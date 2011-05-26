@@ -441,6 +441,7 @@
 (define (s5parser:dri_phdb group buf)
   (let* ((time (u8data-le-u32 (subu8data buf 0 4)))
          (payload (subu8data buf 4 274))
+         (marker (subu8data buf 274 275)) ;;needed for iFish-AA application
          (cl_drivl_subt (u8data-le-u16 (subu8data buf 276 278))))
   (let ((flag (bitwise-and (arithmetic-shift cl_drivl_subt -8) 3)))
     (cond 
@@ -449,6 +450,7 @@
       ((fx= flag 2) (s5parser:ext2_phdb group payload))
       ((fx= flag 3) (s5parser:ext3_phdb group payload))
       (else (log-error "s5parser: dri_phdb: unknown subrecord"))))
+  (s5parser:settrend! group "marker" marker) ;; Need marker for iFish-AA application
   (u8data-skip buf 278)))
 
 (define (s5parser:parsetrends group buf srlist)
