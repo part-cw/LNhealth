@@ -461,7 +461,9 @@
       (let ((ofs (car (car sr)))
             (type (cadr (car sr))))
        ;;  (for-each display (list "s5parser: dri_phdb subrecord=" type "\n"))
-         (if (fx< type 4) (s5parser:dri_phdb store (u8data-skip buf ofs)))
+         ;;(if (fx< type 4) (s5parser:dri_phdb store (u8data-skip buf ofs)))
+         ;; We do care as the 60 sec trend causes a jump from the current value to the 1min avg. [MG 29May2011]
+         (if (fx= type 1) (s5parser:dri_phdb store (u8data-skip buf ofs)))
          (loop (cdr sr))))))
 
 ;; ----------------
