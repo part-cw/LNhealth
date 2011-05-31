@@ -467,10 +467,10 @@
          (loop (cdr sr))))))
 
 ;; ----------------
-;; waveforms
+;; waveforms   [Changed ECG from 1.0 to 1000.0 as the standard is mV not uV]
 
 (define s5parser:waveforms '( 
-  (1 "ECG1" 1.)  (2 "ECG2" 1.) (3 "ECG3" 1.)
+  (1 "ECG1" 1000.)  (2 "ECG2" 1.) (3 "ECG3" 1.)
   (4 "INVP1" 100.) (5 "INVP2" 100.) (6 "INVP3" 100.) (7 "INVP4" 100.)
   (8 "PLETH" 100.) (9 "CO2" 100.) (10 "O2" 100.) (11 "N2O" 100.)
   (12 "AA" 100.) (13 "AWP" 100.) (14 "FLOW" 100.) (15 "RESP" 100.)
@@ -498,7 +498,9 @@
 
               ;; 20101007: change to use waveform
               (store-waveform-append s wavename out)
-              (store-waveform-scale s wavename '(-32767 32767 -1. 1.))
+;;              (store-waveform-scale s wavename '(-32767 32767 -1. 1.))
+	      ;;iFish-AA needs proper waveforms (This is enough precision and all it does is introduce rounding errors)
+              (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
             ))
           (let ((val (u8data-le-s16 (subu8data buf o (+ o 2)))))
             (loop2 (+ o 2) (+ n 1) (append res 
@@ -579,6 +581,7 @@
          (plug_id (u8data-le-u16 (subu8data buf 4 6)))
          (r_time (u8data-le-u32 (subu8data buf 6 10)))
          (r_maintype (u8data-le-u16 (subu8data buf 14 16))))
+         (store-set! store "plug_id" plug_id) ;;Added for iFish-AA (we know these from Dave Kobayashi)
 ;;    (for-each display (list "s5parser: parsing frame len=" r_len "\n"))
     (let loop ((n 0)(p subrecords)(srlist '())(done #f))
       (if (or done (fx= n 8)) (begin
