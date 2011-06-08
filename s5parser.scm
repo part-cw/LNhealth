@@ -7,11 +7,13 @@
 ;; group header
 
 (define s5parser:group_active? #f)
+(define s5parser:group_label #f)    ;; Introduced so I can look at Agent type, P1-6 sources etc.
 (define (s5parser:group_hdr buf)
   (let ((remainder (u8data-skip buf 6))
         (status_bits (u8data-le-u32 (subu8data buf 0 4)))
         (label_info (u8data-le-u16 (subu8data buf 4 6))))
    (set! s5parser:group_active? (if (fx= (bitwise-and #x3 status_bits) 3) #t #f))
+   (set! s5parser:group_label label_info)
    remainder))
 (define (s5parser:validate val scale) (if (fx< val -32000) #f (/ val scale)))
 
@@ -44,6 +46,23 @@
     (s5parser:settrend! s "rr"      imp_rr 	1.)
     (u8data-skip step1 10)))
 
+(define (s5parser:p_getname l)
+  (cond ((= l 1) "ART")
+	((= l 2) "CVP")
+	((= l 3) "PA")
+	((= l 4) "RAP")
+	((= l 5) "RVP")
+	((= l 6) "LAP")
+	((= l 7) "ICP")
+	((= l 8) "ABP")
+	((= l 9) "P1")
+	((= l 10) "P2")
+	((= l 11) "P3")
+	((= l 12) "P4")
+	((= l 13) "P5")
+	((= l 14) "P6")
+	(else "NOT DEFINED")))
+
 (define (s5parser:p_group s buf idx)
   (let* ((step1 (s5parser:group_hdr buf))
          (sys (u8data-le-s16 (subu8data step1 0 2)))
@@ -54,6 +73,7 @@
    (s5parser:settrend! s (string-append "p" idx "_dia") dia 100.)
    (s5parser:settrend! s (string-append "p" idx "_mean") mean 100.)
    (s5parser:settrend! s (string-append "p" idx "_hr") hr)
+   (store-set! s (string-append "p" idx "_name") (s5parser:p_getname s5parser:group_label))
    (u8data-skip step1 8)))
 
 (define (s5parser:nibp_group s buf)
@@ -70,10 +90,30 @@
    (s5parser:settrend! s "nibp_hr" hr)
    (u8data-skip step1 8)))
 
+(define (s5parser:t_getname l)
+  (cond ((= l 1) "ESO")
+	((= l 2) "NASO")
+	((= l 3) "TYMP")
+	((= l 4) "RECT")
+	((= l 5) "BLAD")
+	((= l 6) "AXIL")
+	((= l 7) "SKIN")
+	((= l 8) "AIRW")
+	((= l 9) "ROOM")
+	((= l 10) "MYO")
+	((= l 11) "T1")
+	((= l 12) "T2")
+	((= l 13) "T3")
+	((= l 14) "T4")
+	((= l 15) "CORE")
+	((= l 16) "SURF")
+	(else "NOT USED")))
+
 (define (s5parser:t_group s buf idx)
   (let* ((step1 (s5parser:group_hdr buf))
          (temp  (u8data-le-s16 (subu8data step1 0 2))))
    (s5parser:settrend! s (string-append "temp" idx) temp 100.)
+   (store-set! s (string-append "temp" idx "_name") (s5parser:t_getname s5parser:group_label))
    (u8data-skip step1 2)))
 
 ;; ignore ir_amp and svo2
@@ -116,6 +156,16 @@
    (s5parser:settrend! s "n2o_fi" fi 100.)
    (u8data-skip step1 4)))
 
+;;Introduced to parse agent type
+(define (s5parser:aa_getname l)
+  (cond ((= l 1) "NONE")
+	((= l 2) "HAL")
+	((= l 3) "ENF")
+	((= l 4) "ISO")
+	((= l 5) "DES")
+	((= l 6) "SEV")
+	(else "UNKNOWN")))
+
 (define (s5parser:aa_group s buf)
   (let* ((step1 (s5parser:group_hdr buf))
          (et (u8data-le-s16 (subu8data step1 0 2)))
@@ -124,6 +174,7 @@
    (s5parser:settrend! s "aa_et"  et 100.)
    (s5parser:settrend! s "aa_fi"  fi 100.)
    (s5parser:settrend! s "aa_mac" mac_sum 100.)
+   (store-set! s "aa_name" (s5parser:aa_getname s5parser:group_label))
    (u8data-skip step1 6)))
 
 (define (s5parser:flow_vol_group s buf)
