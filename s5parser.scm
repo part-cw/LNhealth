@@ -564,10 +564,10 @@
 ;; patient data
 
 (define (s5parser:nw_pat_descr s buf)
-  (let* ((pat_1stname (subu8data buf 0 30))
-         (pat_2ndname (subu8data buf 30 70))
+  (let* ((pat_1stname (u8data->u8vector (subu8data buf 0 30)))
+         (pat_2ndname (u8data->u8vector (subu8data buf 30 70)))
          (pat_id      (subu8data buf 70 110))
-         (middle_name (subu8data buf 110 140))
+         (middle_name (u8data->u8vector (subu8data buf 110 140)))
          (gender    (u8data-le-s16 (subu8data buf 140 142)))
          (age_years (u8data-le-s16 (subu8data buf 142 144)))
          (age_days (u8data-le-s16 (subu8data buf 144 146)))
@@ -591,6 +591,9 @@
 ;;       " age_hours=" age_hours
 ;;       " weight=" weight
 ;;       " height=" height  "\n"))
+   ;; name [Added 20Jun2011 MG]
+   (if (> (u8vector-ref pat_1stname 0) 0) (store-set! s "FirstName" (with-input-from-u8vector pat_1stname read)))
+   (if (> (u8vector-ref pat_2ndname 0) 0) (store-set! s "LastName" (with-input-from-u8vector pat_2ndname read)))
    ;; gender
    (if (fx= gender 1) (store-set! s "Sex" "Male" "s5"))
    (if (fx= gender 2) (store-set! s "Sex" "Female" "s5"))
