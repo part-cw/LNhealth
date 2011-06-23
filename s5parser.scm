@@ -14,6 +14,7 @@
         (label_info (u8data-le-u16 (subu8data buf 4 6))))
    (set! s5parser:group_active? (if (fx= (bitwise-and #x3 status_bits) 3) #t #f))
    (set! s5parser:group_label label_info)
+   (set! s5parser:status_bits status_bits)
    remainder))
 (define (s5parser:validate val scale) (if (fx< val -32000) #f (/ val scale)))
 
@@ -30,6 +31,12 @@
 ;; trends
 
 ;; basic ----------------
+(define (s5parser:hr_getsource v)
+  (cond ((= v 1) "ECG1")
+	((and (>= v 2) (<= v 5)) (string-append "BP" (number->string (- v 1))))
+	((= v 6) "PLETH")
+	((or (= v 7) (= v 8)) (string-append "BP" (number->string (- v 2))))
+	(else "UNKNOWN")))
 
 (define (s5parser:ecg_group s buf)
   (let* ((step1 (s5parser:group_hdr buf))
@@ -40,6 +47,8 @@
          (imp_rr (u8data-le-s16 (subu8data step1 8 10))))
     (s5parser:settrend! s "hr(ecg)" hr 	1.)
     (s5parser:settrend! s "HR" hr 	1.)
+    ;; HR Source is bits 3-6
+    (store-set! s "hr_source" (s5parser:hr_getsource (bitwise-and (arithmetic-shift s5parser:status_bits -3) 7)) "s5") 
     (s5parser:settrend! s "st1"     st1 	100.)
     (s5parser:settrend! s "st2"     st2 	100.)
     (s5parser:settrend! s "st3"     st3 	100.)
@@ -73,7 +82,7 @@
    (s5parser:settrend! s (string-append "p" idx "_dia") dia 100.)
    (s5parser:settrend! s (string-append "p" idx "_mean") mean 100.)
    (s5parser:settrend! s (string-append "p" idx "_hr") hr)
-   (store-set! s (string-append "p" idx "_name") (s5parser:p_getname s5parser:group_label))
+   (store-set! s (string-append "p" idx "_name") (s5parser:p_getname s5parser:group_label) "s5")
    (u8data-skip step1 8)))
 
 (define (s5parser:nibp_group s buf)
@@ -113,7 +122,7 @@
   (let* ((step1 (s5parser:group_hdr buf))
          (temp  (u8data-le-s16 (subu8data step1 0 2))))
    (s5parser:settrend! s (string-append "temp" idx) temp 100.)
-   (store-set! s (string-append "temp" idx "_name") (s5parser:t_getname s5parser:group_label))
+   (store-set! s (string-append "temp" idx "_name") (s5parser:t_getname s5parser:group_label) "s5")
    (u8data-skip step1 2)))
 
 ;; ignore ir_amp and svo2
@@ -174,7 +183,7 @@
    (s5parser:settrend! s "aa_et"  et 100.)
    (s5parser:settrend! s "aa_fi"  fi 100.)
    (s5parser:settrend! s "aa_mac" mac_sum 100.)
-   (store-set! s "aa_name" (s5parser:aa_getname s5parser:group_label))
+   (store-set! s "aa_name" (s5parser:aa_getname s5parser:group_label) "s5")
    (u8data-skip step1 6)))
 
 (define (s5parser:flow_vol_group s buf)
@@ -592,8 +601,8 @@
 ;;       " weight=" weight
 ;;       " height=" height  "\n"))
    ;; name [Added 20Jun2011 MG]
-   (if (> (u8vector-ref pat_1stname 0) 0) (store-set! s "FirstName" (with-input-from-u8vector pat_1stname read)))
-   (if (> (u8vector-ref pat_2ndname 0) 0) (store-set! s "LastName" (with-input-from-u8vector pat_2ndname read)))
+   (store-set! s "FirstName" (list->string (map integer->char (u8vector->list pat_1stname))))
+   (store-set! s "LastName" (list->string (map integer->char (u8vector->list pat_2ndname))))
    ;; gender
    (if (fx= gender 1) (store-set! s "Sex" "Male" "s5"))
    (if (fx= gender 2) (store-set! s "Sex" "Female" "s5"))
