@@ -91,10 +91,23 @@
          (dia (u8data-le-s16 (subu8data step1 2 4)))
          (mean (u8data-le-s16 (subu8data step1 4 6)))
          (hr  (u8data-le-s16 (subu8data step1 6 8))))
-   (s5parser:settrend! s "nibp_sys" sys 100.)
-   (s5parser:settrend! s "nibp_dia" dia 100.)
    (s5parser:settrend! s "nibp_mean" mean 100.)
    (s5parser:settrend! s "nibp_hr" hr)
+
+;;   (s5parser:settrend! s "nibp_sys" sys 100.)
+;;   (s5parser:settrend! s "nibp_dia" dia 100.)
+   ;; the S5 keeps outputting stale BP values, don't update if same
+   ;; this will let us trigger an alarm on stale numbers later (used in iControl)
+   (let ((oldsys (store-ref s "nibp_sys" #f))
+         (olddia (store-ref s "nibp_dia" #f))
+         (newsys (s5parser:validate sys 100.))
+         (newdia (s5parser:validate dia 100.)))
+     (if (or (not oldsys) (and newsys oldsys (not (= oldsys newsys))))
+       (s5parser:settrend! s "nibp_sys" sys 100.))
+     (if (or (not olddia) (and newdia olddia (not (= olddia newdia))))
+       (s5parser:settrend! s "nibp_dia" dia 100.))
+   )
+
    (u8data-skip step1 8)))
 
 (define (s5parser:t_getname l)
