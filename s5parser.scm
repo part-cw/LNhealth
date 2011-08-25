@@ -646,6 +646,9 @@
 ;; top level
 
 ;; all frames have the same header format
+;M @deffn {procedure} s5parser store buf
+;M Takes raw data from S5 patient monitor and saves the patient information in the data store
+;M @end deffn
 (define (s5parser store buf)
   (let* ((subrecords (u8data-skip buf 16))
          (payload (u8data-skip buf 40))
