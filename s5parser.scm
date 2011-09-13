@@ -560,6 +560,8 @@
              (wavename (if wave (cadr wave) #f))
              (wavescale (if wave (caddr wave) #f))
              (wavelen (u8data-le-s16 (subu8data buf ofs (+ ofs 2)))))
+
+#|  ;; list implementation (original)
     (if wavename
       (let loop2 ((o (+ ofs 6))(n 0)(res '()))
         (if (fx= n wavelen) (if (and (fx> (length res) 0)
@@ -577,6 +579,23 @@
               (list val))))))
        #f ;;(for-each display (list "s5parser: unknown wave: id=" type "\n"))
      )
+|#
+     ;; vector implementation 
+     (if (and wavename (> wavelen 0))
+       (let ((wavedata (##still-copy (make-vector wavelen)))
+             (wavescaleinv (/ 1. wavescale)))
+         ;; populate the vector
+         (let loop2 ((o (fx+ ofs 6))(n 0))
+           (if (fx< n wavelen) 
+             (let* ((val (u8data-le-s16 (subu8data buf o (fx+ o 2))))
+                    (sval (if (fx< val -32000) 0. (fl* (exact->inexact val) wavescaleinv))))
+               (vector-set! wavedata n sval)
+               (loop2 (fx+ o 2) (fx+ n 1)))))
+         (store-waveform-append s wavename (vector->list wavedata))
+         (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
+       )
+     )       
+
      (loop (cdr srs))))))
 
 ;; ----------------
