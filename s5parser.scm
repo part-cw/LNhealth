@@ -593,8 +593,7 @@
                (loop2 (fx+ o 2) (fx+ n 1)))))
          (store-waveform-append s wavename (vector->list wavedata))
          (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
-       )
-     )       
+       ) #f)       
 
      (loop (cdr srs))))))
 
