@@ -580,7 +580,7 @@
        #f ;;(for-each display (list "s5parser: unknown wave: id=" type "\n"))
      )
 |#
-     ;; vector implementation 
+     ;; f32vector implementation 
      (if (and wavename (> wavelen 0))
        (let ((wavedata (##still-copy (make-f32vector wavelen)))
              (wavescaleinv (/ 1. wavescale)))
@@ -591,7 +591,7 @@
                     (sval (if (fx< val -32000) 0. (fl* (exact->inexact val) wavescaleinv))))
                (f32vector-set! wavedata n sval)
                (loop2 (fx+ o 2) (fx+ n 1)))))
-         (store-waveform-append s wavename (f32vector->list wavedata))
+         (store-waveform-append s wavename wavedata)
          (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
        ) #f)       
 
