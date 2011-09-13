@@ -582,16 +582,16 @@
 |#
      ;; vector implementation 
      (if (and wavename (> wavelen 0))
-       (let ((wavedata (##still-copy (make-vector wavelen)))
+       (let ((wavedata (##still-copy (make-f32vector wavelen)))
              (wavescaleinv (/ 1. wavescale)))
          ;; populate the vector
          (let loop2 ((o (fx+ ofs 6))(n 0))
            (if (fx< n wavelen) 
              (let* ((val (u8data-le-s16 (subu8data buf o (fx+ o 2))))
                     (sval (if (fx< val -32000) 0. (fl* (exact->inexact val) wavescaleinv))))
-               (vector-set! wavedata n sval)
+               (f32vector-set! wavedata n sval)
                (loop2 (fx+ o 2) (fx+ n 1)))))
-         (store-waveform-append s wavename (vector->list wavedata))
+         (store-waveform-append s wavename (f32vector->list wavedata))
          (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
        ) #f)       
 
