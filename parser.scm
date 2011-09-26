@@ -33,14 +33,14 @@
            (let ((roapdus (u8data-ref buf 5)))
               (cond 
                 ((fx= roapdus ROIV_APDU)
-                  (log-debug "ivueparser: mds create event") 
+                  (log-debug "ivueparser: mds create event" 1) 
                   (ivueparser:parsecentralstation buf) #f)
                 ((fx= roapdus RORS_APDU)
-                  ;;(log-debug "ivueparser: frame single") 
+                  ;;(log-debug "ivueparser: frame single" 1) 
                   (set! ivueparser:islinked #f)
                   (ivueparser:parsedataresult buf #f) #f)
                 ((fx= roapdus ROLRS_APDU)
-                  ;;(log-debug "ivueparser: linked data result") 
+                  ;;(log-debug "ivueparser: linked data result" 1) 
                   (set! ivueparser:islinked #t)
                   (ivueparser:parsedataresult buf #t) #t)
                 ((fx= roapdus ROER_APDU)
@@ -63,12 +63,12 @@
          ((= val #x0d03) 2)
          ((= val #x0d01) 2)
          ((= val #x0d16) 2)
-         (else (log-debug (string-append "ignoring type=" (number->string val 16))) 0))))
+         (else (log-debug (string-append "ignoring type=" (number->string val 16)) 1) 0))))
 
 ;; parse a central station data frame
 (define (ivueparser:parsecentralstation buf)
   (log-debug (string-append "ivueparser: central station frame length="
-                (number->string (u8data-length buf))))
+                (number->string (u8data-length buf))) 1)
   (let* ((tpe (ivueparser:stationtype buf))
          (res  (cond ((= tpe 1) (ivueparser:parseServerWaveforms buf))
                      ((= tpe 2) (ivueparser:parseServerTrends buf))
@@ -78,7 +78,7 @@
         "ivueparser: central station: message with "
           (number->string (u8data-length res))
          " bytes of " (number->string (u8data-length buf))
-         " trailing??")))
+         " trailing??") 1))
   #t))
 
 ;; server waveforms ----
@@ -102,7 +102,7 @@
 ;; parse a server waveform frame  
 ;; this is purely empirical from inspecting raw frames
 (define (ivueparser:parseServerWaveform buf)
-  (log-debug (string-append "parseServerWaveform len=" (number->string (u8data-length buf))))
+  (log-debug (string-append "parseServerWaveform len=" (number->string (u8data-length buf))) 1)
   (let* ((payload   (ivueparser:skip buf 8))
          (handle_id (ivueparser:decodeu16 (subu8data buf 0 2))) ;; not sure??
          (physio_id (ivueparser:decodeu16 (subu8data buf 2 4)))
@@ -113,7 +113,7 @@
               (ivueparser:skip p 2) (append l (list
                  (ivueparser:decodeu16 (subu8data p 0 2)))))))))
     (log-debug (string-append "parseServerWaveform: wave [" 
-        (number->string physio_id) "] n=" (number->string count)))
+        (number->string physio_id) "] n=" (number->string count)) 1)
     (ivueparser:storage-data ivueparser:store handle_id physio_id data)
     (ivueparser:skip payload len)))
   
@@ -141,7 +141,7 @@
          (count     (ivueparser:decodeu16 (subu8data buf 2 4)))
          (len       (ivueparser:decodeu16 (subu8data buf 4 6))))
      (log-debug (string-append "parseServerTrend: count="
-       (number->string count) " [ id=" (number->string id) "]"))
+       (number->string count) " [ id=" (number->string id) "]") 1)
      (set! ivueparser:handleid id)
      (let loop ((n 0)(p payload))
         (if (fx< n count) (loop (fx+ n 1) (ivueparser:parseAttribute p))))
@@ -151,7 +151,7 @@
  
 ;; parse the data results - this is where the magic happens!
 (define (ivueparser:parsedataresult buf islinked)
-  (log-debug "ivueparser: parse begin")
+  (log-debug "ivueparser: parse begin" 1)
   (let* ((isextended (if (fx= 
             (u8data-ref buf (fx+ 21 (if islinked 2 0))) #x3B) #t #f))
          (step1 (ivueparser:parseSPdpu buf))
@@ -171,7 +171,7 @@
 
 ;; handle an ActionResult
 (define (ivueparser:doActionResult buf isextended)
-  (log-debug "ActionResult")
+  (log-debug "ActionResult" 1)
   (let* ((step4 (ivueparser:parseActionResult buf))
         (step5 (ivueparser:parsePollMdibDataReply step4 isextended))
         (step6 (if (fx> (u8data-length step5) 2) ;; skip empty lists
@@ -191,7 +191,7 @@
 ;; handle a GetResult
 ;; this would be a priority list request response
 (define (ivueparser:doGetResult buf)
-  (log-debug "GetResult")
+  (log-debug "GetResult" 1)
   (let* ((step4 (ivueparser:parseGetResult buf))
          (step5 (ivueparser:parseAttributeList step4)))
    (if (> (u8data-length step5) 0)
@@ -204,7 +204,7 @@
 
 ;; handle a SetResult
 (define (ivueparser:doSetResult buf)
-  (log-debug "SetResult")
+  (log-debug "SetResult" 1)
   (let* ((step4 (ivueparser:parseSetResult buf))
         (step5 (ivueparser:parseAttributeList step4)))
    (if (> (u8data-length step5) 0)
@@ -282,14 +282,14 @@
         (count (ivueparser:decodeu16 (subu8data buf 0 2)))
         (len (ivueparser:decodeu16 (subu8data buf 2 4))))
  ;;   (log-debug (string-append "parseAttributeList count="
- ;;     (number->string count) " [" (number->string len) "]"))
+ ;;     (number->string count) " [" (number->string len) "]") 1)
     (let loop ((n 0)(p payload))
       (if (fx< n count)
         (loop (fx+ n 1) (ivueparser:parseAttribute p))))
     (ivueparser:skip payload len)))
  
 (define (ivueparser:parseAttribute buf)    
- ;; (log-debug "parseAttribute")
+ ;; (log-debug "parseAttribute" 1)
   (let ((payload (ivueparser:skip buf 4))
         (id (ivueparser:decodeu16 (subu8data buf 0 2)))
         (len (ivueparser:decodeu16 (subu8data buf 2 4))))
@@ -312,7 +312,7 @@
        (ivueparser:parseAttrScaleSpec payload))
     ((fx= id NOM_ATTR_ID_LABEL) ;; AttrIdLabel
        (ivueparser:parseAttrIdLabel payload))
-    (else (log-debug "ivueparser: unknown attribute " id " [" len "]"))
+    (else (log-debug "ivueparser: unknown attribute " id " [" len "]" 1) )
     )
    (ivueparser:skip payload len)))
 
@@ -330,7 +330,7 @@
         (state (ivueparser:decodeu16 (subu8data buf 2 4)))
         (unit (ivueparser:decodeu16 (subu8data buf 4 6)))
         (value (ivueparser:decodef32 (subu8data buf 6 10))))
-;;     (log-debug (format "NuObsValue: data [~D] ~F" physio_id value))
+;;     (log-debug (format "NuObsValue: data [~D] ~F" physio_id value) 1)
 
 ;;     (let ((localvar (metadata-mcode physio_id)))
 ;;       (if (and (string? localvar) (not (= value 8388607.))) ;; ignore invalid data
@@ -363,7 +363,7 @@
                  (ivueparser:decodeu16 (subu8data p 0 2)))))))))
     (log-debug (string-append "SaObsValue: wave [" (number->string physio_id) 
                     "] n=" (number->string count) 
-             " handle=" (number->string ivueparser:handleid)))
+             " handle=" (number->string ivueparser:handleid)) 1)
      (ivueparser:storage-data ivueparser:store ivueparser:handleid physio_id data)
       (ivueparser:skip payload len)))
 
@@ -374,7 +374,7 @@
         (lower_scale (ivueparser:decodeu16 (subu8data buf 8 10)))
         (upper_scale (ivueparser:decodeu16 (subu8data buf 10 12))))
 ;;  (log-debug (format "AttrScaleSpec: ~D: [~D-~D] -> [~F-~F]" ivueparser:handleid
-;;        lower_scale upper_scale lower_abs  upper_abs))
+;;        lower_scale upper_scale lower_abs  upper_abs) 1)
      (ivueparser:storage-scale ivueparser:store ivueparser:handleid 
         lower_scale upper_scale lower_abs  upper_abs)
    payload))
@@ -399,7 +399,7 @@
 ;;        (period (* 8000. 
 ;;         (ivueparser:decodeu32 (subu8data buf 0 4)))))
 ;;  (log-debug (string-append "AttrSamplePeriod period="
-;;      (number->string period)))
+;;      (number->string period)) 1)
 ;;   (ivueparser:storage-period ivueparser:store ivueparser:handleid period)
 ;;   payload))
     
@@ -410,7 +410,7 @@
 ;;        (sbits (ivueparser:decodeu8 (subu8data buf 3 4)))
 ;;        (flags (ivueparser:decodeu16 (subu8data buf 4 6))))
 ;;  (log-debug (string-append "AttrSampleArraySpec: array size="
-;;      (number->string asize)))
+;;      (number->string asize)) 1)
 ;;   (ivueparser:storage-size ivueparser:store ivueparser:handleid asize)
 ;;   payload))
 
