@@ -23,7 +23,8 @@
   (let* ((scale (if (fx= (length scale0) 1) (car scale0) 1.))
          (val (s5parser:validate value scale)))
     (if (and val  s5parser:group_active?) (begin
-      (store-set! store name val "s5"))
+      ;; use store-setnew! to catch stale values 
+      (store-setnew! store name val "s5"))
       #f ;;(for-each display (list "s5parser: " name "=" value " IGNORED \n"))
     )))
     
