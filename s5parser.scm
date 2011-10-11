@@ -23,8 +23,7 @@
   (let* ((scale (if (fx= (length scale0) 1) (car scale0) 1.))
          (val (s5parser:validate value scale)))
     (if (and val  s5parser:group_active?) (begin
-      ;; use store-setnew! to catch stale values 
-      (store-setnew! store name val "s5"))
+      (store-set! store name val "s5"))
       #f ;;(for-each display (list "s5parser: " name "=" value " IGNORED \n"))
     )))
     
@@ -582,7 +581,7 @@
      )
 |#
      ;; f32vector implementation 
-     (if (and wavename (> wavelen 0))
+     (if (and wavename (fx> wavelen 0) (fx> (u8data-le-s16 (subu8data buf (fx+ ofs 6) (fx+ ofs 8))) -32000))
        (let ((wavedata (##still-copy (make-f32vector wavelen)))
              (wavescaleinv (/ 1. wavescale)))
          ;; populate the vector
