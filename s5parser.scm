@@ -585,18 +585,18 @@
        (let ((wavedata (##still-copy (make-f32vector wavelen)))
              (wavescaleinv (/ 1. wavescale)))
          ;; populate the vector
-         (let loop2 ((o (fx+ ofs 6))(n 0)(flag #f))
+         (let loop2 ((o (fx+ ofs 6))(n 0)(flag 0))
            (if (fx= n wavelen)  
-             (if flag (log-system "s5parser: invalid data in waveform"))
+             (if (> flag 0) (log-system "s5parser: invalid data in waveform " flag))
              (let* ((val (u8data-le-s16 (subu8data buf o (fx+ o 2))))
                     (newflag (fx< val -32000))
                     (sval (if newflag 0. (fl* (exact->inexact val) wavescaleinv))))
                (f32vector-set! wavedata n sval)
-               (loop2 (fx+ o 2) (fx+ n 1) (if newflag #t flag))
+               (loop2 (fx+ o 2) (fx+ n 1) (if newflag (+ flag 1) flag))
             )))
          (store-waveform-append s wavename wavedata)
          (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
-       ) #f)       
+       ) #f)
 
      (loop (cdr srs))))))
 
