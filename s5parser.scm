@@ -595,7 +595,7 @@
                (loop2 (fx+ o 2) (fx+ n 1) (if newflag (+ flag 1) flag))
             )))
          (store-waveform-append s wavename wavedata)
-         (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
+         (store-waveform-scale s wavename '(0 0 0 0)) ;; This is actually not doing anything 
        ) #f)
 
      (loop (cdr srs))))))
