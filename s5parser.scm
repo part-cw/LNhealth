@@ -282,7 +282,6 @@
   (u8data-skip buf 270)))
 
 ;; ext1 -------------
-
 (define (s5parser:ext1_phdb s buf)
 ;;  (display "s5parser:ext1_phdb\n")
   (let* ((step1 (s5parser:arrh_ecg_group s buf))
@@ -329,7 +328,6 @@
 
 
 ;; ext2 -------------
-
 (define (s5parser:nmt2_group s buf)
   (let* ((step1 (s5parser:group_hdr buf))
          (nmt_t1 (u8data-le-s16 (subu8data step1 2 4)))
@@ -520,6 +518,7 @@
       ((fx= flag 2) (s5parser:ext2_phdb store payload))
       ((fx= flag 3) (s5parser:ext3_phdb store payload))
       (else (log-error "s5parser: dri_phdb: unknown subrecord"))))
+    (s5parser:settrend! store "time" time)
     (s5parser:settrend! store "marker" marker) ;; Need marker for iFish-AA application
   (u8data-skip buf 278)))
 
@@ -606,7 +605,7 @@
 (define (s5parser:nw_pat_descr s buf)
   (let* ((pat_1stname (u8data->u8vector (subu8data buf 0 30)))
          (pat_2ndname (u8data->u8vector (subu8data buf 30 70)))
-         (pat_id      (subu8data buf 70 110))
+         (pat_id      (u8data->u8vector (subu8data buf 70 110)))
          (middle_name (u8data->u8vector (subu8data buf 110 140)))
          (gender    (u8data-le-s16 (subu8data buf 140 142)))
          (age_years (u8data-le-s16 (subu8data buf 142 144)))
@@ -632,8 +631,10 @@
 ;;       " weight=" weight
 ;;       " height=" height  "\n"))
    ;; name [Added 20Jun2011 MG]
-   (store-set! s "FirstName" (list->string (map integer->char (u8vector->list pat_1stname))))
-   (store-set! s "LastName" (list->string (map integer->char (u8vector->list pat_2ndname))))
+   (store-set! s "FirstName" (u8vector->string pat_1stname) "s5")
+   (store-set! s "LastName" (u8vector->string pat_2ndname) "s5")
+   ;; patient id
+   (store-set! s "PatientID" (u8vector->string pat_id) "s5")
    ;; gender
    (if (fx= gender 1) (store-set! s "Sex" "Male" "s5"))
    (if (fx= gender 2) (store-set! s "Sex" "Female" "s5"))
@@ -663,6 +664,45 @@
         )
         (loop (cdr srs))))))
 
+;; ---------------
+;; alarm data
+(define (s5parser:al_disp_al s buf idx)
+  (let* ((text (u8data->u8vector (subu8data buf 0 80)))
+         (text_changed (subu8data buf 80 82))
+	 ;; DRI_PR0 = 0, //No alarm DRI_PR1 = 1, //White DRI_PR2 = 2, //Yellow DRI_PR3 = 3 //Red
+         (color (subu8data buf 82 84))
+         (color_changed (subu8data buf 84 86))
+         (reserved (subu8data buf 86 98)))
+    ;;(display (string-append s "[" idx "]: " (u8vector->string text)))(newline)
+    (store-set! s (string-append "alarm" idx "_text") (u8vector->string text) "s5")
+    (store-set! s (string-append "alarm" idx "_color") color "s5")
+    ;; Add the alarm event to the respective store
+    ;;(if (fx> color 0) (store-event-add s color (u8vector->string text)))
+    (u8data-skip buf 98)
+  ))
+
+(define (s5parser:dri_al_msg s buf)
+  (let* ((reserved1 (subu8data buf 0 2))
+	 (sound_on_off (subu8data buf 2 4))         
+	 (reserved2 (subu8data buf 4 6))
+         (reserved3 (subu8data buf 6 8))
+	 (silence_info (subu8data buf 8 10))
+         (step1 (s5parser:al_disp_al s (u8data-skip buf 10) "1"))
+	 (step2 (s5parser:al_disp_al s step1 "2"))
+	 (step3 (s5parser:al_disp_al s step2 "3"))
+	 (step4 (s5parser:al_disp_al s step3 "4"))
+	 (step5 (s5parser:al_disp_al s step4 "5"))
+         (reserved (subu8data step5 0 10)))
+    (u8data-skip step5 10)))
+
+(define (s5parser:parsealarms store buf srlist)
+  (let loop ((sr srlist))
+    (if (fx> (length sr) 0)
+      (let ((ofs (car (car sr)))
+            (type (cadr (car sr))))
+	  ;; subrecord type of alarms is 1
+         (if (fx= type 1) (s5parser:dri_al_msg store (u8data-skip buf ofs)))
+         (loop (cdr sr))))))
 ;; ----------------
 ;; top level
 
@@ -678,7 +718,7 @@
          (plug_id (u8data-le-u16 (subu8data buf 4 6)))
          (r_time (u8data-le-u32 (subu8data buf 6 10)))
          (r_maintype (u8data-le-u16 (subu8data buf 14 16))))
-         (store-set! store "plug_id" plug_id) ;;Added for iFish-AA (we know these from Dave Kobayashi)
+         (store-set! store "plug_id" plug_id "s5") ;;Added for iFish-AA (we know these from Dave Kobayashi)
 ;;    (for-each display (list "s5parser: parsing frame len=" r_len "\n"))
     (let loop ((n 0)(p subrecords)(srlist '())(done #f))
       (if (or done (fx= n 8)) (begin
@@ -691,6 +731,7 @@
                #f ;;(for-each display (list "s5parser: ignoring invalid trend frame from " store "\n"))
            ))
           ((fx= r_maintype 1) (s5parser:parsewaveforms store payload srlist))
+	  ((fx= r_maintype 4) (s5parser:parsealarms store payload srlist))
           ((fx= r_maintype 5) (s5parser:parsepatientdata store payload srlist))
         ))
       (let ((offset (u8data-le-u16 (subu8data p 0 2)))
