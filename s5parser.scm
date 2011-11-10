@@ -49,14 +49,14 @@
          (st2 (u8data-le-s16 (subu8data step1 4 6)))
          (st3 (u8data-le-s16 (subu8data step1 6 8)))
          (imp_rr (u8data-le-s16 (subu8data step1 8 10))))
-    (s5parser:settrend! s "hr(ecg)" hr 	1.)
+    (s5parser:settrend! s "hr" hr 	1.)
     (s5parser:settrend! s "HR" hr 	1.)
     ;; HR Source is bits 3-6
     (store-set! s "hr_source" (s5parser:hr_getsource (bitwise-and (arithmetic-shift s5parser:status_bits -3) 7)) "s5") 
     (s5parser:settrend! s "st1"     st1 	100.)
     (s5parser:settrend! s "st2"     st2 	100.)
     (s5parser:settrend! s "st3"     st3 	100.)
-    (s5parser:settrend! s "rr"      imp_rr 	1.)
+    (s5parser:settrend! s "imp_rr"      imp_rr 	1.)
     (u8data-skip step1 10)))
 
 (define (s5parser:p_getname l)
@@ -149,6 +149,8 @@
          (svo2  (u8data-le-s16 (subu8data step1 6 8))))
    (s5parser:settrend! s "spo2" spo2 100.)
    (s5parser:settrend! s "pr" pr)
+   (s5parser:settrend! s "ir_amp" ir_amp)
+   (s5parser:settrend! s "s_o2" svo2 100.)
    (u8data-skip step1 8)))
 
 (define (s5parser:co2_group s buf)
@@ -237,9 +239,9 @@
          (t1 (u8data-le-s16 (subu8data step1 0 2)))
          (tratio (u8data-le-s16 (subu8data step1 2 4)))
          (ptc (u8data-le-s16 (subu8data step1 4 6))))
-   (s5parser:settrend! s "t1"  t1 10.)
-   (s5parser:settrend! s "tratio"  tratio 10.)
-   (s5parser:settrend! s "ptc" ptc)
+   (s5parser:settrend! s "nmt_t1"  t1 10.)
+   (s5parser:settrend! s "nmt_tratio"  tratio 10.)
+   (s5parser:settrend! s "nmt_ptc" ptc)
    (u8data-skip step1 6)))
 
 (define (s5parser:ecg_extra_group s buf)
@@ -297,9 +299,9 @@
          (hr (u8data-le-s16 (subu8data step1 0 2)))
          (rr_time (u8data-le-s16 (subu8data step1 2 4)))
          (pvc (u8data-le-s16 (subu8data step1 4 6))))
-    (s5parser:settrend! s "hr" hr)
-    (s5parser:settrend! s "rr_time" rr_time)
-    (s5parser:settrend! s "pvc" pvc)
+    (s5parser:settrend! s "arrh_hr" hr)
+    (s5parser:settrend! s "arrh_rr_time" rr_time)
+    (s5parser:settrend! s "arrh_pvc" pvc)
     (u8data-skip step1 42)))
 
 (define (s5parser:ecg_12_group s buf)
@@ -390,9 +392,9 @@
           (eeg_ent (u8data-le-s16 (subu8data step1 0 2)))
           (emg_ent (u8data-le-s16 (subu8data step1 2 4)))
           (bsr_ent (u8data-le-s16 (subu8data step1 4 6))))
-    (s5parser:settrend! s "eeg_ent" eeg_ent)
-    (s5parser:settrend! s "emg_ent" emg_ent)
-    (s5parser:settrend! s "bsr_ent" bsr_ent)
+    (s5parser:settrend! s "ent_eeg" eeg_ent)
+    (s5parser:settrend! s "ent_emg" emg_ent)
+    (s5parser:settrend! s "ent_bsr" bsr_ent)
     (u8data-skip step1 22)))  ;; 6 + 2*8
 
 ;; electrode labels, we ignore those for now..
@@ -543,7 +545,7 @@
 ;; waveforms   [Changed ECG from 1.0 to 1000.0 as the standard is mV not uV]
 
 (define s5parser:waveforms '( 
-  (1 "ECG1" 1000.)  (2 "ECG2" 1.) (3 "ECG3" 1.)
+  (1 "ECG1" 1000.)  (2 "ECG2" 1000.) (3 "ECG3" 1000.)
   (4 "INVP1" 100.) (5 "INVP2" 100.) (6 "INVP3" 100.) (7 "INVP4" 100.)
   (8 "PLETH" 100.) (9 "CO2" 100.) (10 "O2" 100.) (11 "N2O" 100.)
   (12 "AA" 100.) (13 "AWP" 100.) (14 "FLOW" 100.) (15 "RESP" 100.)
