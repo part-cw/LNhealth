@@ -2,6 +2,10 @@
 ;; this is a separate module in order to reuse the code in monitor+tap plugins
 
 (include "../s-optimize.inc")
+(define s5parser:fromfile #f)
+
+(define (s5parser-setfromfile! v)
+  (set! s5parser:fromfile v))
 
 ;; ----------------
 ;; group header
@@ -518,7 +522,7 @@
       ((fx= flag 2) (s5parser:ext2_phdb store payload))
       ((fx= flag 3) (s5parser:ext3_phdb store payload))
       (else (log-error "s5parser: dri_phdb: unknown subrecord"))))
-    (s5parser:settrend! store "time" time)
+    (s5parser:settrend! store "timestamp" time)
     (s5parser:settrend! store "marker" marker) ;; Need marker for iFish-AA application
   (u8data-skip buf 278)))
 
@@ -559,34 +563,14 @@
              (wavename (if wave (cadr wave) #f))
              (wavescale (if wave (caddr wave) #f))
              (wavelen (u8data-le-s16 (subu8data buf ofs (+ ofs 2)))))
-
-#|  ;; list implementation (original)
-    (if wavename
-      (let loop2 ((o (+ ofs 6))(n 0)(res '()))
-        (if (fx= n wavelen) (if (and (fx> (length res) 0)
-          (not (fx= (apply + (map (lambda (x) (if (fx< x -32000) 0 1)) res)) 0)))
-            (let ((out (map (lambda (x) (/ x wavescale)) res)))
-
-              ;; 20101007: change to use waveform
-              (store-waveform-append s wavename out)
-;;              (store-waveform-scale s wavename '(-32767 32767 -1. 1.))
-	      ;;iFish-AA needs proper waveforms (This is enough precision and all it does is introduce rounding errors)
-              (store-waveform-scale s wavename '(-10 10 -10. 10.)) 
-            ))
-          (let ((val (u8data-le-s16 (subu8data buf o (+ o 2)))))
-            (loop2 (+ o 2) (+ n 1) (append res 
-              (list val))))))
-       #f ;;(for-each display (list "s5parser: unknown wave: id=" type "\n"))
-     )
-|#
-     ;; f32vector implementation 
-     (if (and wavename (fx> wavelen 0) (fx> (u8data-le-s16 (subu8data buf (fx+ ofs 6) (fx+ ofs 8))) -32000))
+     ;; To save CPU time we only take valid waveform packages if running online
+     (if (and wavename (fx> wavelen 0) (if s5parser:fromfile #t (fx> (u8data-le-s16 (subu8data buf (fx+ ofs 6) (fx+ ofs 8))) -32000)))
        (let ((wavedata (##still-copy (make-f32vector wavelen)))
              (wavescaleinv (/ 1. wavescale)))
          ;; populate the vector
          (let loop2 ((o (fx+ ofs 6))(n 0)(flag 0))
            (if (fx= n wavelen)  
-             (if (> flag 0) (log-system "s5parser: invalid data in waveform " flag))
+             (if (and (> flag 0) (not s5parser:fromfile)) (log-system "s5parser: invalid data in waveform " flag))
              (let* ((val (u8data-le-s16 (subu8data buf o (fx+ o 2))))
                     (newflag (fx< val -32000))
                     (sval (if newflag 0. (fl* (exact->inexact val) wavescaleinv))))
@@ -668,10 +652,10 @@
 ;; alarm data
 (define (s5parser:al_disp_al s buf idx)
   (let* ((text (u8data->u8vector (subu8data buf 0 80)))
-         (text_changed (subu8data buf 80 82))
+         (text_changed (u8data-le-s16 (subu8data buf 80 82)))
 	 ;; DRI_PR0 = 0, //No alarm DRI_PR1 = 1, //White DRI_PR2 = 2, //Yellow DRI_PR3 = 3 //Red
-         (color (subu8data buf 82 84))
-         (color_changed (subu8data buf 84 86))
+         (color (u8data-le-s16 (subu8data buf 82 84)))
+         (color_changed (u8data-le-s16 (subu8data buf 84 86)))
          (reserved (subu8data buf 86 98)))
     ;;(display (string-append s "[" idx "]: " (u8vector->string text)))(newline)
     (store-set! s (string-append "alarm" idx "_text") (u8vector->string text) "s5")
@@ -683,10 +667,10 @@
 
 (define (s5parser:dri_al_msg s buf)
   (let* ((reserved1 (subu8data buf 0 2))
-	 (sound_on_off (subu8data buf 2 4))         
+	 (sound_on_off (u8data-le-s16 (subu8data buf 2 4)))         
 	 (reserved2 (subu8data buf 4 6))
          (reserved3 (subu8data buf 6 8))
-	 (silence_info (subu8data buf 8 10))
+	 (silence_info (u8data-le-s16 (subu8data buf 8 10)))
          (step1 (s5parser:al_disp_al s (u8data-skip buf 10) "1"))
 	 (step2 (s5parser:al_disp_al s step1 "2"))
 	 (step3 (s5parser:al_disp_al s step2 "3"))
