@@ -287,6 +287,27 @@
          (step22 (s5parser:p_group s step21 "6")))
   (u8data-skip buf 270)))
 
+;; Added so we can reference it in trendoutput or other apps
+(define s5parser:physdatavalues_basic (list
+  "hr" "st1" "st2" "st3" "imp_rr"
+  "p1_sys" "p1_dia" "p1_mean" "p1_hr"
+  "p2_sys" "p2_dia" "p2_mean" "p2_hr"
+  "p3_sys" "p3_dia" "p3_mean" "p3_hr"
+  "p4_sys" "p4_dia" "p4_mean" "p4_hr"
+  "nibp_sys" "nibp_dia" "nibp_mean" "nibp_hr"
+  "temp1" "temp2" "temp3" "temp4"
+  "spo2" "pr" "ir_amp" "s_o2"
+  "co2_et" "co2_fi" "co2_rr" "co2_amb"
+  "o2_et" "o2_fi" "n2o_et" "n2o_fi"
+  "aa_et" "aa_fi" "aa_mac"
+  "rr" "ppeak" "peep" "pplat" "tv_insp" "tv_exp" "compliance" "mv_exp"
+  "co" "blood_temp" "ref" "pcwp" 
+  "nmt_t1" "nmt_tratio" "nmt_ptc" 
+  "hr_ecg" "hr_max" "hr_min" 
+  "svo2"
+  "p5_sys" "p5_dia" "p5_mean" "p5_hr"
+  "p6_sys" "p6_dia" "p6_mean" "p6_hr"))
+
 ;; ext1 -------------
 (define (s5parser:ext1_phdb s buf)
 ;;  (display "s5parser:ext1_phdb\n")
@@ -332,6 +353,10 @@
     (s5parser:settrend! s "stV6" stV6)
     (u8data-skip step1 24)))
 
+;; Added so we can reference it in trendoutput or other apps
+(define s5parser:physdatavalues_ext1 (list
+  "arrh_hr" "arrh_rr_time" "arrh_pvc"
+  "stI" "stII" "stIII" "stAVL" "stAVR" "stAVF" "stV1" "stV2" "stV3" "stV4" "stV5" "stV6"))
 
 ;; ext2 -------------
 (define (s5parser:nmt2_group s buf)
@@ -421,8 +446,18 @@
          (step6 (s5parser:eeg2_group s step5)))
     (u8data-skip buf 270)))
 
-;; ext3 ------------------
+;; Added so we can reference it in trendoutput or other apps
+(define s5parser:physdatavalues_ext2 (list
+  "nmt_t1" "nmt_t2" "nmt_t3" "nmt_t4" 
+  "femg"
+  "eeg1_ampl" "eeg1_sef" "eeg1_mf" "eeg1_deltap" "eeg1_thetap" "eeg1_alphap" "eeg1_betap" "eeg1_bsr"
+  "eeg2_ampl" "eeg2_sef" "eeg2_mf" "eeg2_deltap" "eeg2_thetap" "eeg2_alphap" "eeg2_betap" "eeg2_bsr"
+  "eeg3_ampl" "eeg3_sef" "eeg3_mf" "eeg3_deltap" "eeg3_thetap" "eeg3_alphap" "eeg3_betap" "eeg3_bsr"
+  "eeg4_ampl" "eeg4_sef" "eeg4_mf" "eeg4_deltap" "eeg4_thetap" "eeg4_alphap" "eeg4_betap" "eeg4_bsr"
+  "bis" "bis_sqi" "bis_emg" "bis_sr"
+  "ent_eeg" "ent_emg" "ent_bsr"))
 
+;; ext3 ------------------
 (define (s5parser:gasex_group s buf)
   (let* ((step1 (s5parser:group_hdr buf))
          (vo2   (u8data-le-s16 (subu8data step1 0 2)))
@@ -508,8 +543,15 @@
          (step5 (s5parser:aa2_group s step4)))
     (u8data-skip buf 270)))
 
-;;--------------------------
+;; Added so we can reference it in trendoutput or other apps
+(define s5parser:physdatavalues_ext3 (list
+  "gasex_vo2" "gasex_vco2" "gasex_ee" "gasex_rq"
+  "ipeep" "pmean" "raw" "mv_insp" "epeep" "mv_spont" "ie_ratio" "insp_time" "exp_time" "static_compliance" "static_pplat" "static_peepe" "static_peepi" 
+  "bal_gas_et" "bal_gas_fi"
+  "prco2" "pr_et" "pr_pa" "pa_delay" "phi" "phi_delay" "amb_press" "cpma"
+  "mac_age_sum"))
 
+;;--------------------------
 ;; the xx_phdb groups are unioned in the dri_phdb structure
 ;; the data structures are 270 bytes long
 (define (s5parser:dri_phdb store buf)
