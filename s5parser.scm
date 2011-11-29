@@ -26,10 +26,8 @@
 (define (s5parser:settrend! store name value . scale0)
   (let* ((scale (if (fx= (length scale0) 1) (car scale0) 1.))
          (val (s5parser:validate value scale)))
-    (if (and val  s5parser:group_active?) (begin
-      (store-set! store name val "s5"))
-      #f ;;(for-each display (list "s5parser: " name "=" value " IGNORED \n"))
-    )))
+    (if s5parser:group_active? (store-set! store name val "s5"))
+    ))
     
 ;; ----------------
 ;; trends
