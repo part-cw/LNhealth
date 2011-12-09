@@ -27,7 +27,7 @@
   (let* ((scale (if (fx= (length scale0) 1) (car scale0) 1.))
          (val (s5parser:validate value scale)))
     (if s5parser:group_active? (store-set! store name val "s5"))
-    ))
+  ))
     
 ;; ----------------
 ;; trends
@@ -564,8 +564,8 @@
       ((fx= flag 2) (s5parser:ext2_phdb store payload))
       ((fx= flag 3) (s5parser:ext3_phdb store payload))
       (else (log-error "s5parser: dri_phdb: unknown subrecord"))))
-    (s5parser:settrend! store "timestamp" time)
-    (s5parser:settrend! store "marker" marker) ;; Need marker for iFish-AA application
+    (store-set! store "timestamp" time "s5")
+    (store-set! store "marker" marker "s5") ;; Need marker for iFish-AA application
   (u8data-skip buf 278)))
 
 (define (s5parser:parsetrends store buf srlist)
