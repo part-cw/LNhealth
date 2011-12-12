@@ -694,16 +694,18 @@
 ;; alarm data
 (define (s5parser:al_disp_al s buf idx)
   (let* ((text (u8data->u8vector (subu8data buf 0 80)))
+         (textstr (u8vector->string text))
          (text_changed (u8data-le-s16 (subu8data buf 80 82)))
 	 ;; DRI_PR0 = 0, //No alarm DRI_PR1 = 1, //White DRI_PR2 = 2, //Yellow DRI_PR3 = 3 //Red
          (color (u8data-le-s16 (subu8data buf 82 84)))
          (color_changed (u8data-le-s16 (subu8data buf 84 86)))
          (reserved (subu8data buf 86 98)))
-    ;;(display (string-append s "[" idx "]: " (u8vector->string text)))(newline)
-    (store-set! s (string-append "alarm" idx "_text") (u8vector->string text) "s5")
+    (string-replace-char! textstr #\newline #\space);; Remove any linebreaks
+    ;;(display (string-append s "[" idx "]: " textstr))(newline)
+    (store-set! s (string-append "alarm" idx "_text") textstr "s5")
     (store-set! s (string-append "alarm" idx "_color") color "s5")
     ;; Add the alarm event to the respective store
-    ;;(if (fx> color 0) (store-event-add s color (u8vector->string text)))
+    ;;(if (and (fx> color 0) (fx> text_changed 0)) (store-event-add s color textstr))
     (u8data-skip buf 98)
   ))
 
