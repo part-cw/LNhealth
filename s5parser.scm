@@ -694,13 +694,12 @@
 ;; alarm data
 (define (s5parser:al_disp_al s buf idx)
   (let* ((text (u8data->u8vector (subu8data buf 0 80)))
-         (textstr (u8vector->string text))
+         (textstr (string-replace-char (u8vector->string text) #\newline #\space)) ;; Strip linebreaks
          (text_changed (u8data-le-s16 (subu8data buf 80 82)))
 	 ;; DRI_PR0 = 0, //No alarm DRI_PR1 = 1, //White DRI_PR2 = 2, //Yellow DRI_PR3 = 3 //Red
          (color (u8data-le-s16 (subu8data buf 82 84)))
          (color_changed (u8data-le-s16 (subu8data buf 84 86)))
          (reserved (subu8data buf 86 98)))
-    (string-replace-char! textstr #\newline #\space);; Remove any linebreaks
     ;;(display (string-append s "[" idx "]: " textstr))(newline)
     (store-set! s (string-append "alarm" idx "_text") textstr "s5")
     (store-set! s (string-append "alarm" idx "_color") color "s5")
