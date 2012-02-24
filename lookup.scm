@@ -43,7 +43,7 @@ end-of-c-declare
 ;; check if a physid is unique
 (define (ivueparser:uniquephysid? physid data)
   (let loop ((d (map (lambda (x) (list-ref x 4)) data))(n 0))
-    (if (= (length d) 0) (if (= n 1) #t #f)
+    (if (= (length d) 0) (= n 1)
       (loop (cdr d) (if (= (car d) physid) (+ n 1) n)))))
 
 ;; generate hash tables (at runtime)

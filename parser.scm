@@ -91,9 +91,10 @@
          (loop (ivueparser:parseServerWaveformBlock p)))))))
 
 (define (ivueparser:parseServerWaveformBlock buf)
-  (let* ((payload (ivueparser:skip buf 6))
-         (count (ivueparser:decodeu16 (subu8data buf 2 4)))
-         (len   (ivueparser:decodeu16 (subu8data buf 4 6))))
+  (let ((payload (ivueparser:skip buf 6))
+        (count (ivueparser:decodeu16 (subu8data buf 2 4)))
+;;      (len   (ivueparser:decodeu16 (subu8data buf 4 6)))
+       )
        (let loop ((n 0)(p payload))
           (if (fx= n count) p 
              (loop (fx+ n 1) 
@@ -127,19 +128,20 @@
          (loop (ivueparser:parseServerTrendBlock p)))))))
 
 (define (ivueparser:parseServerTrendBlock buf)
-  (let* ((payload (ivueparser:skip buf 6))
-         (count (ivueparser:decodeu16 (subu8data buf 2 4)))
-         (len   (ivueparser:decodeu16 (subu8data buf 4 6))))
+  (let ((payload (ivueparser:skip buf 6))
+        (count (ivueparser:decodeu16 (subu8data buf 2 4)))
+;;      (len   (ivueparser:decodeu16 (subu8data buf 4 6)))
+       )
        (let loop ((n 0)(p payload))
           (if (fx= n count) p 
              (loop (fx+ n 1) 
                  (ivueparser:parseServerTrend p))))))
 
 (define (ivueparser:parseServerTrend buf)
-  (let* ((payload   (ivueparser:skip buf 6))
-         (id    (ivueparser:decodeu16 (subu8data buf 0 2)))
-         (count     (ivueparser:decodeu16 (subu8data buf 2 4)))
-         (len       (ivueparser:decodeu16 (subu8data buf 4 6))))
+  (let ((payload (ivueparser:skip buf 6))
+        (id (ivueparser:decodeu16 (subu8data buf 0 2)))
+        (count (ivueparser:decodeu16 (subu8data buf 2 4)))
+        (len (ivueparser:decodeu16 (subu8data buf 4 6))))
      (log-debug (string-append "parseServerTrend: count="
        (number->string count) " [ id=" (number->string id) "]") 1)
      (set! ivueparser:handleid id)
@@ -152,8 +154,7 @@
 ;; parse the data results - this is where the magic happens!
 (define (ivueparser:parsedataresult buf islinked)
   (log-debug "ivueparser: parse begin" 1)
-  (let* ((isextended (if (fx= 
-            (u8data-ref buf (fx+ 21 (if islinked 2 0))) #x3B) #t #f))
+  (let* ((isextended (fx= (u8data-ref buf (fx+ 21 (if islinked 2 0))) #x3B))
          (step1 (ivueparser:parseSPdpu buf))
          (step2 (ivueparser:parseROapdus step1))
          (step3 (if islinked (ivueparser:parseROLRSapdu step2)
@@ -257,7 +258,7 @@
 
 (define (ivueparser:parseSingleContextPoll buf)
   (let ((payload (ivueparser:skip buf 6))
-        (context_id (ivueparser:decodeu16 (subu8data buf 0 2)))
+;;      (context_id (ivueparser:decodeu16 (subu8data buf 0 2)))
         (count (ivueparser:decodeu16 (subu8data buf 2 4)))
         (len (ivueparser:decodeu16 (subu8data buf 4 6))))
     (let loop ((n 0)(p payload))
@@ -328,7 +329,7 @@
   (let ((payload (ivueparser:skip buf 10))
         (physio_id (ivueparser:decodeu16 (subu8data buf 0 2)))
         (state (ivueparser:decodeu16 (subu8data buf 2 4)))
-        (unit (ivueparser:decodeu16 (subu8data buf 4 6)))
+;;      (unit (ivueparser:decodeu16 (subu8data buf 4 6)))
         (value (ivueparser:decodef32 (subu8data buf 6 10))))
 ;;     (log-debug (format "NuObsValue: data [~D] ~F" physio_id value) 1)
 
@@ -345,7 +346,7 @@
 
 (define (ivueparser:parseSaObsValueCmp buf)
   (let ((payload (ivueparser:skip buf 4))
-         (count (ivueparser:decodeu16 (subu8data buf 0 2)))
+        (count (ivueparser:decodeu16 (subu8data buf 0 2)))
         (len (ivueparser:decodeu16 (subu8data buf 2 4))))
      (let loop ((n 0)(p payload))
         (if (fx< n count) (loop (fx+ n 1) (ivueparser:parseSaObsValue p))))
@@ -354,7 +355,7 @@
 (define (ivueparser:parseSaObsValue buf)
   (let* ((payload (ivueparser:skip buf 6)) ;; 10??
          (physio_id (ivueparser:decodeu16 (subu8data buf 0 2)))
-         (state (ivueparser:decodeu16 (subu8data buf 2 4)))
+;;       (state (ivueparser:decodeu16 (subu8data buf 2 4)))
          (len (ivueparser:decodeu16 (subu8data buf 4 6)))
          (count (/ len 2))
          (data (let loop ((n 0)(p payload)(l '()))
