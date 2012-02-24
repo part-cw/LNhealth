@@ -13,13 +13,13 @@
 (define s5parser:group_active? #f)
 (define s5parser:group_label #f)    ;; Introduced so I can look at Agent type, P1-6 sources etc.
 (define (s5parser:group_hdr buf)
-  (let ((remainder (u8data-skip buf 6))
+  (let ((skip (u8data-skip buf 6))
         (status_bits (u8data-le-u32 (subu8data buf 0 4)))
         (label_info (u8data-le-u16 (subu8data buf 4 6))))
-   (set! s5parser:group_active? (if (fx= (bitwise-and #x3 status_bits) 3) #t #f))
+   (set! s5parser:group_active? (fx= (bitwise-and #x3 status_bits) 3))
    (set! s5parser:group_label label_info)
    (set! s5parser:status_bits status_bits)
-   remainder))
+   skip))
 (define (s5parser:validate val scale) (if (fx< val -32000) #f (/ val scale)))
 
 ;; 20101007: start using data category "s5"
@@ -281,8 +281,8 @@
          (step18 (s5parser:nmt_group s step17))
          (step19 (s5parser:ecg_extra_group s step18))
          (step20 (s5parser:svo2_group s step19))
-         (step21 (s5parser:p_group s step20 "5"))
-         (step22 (s5parser:p_group s step21 "6")))
+         (step21 (s5parser:p_group s step20 "5")))
+  (s5parser:p_group s step21 "6")
   (u8data-skip buf 270)))
 
 ;; Added so we can reference it in trendoutput or other apps
@@ -309,8 +309,8 @@
 ;; ext1 -------------
 (define (s5parser:ext1_phdb s buf)
 ;;  (display "s5parser:ext1_phdb\n")
-  (let* ((step1 (s5parser:arrh_ecg_group s buf))
-         (step2 (s5parser:ecg_12_group s step1)))
+  (let ((step1 (s5parser:arrh_ecg_group s buf)))
+    (s5parser:ecg_12_group s step1)
     (u8data-skip buf 270)))
 
 (define (s5parser:arrh_ecg_group s buf)
@@ -422,16 +422,17 @@
 
 ;; electrode labels, we ignore those for now..
 (define (s5parser:eeg2_group s buf)
-   (let* ((step1 (s5parser:group_hdr buf))
-          (common_reference     (u8data-u8 (subu8data step1 0 1)))
-          (montage_label_ch_1_m (u8data-u8 (subu8data step1 1 2)))
-          (montage_label_ch_1_p (u8data-u8 (subu8data step1 2 3)))
-          (montage_label_ch_2_m (u8data-u8 (subu8data step1 3 4)))
-          (montage_label_ch_2_p (u8data-u8 (subu8data step1 4 5)))
-          (montage_label_ch_3_m (u8data-u8 (subu8data step1 5 6)))
-          (montage_label_ch_3_p (u8data-u8 (subu8data step1 6 7)))
-          (montage_label_ch_4_m (u8data-u8 (subu8data step1 7 8)))
-          (montage_label_ch_4_p (u8data-u8 (subu8data step1 8 9))))
+   (let* ((step1 (s5parser:group_hdr buf)) ;;keeping let* in case rest is commented out
+;;        (common_reference     (u8data-u8 (subu8data step1 0 1)))
+;;        (montage_label_ch_1_m (u8data-u8 (subu8data step1 1 2)))
+;;        (montage_label_ch_1_p (u8data-u8 (subu8data step1 2 3)))
+;;        (montage_label_ch_2_m (u8data-u8 (subu8data step1 3 4)))
+;;        (montage_label_ch_2_p (u8data-u8 (subu8data step1 4 5)))
+;;        (montage_label_ch_3_m (u8data-u8 (subu8data step1 5 6)))
+;;        (montage_label_ch_3_p (u8data-u8 (subu8data step1 6 7)))
+;;        (montage_label_ch_4_m (u8data-u8 (subu8data step1 7 8)))
+;;        (montage_label_ch_4_p (u8data-u8 (subu8data step1 8 9)))
+         )
      (u8data-skip step1 17))) ;; 9+8
 
 (define (s5parser:ext2_phdb s buf)
@@ -440,8 +441,8 @@
          (step2 (s5parser:eeg_group s step1))
          (step3 (s5parser:eeg_bis_group s step2))
          (step4 (s5parser:entropy_group s step3))
-         (step5 (u8data-skip step4 58))
-         (step6 (s5parser:eeg2_group s step5)))
+         (step5 (u8data-skip step4 58)))
+    (s5parser:eeg2_group s step5)
     (u8data-skip buf 270)))
 
 ;; Added so we can reference it in trendoutput or other apps
@@ -537,8 +538,8 @@
   (let* ((step1 (s5parser:gasex_group s buf))
          (step2 (s5parser:flow_vol_group2 s step1))
          (step3 (s5parser:bal_gas_group s step2))
-         (step4 (s5parser:tono_group s step3))
-         (step5 (s5parser:aa2_group s step4)))
+         (step4 (s5parser:tono_group s step3)))
+    (s5parser:aa2_group s step4)
     (u8data-skip buf 270)))
 
 ;; Added so we can reference it in trendoutput or other apps
@@ -553,10 +554,10 @@
 ;; the xx_phdb groups are unioned in the dri_phdb structure
 ;; the data structures are 270 bytes long
 (define (s5parser:dri_phdb store buf)
-  (let* ((time (u8data-le-u32 (subu8data buf 0 4)))
-         (payload (subu8data buf 4 274))
-         (marker (u8data-u8 (subu8data buf 274 275))) ;;needed for iFish-AA application
-         (cl_drivl_subt (u8data-le-u16 (subu8data buf 276 278))))
+  (let ((time (u8data-le-u32 (subu8data buf 0 4)))
+        (payload (subu8data buf 4 274))
+        (marker (u8data-u8 (subu8data buf 274 275))) ;;needed for iFish-AA application
+        (cl_drivl_subt (u8data-le-u16 (subu8data buf 276 278))))
   (let ((flag (bitwise-and (arithmetic-shift cl_drivl_subt -8) 3)))
     (cond 
       ((fx= flag 0) (s5parser:basic_phdb store payload))
@@ -629,27 +630,28 @@
 ;; patient data
 
 (define (s5parser:nw_pat_descr s buf)
-  (let* ((pat_1stname (u8data->u8vector (subu8data buf 0 30)))
-         (pat_2ndname (u8data->u8vector (subu8data buf 30 70)))
-         (pat_id      (u8data->u8vector (subu8data buf 70 110)))
-         (middle_name (u8data->u8vector (subu8data buf 110 140)))
-         (gender    (u8data-le-s16 (subu8data buf 140 142)))
-         (age_years (u8data-le-s16 (subu8data buf 142 144)))
-         (age_days (u8data-le-s16 (subu8data buf 144 146)))
-         (age_hours (u8data-le-s16 (subu8data buf 146 148)))
-         (height (u8data-le-s16 (subu8data buf 148 150)))
-         (height_unit (u8data-le-s16 (subu8data buf 150 152)))
-         (weight (u8data-le-s16 (subu8data buf 152 154)))
-         (weight_unit (u8data-le-s16 (subu8data buf 154 156)))
-         (year_birth_date (u8data-le-s16 (subu8data buf 156 158)))
-         (month_birth_date (u8data-le-s16 (subu8data buf 158 160)))
-         (day_birth_date (u8data-le-s16 (subu8data buf 160 162)))
-         (hour_birth_date (u8data-le-s16 (subu8data buf 162 164)))
-         (bsa (u8data-le-s16 (subu8data buf 164 166)))
-         (location (subu8data buf 166 198))
-         (issuer (subu8data buf 198 230))
-         (change_src (u8data-le-s16 (subu8data buf 230 232)))
-         (reserved (subu8data buf 232 350)))
+  (let ((pat_1stname (u8data->u8vector (subu8data buf 0 30)))
+        (pat_2ndname (u8data->u8vector (subu8data buf 30 70)))
+        (pat_id      (u8data->u8vector (subu8data buf 70 110)))
+;;      (middle_name (u8data->u8vector (subu8data buf 110 140)))
+        (gender    (u8data-le-s16 (subu8data buf 140 142)))
+        (age_years (u8data-le-s16 (subu8data buf 142 144)))
+        (age_days (u8data-le-s16 (subu8data buf 144 146)))
+        (age_hours (u8data-le-s16 (subu8data buf 146 148)))
+        (height (u8data-le-s16 (subu8data buf 148 150)))
+        (height_unit (u8data-le-s16 (subu8data buf 150 152)))
+        (weight (u8data-le-s16 (subu8data buf 152 154)))
+        (weight_unit (u8data-le-s16 (subu8data buf 154 156)))
+;;      (year_birth_date (u8data-le-s16 (subu8data buf 156 158)))
+;;      (month_birth_date (u8data-le-s16 (subu8data buf 158 160)))
+;;      (day_birth_date (u8data-le-s16 (subu8data buf 160 162)))
+;;      (hour_birth_date (u8data-le-s16 (subu8data buf 162 164)))
+;;      (bsa (u8data-le-s16 (subu8data buf 164 166)))
+;;      (location (subu8data buf 166 198))
+;;      (issuer (subu8data buf 198 230))
+;;      (change_src (u8data-le-s16 (subu8data buf 230 232)))
+;;      (reserved (subu8data buf 232 350))
+       )
 ;;   (for-each display (list "s5parser: patient: gender=" gender 
 ;;       " age_years=" age_years
 ;;       " age_days=" age_days
@@ -681,8 +683,8 @@
 ;;  (display "parsing patientdata\n")
   (let loop ((srs srlist))
     (if (> (length srs) 0)
-      (let* ((ofs (car (car srs)))
-             (type (cadr (car srs))))
+      (let ((ofs (car (car srs)))
+            (type (cadr (car srs))))
         (cond
           ((fx= type 6) (s5parser:nw_pat_descr s (u8data-skip buf ofs)))
 ;;          (else
@@ -691,15 +693,35 @@
         (loop (cdr srs))))))
 
 ;; ---------------
+;; anesthesia record keeping event data
+(define (s5parser:ar_descr s buf)
+  #f
+;;  (display (u8vector->string (u8data->u8vector (subu8data buf 0 (length buf)))))(newline)
+;;  (display (map (lambda(l) (if (< l 16) (string-append "0" (number->string l 16)) (number->string l 16))) (u8vector->list (u8data->u8vector buf))))(newline)
+)
+
+(define (s5parser:anesthesiarecorddata s buf srlist)
+  (let loop ((srs srlist))
+    (if (> (length srs) 0)
+      (let ((ofs (car (car srs)))
+            (type (cadr (car srs))))
+        (cond
+          ((fx= type 0) (s5parser:ar_descr s (u8data-skip buf ofs)))
+          ;;(else (for-each display (list "s5parser: anesthetic record subrecord=" type " is not parsed.\n")))
+        )
+        (loop (cdr srs))))))
+
+;; ---------------
 ;; alarm data
 (define (s5parser:al_disp_al s buf idx)
   (let* ((text (u8data->u8vector (subu8data buf 0 80)))
          (textstr (string-replace-char (u8vector->string text) #\newline #\space)) ;; Strip linebreaks
-         (text_changed (u8data-le-s16 (subu8data buf 80 82)))
+;;       (text_changed (u8data-le-s16 (subu8data buf 80 82)))
 	 ;; DRI_PR0 = 0, //No alarm DRI_PR1 = 1, //White DRI_PR2 = 2, //Yellow DRI_PR3 = 3 //Red
          (color (u8data-le-s16 (subu8data buf 82 84)))
-         (color_changed (u8data-le-s16 (subu8data buf 84 86)))
-         (reserved (subu8data buf 86 98)))
+;;       (color_changed (u8data-le-s16 (subu8data buf 84 86)))
+;;       (reserved (subu8data buf 86 98))
+        )
     ;;(display (string-append s "[" idx "]: " textstr))(newline)
     (store-set! s (string-append "alarm" idx "_text") textstr "s5")
     (store-set! s (string-append "alarm" idx "_color") color "s5")
@@ -709,17 +731,19 @@
   ))
 
 (define (s5parser:dri_al_msg s buf)
-  (let* ((reserved1 (subu8data buf 0 2))
-	 (sound_on_off (u8data-le-s16 (subu8data buf 2 4)))         
-	 (reserved2 (subu8data buf 4 6))
-         (reserved3 (subu8data buf 6 8))
-	 (silence_info (u8data-le-s16 (subu8data buf 8 10)))
+  (let* (
+;;       (reserved1 (subu8data buf 0 2))
+;;       (sound_on_off (u8data-le-s16 (subu8data buf 2 4)))         
+;;       (reserved2 (subu8data buf 4 6))
+;;       (reserved3 (subu8data buf 6 8))
+;;       (silence_info (u8data-le-s16 (subu8data buf 8 10)))
          (step1 (s5parser:al_disp_al s (u8data-skip buf 10) "1"))
 	 (step2 (s5parser:al_disp_al s step1 "2"))
 	 (step3 (s5parser:al_disp_al s step2 "3"))
 	 (step4 (s5parser:al_disp_al s step3 "4"))
 	 (step5 (s5parser:al_disp_al s step4 "5"))
-         (reserved (subu8data step5 0 10)))
+;;       (reserved (subu8data step5 0 10))
+        )
     (u8data-skip step5 10)))
 
 (define (s5parser:parsealarms store buf srlist)
@@ -738,14 +762,14 @@
 ;M Takes raw data from S5 patient monitor and saves the patient information in the data store
 ;M @end deffn
 (define (s5parser store buf)
-  (let* ((subrecords (u8data-skip buf 16))
-         (payload (u8data-skip buf 40))
-         (r_len (u8data-le-u16 (subu8data buf 0 2)))
-         (r_dri_level (u8data-u8  (subu8data buf 3 4)))
-         (plug_id (u8data-le-u16 (subu8data buf 4 6)))
-         (r_time (u8data-le-u32 (subu8data buf 6 10)))
-         (r_maintype (u8data-le-u16 (subu8data buf 14 16))))
-         (store-set! store "plug_id" plug_id "s5") ;;Added for iFish-AA (we know these from Dave Kobayashi)
+  (let ((subrecords (u8data-skip buf 16))
+        (payload (u8data-skip buf 40))
+        (r_len (u8data-le-u16 (subu8data buf 0 2)))
+;;      (r_dri_level (u8data-u8  (subu8data buf 3 4)))
+        (plug_id (u8data-le-u16 (subu8data buf 4 6)))
+;;      (r_time (u8data-le-u32 (subu8data buf 6 10)))
+        (r_maintype (u8data-le-u16 (subu8data buf 14 16))))
+    (store-set! store "plug_id" plug_id "s5") ;;Added for iFish-AA (we know these from Dave Kobayashi)
 ;;    (for-each display (list "s5parser: parsing frame len=" r_len "\n"))
     (let loop ((n 0)(p subrecords)(srlist '())(done #f))
       (if (or done (fx= n 8)) (begin
@@ -760,12 +784,13 @@
           ((fx= r_maintype 1) (s5parser:parsewaveforms store payload srlist))
 	  ((fx= r_maintype 4) (s5parser:parsealarms store payload srlist))
           ((fx= r_maintype 5) (s5parser:parsepatientdata store payload srlist))
+          ((and (fx= r_maintype 8) (> r_len 100)) (s5parser:anesthesiarecorddata store payload srlist))
         ))
       (let ((offset (u8data-le-u16 (subu8data p 0 2)))
             (sr_type (u8data-u8 (subu8data p 2 3))))
          (loop (fx+ n 1) (u8data-skip p 3) (append srlist
             (if (not (fx= sr_type #xff))  (list (list
-            offset sr_type)) '())) (if (fx= sr_type #xff) #t #f)))))))
+            offset sr_type)) '())) (fx= sr_type #xff)))))))
 
 
 ;; eof
