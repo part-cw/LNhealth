@@ -93,6 +93,9 @@
          (dia (u8data-le-s16 (subu8data step1 2 4)))
          (mean (u8data-le-s16 (subu8data step1 4 6)))
          (hr  (u8data-le-s16 (subu8data step1 6 8))))
+    (if (fx= (bitwise-and s5parser:group_label 32) 32) ;; Bit 5 of LABEL field is Measuring
+      (store-set! s "nibp_timestamp" (store-ref s "timestamp") "s5")
+    )
    (s5parser:settrend! s "nibp_mean" mean 100.)
    (s5parser:settrend! s "nibp_hr" hr)
 
@@ -687,6 +690,13 @@
             (type (cadr (car srs))))
         (cond
           ((fx= type 6) (s5parser:nw_pat_descr s (u8data-skip buf ofs)))
+          ((fx= type 10) (begin
+            (store-clear! s (map cadr s5parser:physdatavalues_basic)) 
+            (store-clear! s (map cadr s5parser:physdatavalues_ext1))
+            (store-clear! s (map cadr s5parser:physdatavalues_ext2))
+            (store-clear! s (map cadr s5parser:physdatavalues_ext3))
+            (store-clear! s (map cadr s5parser:waveforms))
+          ))
 ;;          (else
 ;;            (for-each display (list "s5parser: patient subrecord=" type " is not parsed.\n")))
         )
