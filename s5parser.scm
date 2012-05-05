@@ -26,7 +26,10 @@
 (define (s5parser:settrend! store name value . scale0)
   (let* ((scale (if (fx= (length scale0) 1) (car scale0) 1.))
          (val (s5parser:validate value scale)))
-    (if s5parser:group_active? (store-set! store name val "s5"))
+    (if s5parser:group_active? 
+      (store-set! store name val "s5")
+      (store-clear! store name val)
+    )
   ))
     
 ;; ----------------
@@ -764,6 +767,15 @@
 	  ;; subrecord type of alarms is 1
          (if (fx= type 1) (s5parser:dri_al_msg store (u8data-skip buf ofs)))
          (loop (cdr sr))))))
+
+;; ----------------
+;; fake marker for new anesthesia machine
+(define (s5parser:fakemarker s)
+  (let ((oldmarker (store-ref s "fake_marker" 0)))
+    (store-set! s "fake_marker" (fx+ oldmarker 1) "s5")
+  )
+)
+
 ;; ----------------
 ;; top level
 
@@ -794,7 +806,8 @@
           ((fx= r_maintype 1) (s5parser:parsewaveforms store payload srlist))
 	  ((fx= r_maintype 4) (s5parser:parsealarms store payload srlist))
           ((fx= r_maintype 5) (s5parser:parsepatientdata store payload srlist))
-          ((and (fx= r_maintype 8) (> r_len 100)) (s5parser:anesthesiarecorddata store payload srlist))
+	  ((and (fx= r_maintype 8) (> r_len 100)) (s5parser:anesthesiarecorddata store payload srlist))
+	  ((fx= r_maintype 18) (s5parser:fakemarker store))
         ))
       (let ((offset (u8data-le-u16 (subu8data p 0 2)))
             (sr_type (u8data-u8 (subu8data p 2 3))))
