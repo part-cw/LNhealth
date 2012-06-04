@@ -1,0 +1,101 @@
+#!/bin/sh
+# program to convert single alpha png to platform icons
+# it needs: imagemagick, netpbm, and tiff2icns (mac specific)
+
+ifile=$1
+if [ "X" = "X$ifile" ]; then
+  echo "png2icons <png file>"
+  echo "generates platform compatible icons"
+  exit 1
+fi
+
+oldpath=`pwd`
+newpath=`mktemp -d tmp.XXXXXX`
+
+echo "png2icons: generating icons.."
+
+if [ ! -e $newpath ]; then
+  mkdir $newpath
+fi
+cp $ifile $newpath/in.png
+cd $newpath
+
+# ----------
+# common stage: extract alpha
+
+pngtopnm -alpha in.png  > atmp.pgm
+pngtopnm -mix in.png > tmp.ppm
+
+# ----------
+# windows ico icon
+
+# extract alpha channel. 
+#convert in.png -channel alpha -negate -separate PNG8:ain.png
+#convert in.png -channel alpha -negate -separate ain.png
+
+#convert in.png -colors 256 -depth 8 PNG8:tin.png
+#pngtopnm in.png | pnmtopng > tin.png
+#cp in.png tin.png
+#
+## convert to ppm
+#pngtopnm ain.png  > atmp.ppm
+#pngtopnm tin.png > tmp0.ppm
+## this masks alpha selection to black.. must be a better way??
+#pamarith -minimum tmp0.ppm atmp.ppm > tmp.ppm
+
+# scale to 32 and 16
+pnmscale -width=32 -height=32 tmp.ppm  | pnmquant 256 2> /dev/null > tmp32.ppm
+#pnmscale -width=32 -height=32 atmp.ppm | ppmtopgm  > atmp32.pgm
+pnmscale -width=32 -height=32 atmp.pgm | ppmtopgm  > atmp32.pgm
+pnmscale -width=16 -height=16 tmp.ppm  | pnmquant 256  2> /dev/null > tmp16.ppm
+#pnmscale -width=16 -height=16 atmp.ppm | ppmtopgm  > atmp16.pgm
+pnmscale -width=16 -height=16 atmp.pgm | ppmtopgm  > atmp16.pgm
+
+# now make the icon
+ppmtowinicon -andpgms -output=../icon_win32.ico tmp32.ppm atmp32.pgm tmp16.ppm atmp16.pgm
+
+# ----------
+# mac icns icon
+# there is trouble with the alpha layers in tiffs here... we need to jump through hoops en masse..
+
+# go through a lot to remake the image...
+make_tiff()
+{
+  s=$1
+  pnmscale -width=$s -height=$s tmp.ppm  | pnmquant 256 2> /dev/null > x.ppm
+ # pnmscale -width=$s -height=$s atmp.pgm | pnminvert > m.pgm
+  pnmscale -width=$s -height=$s atmp.pgm > m.pgm
+  pnmtopng -alpha=m.pgm -transparent=white x.ppm 2> /dev/null > x.png
+  #convert x.png -alpha on -resize $s"x"$s -depth 8 tmp$s.tif
+  convert x.png tmp$s.tif
+} 
+
+make_tiff 128
+make_tiff 48
+make_tiff 32
+make_tiff 16
+
+# splice it all into one image and generate the icon
+tiffutil -catnosizecheck tmp48.tif tmp32.tif tmp16.tif tmp128.tif -out tmp.tif 2> /dev/null
+#convert tmp48.tif tmp32.tif tmp128.tif tmp.tif
+tiff2icns tmp.tif ../icon_macosx.icns
+
+# ----------
+# iphone icon
+
+convert in.png -resize 57x57 ../icon_iphone.png
+
+# ----------
+# android icon
+
+convert in.png -resize 48x48 ../icon_android.png
+
+# ----------
+# maemo icon
+
+convert in.png -resize 48x48 ../icon_maemo.png
+
+cd $oldpath
+rm -rf $newpath
+
+#eof
