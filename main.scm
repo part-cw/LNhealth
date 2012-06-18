@@ -84,13 +84,13 @@
 (define rupi:bcch-addr 
   (with-exception-catcher
     (lambda (e) #f)
-    (lambda () (car(host-info-addresses (host-info rupi:hostname))))
+    (lambda () (car (host-info-addresses (host-info rupi:hostname))))
   )
 )
 (define rupi:demo-addr 
   (with-exception-catcher
     (lambda (e) #f)
-    (lambda () (car(host-info-addresses (host-info rupi:demo-hostname))))
+    (lambda () (car (host-info-addresses (host-info rupi:demo-hostname))))
   )
 )
 (define rupi:addr rupi:bcch-addr)
@@ -2594,6 +2594,7 @@
     ;; If we don't run on the phone the window size needs to be limited to iPhone <=3 size
     (if (or (string=? (system-platform) "macosx")
 	    (string=? (system-platform) "linux") 
+            (string=? (system-platform) "android") 
             (string=? (system-platform) "win32")) 
     	      (make-window 320 480)
     )
