@@ -165,28 +165,29 @@
   )
 
   ;; Check if a correct pin is entered and start the system
-  (let ((login (store-ref "main" "Key" ""))
-	(key (car (glgui-widget-get g wgt 'image))))
-    (store-set! "main" "Key" (string-append login key))
+  (let* ((store "main")
+         (login (store-ref store "Key" ""))
+         (key (car (glgui-widget-get g wgt 'image))))
+    (store-set! store "Key" (string-append login key))
     ;; Connect to demo system if pin 0000-0009
     (if (and (>= (string-length login) (- rupi:pin-length 1)))
-      (set! rupi:addr (if (string<? (store-ref "main" "Key" "") "0010") rupi:demo-addr rupi:bcch-addr))
+      (set! rupi:addr (if (string<? (store-ref store "Key" "") "0010") rupi:demo-addr rupi:bcch-addr))
     )
     ;; Check if we reached pin length [Login isn't queried again so its rupi:pin-length - 1]
     (if (>= (string-length login) (- rupi:pin-length 1)) 
       (let* ((rc (rupi-client 0 rupi:key rupi:addr rupi:port))
 	     ;;Include build date so we can send messages to ask users to upgrade
-	     (success (rupi-cmd rc "LOGIN" (store-ref "main" "Key") (number->string (system-buildepoch)) (host-name)))) 
+	     (success (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))) 
 	(if success
 	  (begin ;;If pin is acceptable run the app
-	    (store-set! "main" "UserName" (car success))
-	    (store-set! "main" "LastUpdateTime" (cadr success)) ;;This way we only request the new messages
-	    (store-set! "main" "AlertMessages" (expire-messages (caddr success) gui:alert-max-age)) ;; and we also keep the list of already answered things
-	    (store-set! "main" "Reminders" (cadddr success)) ;; and also keep the old reminders
+	    (store-set! store "UserName" (car success))
+	    (store-set! store "LastUpdateTime" (cadr success)) ;;This way we only request the new messages
+	    (store-set! store "AlertMessages" (expire-messages (caddr success) gui:alert-max-age)) ;; and we also keep the list of already answered things
+	    (store-set! store "Reminders" (cadddr success)) ;; and also keep the old reminders
             (if (= (length success) 5) ;; added here as to not break compatibility of old clients
-	      (store-set! "main" "ChatMessages" (expire-messages (list-ref success 4) gui:chat-max-age)) 
+	      (store-set! store "ChatMessages" (expire-messages (list-ref success 4) gui:chat-max-age)) 
             )
-	    (init-server-communication "main") ;;Moved before the room creation, so we can use values?
+	    (init-server-communication store) ;;Moved before the room creation, so we can use values?
 	    (init-gui-overview)
 	    (init-gui-waves)    
 	    (init-gui-rooms)
@@ -203,7 +204,7 @@
  	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
 	    (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
 	  )
-	  (store-set! "main" "Key" "") ;; Clear the string and try again.
+	  (store-set! store "Key" "") ;; Clear the string and try again.
 	)
 	(glgui-widget-set! gui:login login-pin 'label "")	
       )
@@ -2301,13 +2302,13 @@
 	  (store-set! "main" "LogoutCount" (fx+ lc 1))
 	  (if (fx> lc min_count)
 	    (begin
-	      ;; Logout and return to login screen
+	      ;; Logout 
               (rupi-logout)
-	      (set! newmode MODE_LOGIN)
-	      ;; Terminate communication thread and reset pin
-	      (store-set! "main" "Key" "")
-	      (thread-terminate! (store-ref "main" "Thread"))
-	      (store-set! "main" "LogoutCount" 0)
+              ;; Terminate the app after showing popup.
+              (set! rupi:addr #f)
+              (glgui-widget-set! gui:popup popup-close-text 'label "")
+              (glgui-widget-set! gui:popup popup-box 'callback #f) ;; needed so can't go to messaging screen
+              (store-set! "main" "popup-text" (list "Shutting Down" "Closing the application to conserve battery power."))
 	    )
 	  )
       )
@@ -2436,8 +2437,8 @@
   )
 
   ;; Load the phonebook
-  (let ((data (rupi-cmd (store-ref "main" "RupiClient" #f) "GETPHONEBOOK" (store-ref store "Key"))))
-    (if data (store-set! "main" "Phonebook" data))
+  (let ((data (rupi-cmd (store-ref store "RupiClient" #f) "GETPHONEBOOK" (store-ref store "Key"))))
+    (if data (store-set! store "Phonebook" data))
   )
 
   ;; Start the main communication thread
