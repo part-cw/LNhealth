@@ -1,5 +1,5 @@
 ;; telePORT [formerly known as iFishAA]
-;; Matthias Görges 2011,2012
+;; Matthias Görges 2011-2012
 (include "../s-optimize.inc")
 
 ;; -----------------------------------------------------------------------------
@@ -1132,15 +1132,18 @@
                 LightGray DarkGray LightBlue DarkBlue LightYellow Yellow))
 
   ;;Place the Trace Widgets
-  (let ((x 5)(y (- (glgui-height-get) gui:menu-height 200)) (w 270) (h 200) (hsmall 100))
+  (let ((x 5)(y (- (glgui-height-get) gui:menu-height 200)) (w 270) (h 200) (hsmall 100) (c DimGray))
     ;; Coordinate system
-    (glgui-box gui:trends x y 2 h DimGray)
-    (glgui-box gui:trends x (- y 110) 2 hsmall DimGray)
-    (glgui-label gui:trends (+ x 3) (- (+ y h) 3) 20 12 "200" ascii12.fnt DimGray)
-    (glgui-label gui:trends (+ x 3) (- (+ y (/ h 2)) 3) 20 12 "100" ascii12.fnt DimGray)
-    (glgui-box gui:trends x y w 2 DimGray)
-    (glgui-box gui:trends  x (- y 110) w 2 DimGray)
-    (glgui-label gui:trends (+ x 3) (+ (- y 110 3) hsmall) 20 12 "100" ascii12.fnt DimGray)
+    (glgui-box gui:trends x y 2 h c)
+    (glgui-box gui:trends x (- y 110) 2 hsmall c)
+    (glgui-label gui:trends (+ x 3) (- (+ y h) 3) 20 12 "200" ascii12.fnt LightGray)
+    (glgui-label gui:trends (+ x 3) (- (+ y (/ h 2)) 3) 20 12 "100" ascii12.fnt LightGray)
+    (glgui-box gui:trends x y w 2 c)
+    (glgui-box gui:trends  x (- y 110) w 2 c)
+    (glgui-label gui:trends (+ x 3) (+ (- y 110 3) hsmall) 20 12 "100" ascii12.fnt LightGray)
+    ;; OR Case Time Label
+    (set! case-time (glgui-label gui:trends (+ x (/ w 4)) (- (+ y h) 12) (/ w 2) 12 "" ascii16.fnt LightGray))
+    (glgui-widget-set! gui:trends case-time 'align GUI_ALIGNCENTER)
     ;; And now the widgets
     (let loop ((i 0))
       (if (fx= i (length trend-traces)) #t
@@ -1218,6 +1221,13 @@
       (glgui-widget-set! gui:trends time30 'label (seconds->string (fl- monitor-time 1800.) "%H:%M"))
       (glgui-widget-set! gui:trends time00 'label (seconds->string monitor-time "%H:%M"))
     ))
+  )
+  (let ((induction-time (store-ref or-name "induction_timestamp"))
+        (wall-time (store-ref "main" "LastUpdateTime")))
+    (if (and induction-time wall-time)
+      (glgui-widget-set! gui:trends case-time 'label (string-append "Case Time: " (seconds->string (fl- wall-time induction-time) "%H:%M")))
+      (glgui-widget-set! gui:trends case-time 'label "Case Time: N/A")
+    )
   )
 )
 
