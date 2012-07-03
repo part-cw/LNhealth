@@ -187,19 +187,19 @@
             (if (= (length success) 5) ;; added here as to not break compatibility of old clients
 	      (store-set! store "ChatMessages" (expire-messages (list-ref success 4) gui:chat-max-age)) 
             )
-	    (init-server-communication store) ;;Moved before the room creation, so we can use values?
+	    (init-gui-messaging)
+            (init-gui-alert)
+            (init-gui-chat)
+	    (init-gui-reminder)
+	    (init-gui-users)
+	    (init-gui-rooms)
+	    (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
 	    (init-gui-overview)
 	    (init-gui-waves)    
-	    (init-gui-rooms)
-	    (init-gui-users)
-	    (init-gui-messaging)
-            (init-gui-chat)
-            (init-gui-alert)
-	    (init-gui-reminder)
+            (init-gui-trends)
 	    (init-gui-reminder-setup)
 	    (init-gui-phonebook)
             (init-gui-phonebook-editor)
-            (init-gui-trends)
 	    (set! gui:battery-tstamp 0.) ;; This allows me to record battery timestamps
  	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
 	    (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
