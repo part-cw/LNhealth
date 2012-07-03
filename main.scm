@@ -1225,11 +1225,7 @@
   (let ((induction-time (store-ref or-name "induction_timestamp"))
         (wall-time (store-ref "main" "LastUpdateTime")))
     (if (and induction-time wall-time)
-<<<<<<< HEAD
       (glgui-widget-set! gui:trends case-time 'label (string-append "Case Time: " (localseconds->string (fl- wall-time induction-time) "%H:%M")))
-=======
-      (glgui-widget-set! gui:trends case-time 'label (string-append "Case Time: " (seconds->string (fl- wall-time induction-time) "%H:%M")))
->>>>>>> 786c762fb648675a63405004cc9769e61cc4a52b
       (glgui-widget-set! gui:trends case-time 'label "Case Time: N/A")
     )
   )
