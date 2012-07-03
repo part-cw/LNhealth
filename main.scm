@@ -176,8 +176,15 @@
     ;; Check if we reached pin length [Login isn't queried again so its rupi:pin-length - 1]
     (if (>= (string-length login) (- rupi:pin-length 1)) 
       (let* ((rc (rupi-client 0 rupi:key rupi:addr rupi:port))
-	     ;;Include build date so we can send messages to ask users to upgrade
-	     (success (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))) 
+             ;;Include build date so we can send messages to ask users to upgrade
+             ;; We will try 3 times and fail otherwise
+             (success3 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))
+             (success2 (if (rupi-valid? rc) success3
+               (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
+             ))
+             (success (if (rupi-valid? rc) success2
+               (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
+             ))) 
 	(if success
 	  (begin ;;If pin is acceptable run the app
 	    (store-set! store "UserName" (car success))
