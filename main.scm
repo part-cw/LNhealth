@@ -530,8 +530,8 @@
           (destination (store-ref "main" "ChatReceiver")))
       ;; Make sure the string is not empty
       (if (> (string-length reply) 0) (begin
-        ;; Quickly log which message button was used
-        (log-remote (string-append "Message: " reply))
+        ;; Quickly log which message button was used [No logging of messages locally! - unsecure]
+        ;; (log-remote (string-append "Message: " reply))
         ;; Send actual message
         (rupi-cmd (store-ref "main" "RupiClient" #f) "SENDMESSAGE" (store-ref "main" "Key" #f) destination reply)
         ;; Add message to chat store
@@ -548,8 +548,8 @@
     (let* ((reply (car (glgui-widget-get g w 'image)))
            (alerts (store-ref "main" "AlertMessages"))
            (destination (cadr (list-ref alerts selected-alert-number))))
-      ;; Quickly log which message button was used
-      (log-remote (string-append "Message: " reply))
+      ;; Quickly log which message button was used [No logging of messages locally! - unsecure]
+      ;; (log-remote (string-append "Message: " reply))
       ;;REPLY: Reset the priority of the replied to message to (VAL-10) to make color darker 
       (alert-markseen selected-alert-number reply)
 
