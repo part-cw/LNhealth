@@ -27,6 +27,7 @@
 ;; Textures for Phonebook screen
 (define delete-small.img (append (list 24 24) (cddr delete.img)))
 (define edit-small.img (append (list 24 24) (cddr edit.img)))
+(include "./pixmaps/voip-small.scm")
 
 ;; Textures for Room subscription screen
 (include "./pixmaps/rooms-transfer.scm")(include "./pixmaps/rooms-subscribed.scm")
@@ -74,6 +75,7 @@
 (define MODE_WAVES 8)
 (define MODE_REMINDER_SETUP 9)
 (define MODE_TRENDS 10)
+(define MODE_VOIP 11)
 (define mode MODE_LOGIN)
 
 ; RUPI settings 
@@ -118,6 +120,10 @@
 (define gui:alert-max-age (* 60 60 6))
 (define gui:chat-max-age (* 60 60 24 7))
 
+;; Voip setting information
+(define voip:ring #f)
+(define voip:ring-count 0)
+(define voip:volume 0.8)
 ;; -----------------------------------------------------------------------------
 ;;   LOGIN SCREEN
 ;; -----------------------------------------------------------------------------
@@ -200,6 +206,7 @@
 	    (init-gui-reminder)
 	    (init-gui-users)
 	    (init-gui-rooms)
+            (init-gui-voip)
 	    (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
 	    (init-gui-overview)
 	    (init-gui-waves)    
@@ -694,7 +701,10 @@
       ((fx= prio 2) (audiofile-play audio:alert))
       ((fx= prio 3) (audiofile-play audio:emergency))
     )
-
+    ;; Handle a voice call request
+    (if (fx= prio 9) 
+      (handle-voip (car str) (string->number (car str)) (string->number (cadr str)))
+    )
     ;; This is the transfer message acceptance
     (if (string=? (car str) "Transfer accepted")
       (let ((rc (store-ref "main" "RupiClient" #f))
@@ -722,6 +732,8 @@
           (store-ref "main" "ChatMessages" '())
         ))
       )
+    )
+    (if (or (fx= prio 2) (fx= prio 3))
       ;; The message list order is: TIMESTAMP, SOURCE, MESSAGE_TEXT, PRIORITY
       (store-set! "main" "AlertMessages" (append
         (list (if (= (length str) 1)
@@ -2068,6 +2080,14 @@
 )
 
 (define (phonebook-edit-callback g w t x y)
+  (if (and (not (glgui-widget-get g phonebook-edit-button 'hidden)) (fx> x 155) (fx< x 310)) 
+    (let ((lst (list-keep (store-ref "main" "Users" '()) (lambda (l) (fx= (cadr l) 1))))
+          (cur (glgui-widget-get g w 'current)))
+      (if (fx< cur (length lst)) 
+        (call-voip (car (list-ref lst cur)))
+      )
+    )
+  )
   (if (and (glgui-widget-get g phonebook-edit-button 'hidden) (fx> x 285) (fx< x 310))
     (let ((lst (store-ref "main" "Phonebook"))
           (cur (glgui-widget-get g w 'current)))
@@ -2130,23 +2150,50 @@
   )
 )
 
+(define (build-voip-phonebook-list)
+  (append
+    (let ((users (store-ref "main" "Users"))
+          (thisuser (store-ref "main" "UserName" "")))
+      (if (pair? users)
+        (let loop ((i 0) (result (list)))
+          (if (= i (length users)) 
+            result
+            (loop (+ i 1)
+              (let ((entry (list-ref users i)))
+                (if (and (fx= (cadr entry) 1) (not (string=? (car entry) thisuser)))
+                  (append result (list (phonebook-list-element (list (car entry) "VOIP"))))
+                  result
+                ))
+              )
+          )
+        )
+        (list)
+      )
+    )
+    (build-phonebook-list)
+  )
+)
 (define (build-phonebook-list)
   (let ((phones (store-ref "main" "Phonebook")))
     (if phones
       (let loop ((i 0) (result (list)))
-        (if (= i (length phones)) result
-	   (loop (+ i 1)(append result (list (phonebook-list-element (list-ref phones i)))))
+        (if (= i (length phones)) 
+         result
+         (loop (+ i 1)(append result (list (phonebook-list-element (list-ref phones i)))))
         )
       )
       (list) 
     )
   )
 )
-
+  
 (define (phonebook-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 145 24 (car entry) ascii24.fnt White)  
-    (glgui:draw-text-left (+ x 155) (+ y (/ (- h 24) 2)) (- (glgui-width-get) 155 10) 24 (cadr entry) ascii24.fnt White)  
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 145 24 (car entry) ascii24.fnt White)   
+    (if (string=? (cadr entry) "VOIP") 
+      (glgui:draw-pixmap-left (+ x 155) (+ y 2) 76 24 voip-small.img White) 
+      (glgui:draw-text-left (+ x 155) (+ y (/ (- h 24) 2)) (- (glgui-width-get) 155 10) 24 (cadr entry) ascii24.fnt White)  
+    )
     (if (glgui-widget-get g phonebook-edit-button 'hidden)
       (begin 
         (glgui:draw-pixmap-left (+ x 255) (+ y 2) 24 24 edit-small.img White)
@@ -2209,7 +2256,7 @@
       (list-set! lst cur (list (glgui-widget-get g phonebook-name 'label) (glgui-widget-get g phonebook-number 'label)))
     )
     (store-set! "main" "Phonebook" (sort lst (lambda (a b) (string<? (car a) (car b)))))
-    (glgui-widget-set! gui:phonebook phonebook-list 'list (build-phonebook-list))
+    (glgui-widget-set! gui:phonebook phonebook-list 'list (build-voip-phonebook-list))
   )
   (glgui-widget-set! gui:phonebook-editor phonebook-number 'focus #f)
   ;; Show the menubar
@@ -2220,6 +2267,116 @@
   (set! gui:phonebook-editor-shown #f)
 )
 
+;; -----------------------------------------------------------------------------
+;;  VOIP SCREEN RELATED FUNCTIONS
+;; -----------------------------------------------------------------------------
+(define gui:voip #f)	
+(define (init-gui-voip)
+  (set! gui:voip (make-glgui))
+  (let ((x 10)(y (- (glgui-height-get) gui:menu-height 16 3))(w (glgui-width-get)))
+    ;; Some text about call
+    (set! voip-caller-label (glgui-label gui:voip x y w 24 "Call with: " ascii24.fnt White))
+    (set! voip-state-label (glgui-label gui:voip x (- y 125) w 24 "" ascii24.fnt White))
+    (glgui-widget-set! gui:voip voip-state-label 'align GUI_ALIGNCENTER)
+    ;; IP info
+    (set! voip-ip-label (glgui-label gui:voip (+ (/ w 2) x) (+ gui:navigation-height 20 30) (- (/ w 2) 20) 16 "IP:" ascii16.fnt LightGray))
+
+    ;; Buttons on the bottom to accept or ignore call. 
+    (set! accept-voip-button
+      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Accept" ascii24.fnt accept-voip-callback)
+    )
+    (set! reject-voip-button
+      (glgui-button-string gui:voip (+ (/ w 2) x) (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Reject" ascii24.fnt reject-voip-callback)
+    )
+    (set! terminate-voip-button
+      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Hang up / Disconnect" ascii24.fnt terminate-voip-callback)
+    ) 
+    (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)
+  )
+)
+
+(define (hide-voip-init-buttons b)
+  (glgui-widget-set! gui:voip accept-voip-button 'hidden b)
+  (glgui-widget-set! gui:voip reject-voip-button 'hidden b)
+  (glgui-widget-set! gui:voip terminate-voip-button 'hidden (not b))
+)
+
+
+(define (accept-voip-callback g wgt t x y)
+  (hide-voip-init-buttons #t)
+  (let ((ip (store-ref "main" "VOIPipaddr")))
+    (if ip (begin 
+      (glgui-widget-set! g voip-state-label 'label "CALL ACTIVE")  
+      ;;Initialize our side of VOIP, parameters are IP volume 
+      (rtaudio-start ip voip:volume)
+      ;;Tell the other side to open their VOIP too
+      ;;Syntax is (CALL pin DestinationName host-ipaddr state)
+      (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) 
+       (store-ref "main" "VOIPcaller") (host-ipaddr) 1)
+    ))
+  )
+)
+
+(define (reject-voip-callback g wgt t x y)
+  (glgui-widget-set! g wgt 'hidden #t)
+  (glgui-widget-set! g accept-voip-button 'hidden #t)
+  (glgui-widget-set! g voip-state-label 'label "CALL REJECTED")
+  (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) (store-ref "main" "VOIPcaller") (host-ipaddr) 0)
+)
+
+(define (terminate-voip-callback g wgt t x y)
+  (set! voip:ring #f)
+  (glgui-widget-set! g wgt 'hidden #t)
+  (glgui-widget-set! g voip-state-label 'label "CONNECTION CLOSED")
+  (rtaudio-stop)
+  (log-remote "Closed call")
+)
+
+(define (call-voip caller)
+  (hide-voip-init-buttons #t)
+  (store-set! "main" "VOIPcaller" caller)
+  (glgui-widget-set! gui:voip voip-caller-label 'label (string-append "Call with: " caller))
+  (glgui-widget-set! gui:voip voip-state-label 'label "RINGING")
+  (set! mode MODE_VOIP)
+  ;; Make the call
+  (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) caller (host-ipaddr) 9)
+  ;; Init the audio parts  
+  (audiofile-play audio:phone)
+  (set! voip:ring (fl+ ##now 4.))
+  (set! voip:ring-count 3)
+)
+
+(define (handle-voip caller ip state)
+  (if (fx= state 1)
+    (begin
+      (rtaudio-start ip voip:volume)
+      (hide-voip-init-buttons #t)
+      (set! voip:ring #f)
+    )
+  )
+  (if (fx= state 9)
+    (begin 
+      (hide-voip-init-buttons #f)
+      (store-set! "main" "VOIPipaddr" ip)
+      (store-set! "main" "VOIPcaller" caller)
+      (glgui-widget-set! gui:voip voip-caller-label 'label (string-append "Call with: " caller))
+      (glgui-widget-set! gui:voip voip-ip-label 'label (string-append "IP: " (ipaddr->string (s32->u8vector ip))))
+      (set! mode MODE_VOIP)
+      ;; Init the audio parts  
+      (audiofile-play audio:phone)
+      (set! voip:ring (fl+ ##now 4.))
+      (set! voip:ring-count 3)
+    )
+  )
+  (if (fx= state 0)
+    (begin
+      (glgui-widget-set! gui:voip reject-voip-button 'hidden #t)
+      (glgui-widget-set! gui:voip accept-voip-button 'hidden #t)
+      (glgui-widget-set! gui:voip voip-state-label 'label "CALL REJECTED")
+      (set! voip:ring #f)
+    )
+  )
+)
 
 ;; -----------------------------------------------------------------------------
 ;;  MENU BAR RELATED FUNCTIONS
@@ -2490,6 +2647,9 @@
                 (store-set! store "Users" (append (map (lambda (l) (list l 1)) (car data))
                                                   (map (lambda (l) (list l 0)) (cadr data))))
                 (glgui-widget-set! gui:users user-list 'list (build-user-list))
+                (if (not (glgui-widget-get gui:phonebook phonebook-edit-button 'hidden))
+                  (glgui-widget-set! gui:phonebook phonebook-list 'list (build-voip-phonebook-list))
+                )
               )
             )
           )
@@ -2632,6 +2792,7 @@
         (set! audio:message (audiofile-load "Message"))
         (set! audio:alert (audiofile-load "Alert"))
         (set! audio:emergency (audiofile-load "Emergency"))
+        (set! audio:phone (audiofile-load "Phone"))
       )
       (begin 
 	(set! gui:login (make-glgui))
@@ -2708,7 +2869,23 @@
         )
       )
     )
-
+    ;; Ring for VOIP scren
+    (if (and (fx= mode MODE_VOIP) voip:ring) (begin
+      (if (and (fx= voip:ring-count 0) (fl> ##now voip:ring))
+        (begin
+          (glgui-widget-set! gui:voip voip-state-label 'label "CALL TIMED OUT")
+          (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)
+          (set! voip:ring #f)
+        )
+      )
+      (if (and (fx> voip:ring-count 0) (fl> ##now voip:ring))
+        (begin
+          (set! voip:ring (fl+ ##now 4.))
+          (set! voip:ring-count (fx- voip:ring-count 1))
+          (audiofile-play audio:phone) 
+        )
+      )
+    ))
     ;; Update the menu icon with the number of messages
     (let ((num (unanswered-message-number-get)))
       (if (fx= num 0)
@@ -2788,6 +2965,7 @@
       ((fx= mode MODE_REMINDER) (glgui-widget-set! gui:menu title 'label "Reminders"))
       ((fx= mode MODE_REMINDER_SETUP) (glgui-widget-set! gui:menu title 'label "Reminder Setup"))
       ((fx= mode MODE_PHONEBOOK) (glgui-widget-set! gui:menu title 'label "Phonebook"))
+      ((fx= mode MODE_VOIP) (glgui-widget-set! gui:menu title 'label "VOIP Call"))
     )
     ;;
     ;; Calls some event handler, and plot the right gui depending on which screen is active
@@ -2805,6 +2983,7 @@
               ((fx= mode MODE_CHAT) gui:chat)
               ((fx= mode MODE_ALERT) gui:alert)
               ((fx= mode MODE_TRENDS) gui:trends)
+              ((fx= mode MODE_VOIP) gui:voip)
               ((fx= mode MODE_PHONEBOOK) (if gui:phonebook-editor-shown gui:phonebook-editor gui:phonebook))
               (else gui:login)
         )
