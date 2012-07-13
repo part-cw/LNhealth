@@ -207,12 +207,12 @@
 	    (init-gui-users)
 	    (init-gui-rooms)
             (init-gui-voip)
+	    (init-gui-phonebook)
 	    (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
 	    (init-gui-overview)
 	    (init-gui-waves)    
             (init-gui-trends)
 	    (init-gui-reminder-setup)
-	    (init-gui-phonebook)
             (init-gui-phonebook-editor)
 	    (set! gui:battery-tstamp 0.) ;; This allows me to record battery timestamps
  	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
@@ -668,18 +668,19 @@
       (glgui-widget-set! gui:messaging alert-list 'offset 0) 
       (glgui-widget-set! gui:messaging chat-user-list 'offset 0) 
       ;; Also add popup if not already on messaging screen
-      (if (not (fx= mode MODE_MESSAGING))
-        (let* ((prio (caddr (car (cdr data))))
-               (msgs (if (fx= prio 1) (store-ref "main" "ChatMessages")(store-ref "main" "AlertMessages"))))
-          (if (not (fx= mode MODE_CHAT))
-            ;; All other screens: show the popup!
-            (store-set! "main" "popup-text" (list (string-append (cadar msgs) " send:") (caddar msgs)))
-            ;; For chat screen check receiver first
-            (if (string=? (cadar msgs) (store-ref "main" "ChatReceiver" ""))
-              ;; The chat message list needs updating
-              (glgui-widget-set! gui:chat chat-list 'list (build-chat-list (store-ref "main" "ChatReceiver")))
-              ;; Otherwise we still need a popup anyway
+      (let ((prio (caddr (car (cdr data)))))
+        (if (not (or (fx= mode MODE_MESSAGING) (fx= prio 0)))
+          (let ((msgs (if (fx= prio 1) (store-ref "main" "ChatMessages")(store-ref "main" "AlertMessages"))))
+            (if (not (fx= mode MODE_CHAT))
+              ;; All other screens: show the popup!
               (store-set! "main" "popup-text" (list (string-append (cadar msgs) " send:") (caddar msgs)))
+              ;; For chat screen check receiver first
+              (if (string=? (cadar msgs) (store-ref "main" "ChatReceiver" ""))
+                ;; The chat message list needs updating
+                (glgui-widget-set! gui:chat chat-list 'list (build-chat-list (store-ref "main" "ChatReceiver")))
+                ;; Otherwise we still need a popup anyway
+                (store-set! "main" "popup-text" (list (string-append (cadar msgs) " send:") (caddar msgs)))
+              )
             )
           )
         )
@@ -701,9 +702,9 @@
       ((fx= prio 2) (audiofile-play audio:alert))
       ((fx= prio 3) (audiofile-play audio:emergency))
     )
-    ;; Handle a voice call request
-    (if (fx= prio 9) 
-      (handle-voip (car str) (string->number (car str)) (string->number (cadr str)))
+    ;; Handle a recent voice call request
+    (if (and (fx= prio 0) (fl< (fl- ##now time) 15.))
+      (handle-voip (car mid) (string->number (car str)) (string->number (cadr str)))
     )
     ;; This is the transfer message acceptance
     (if (string=? (car str) "Transfer accepted")
@@ -2062,7 +2063,7 @@
     (glgui-label gui:phonebook (+ x 155) y 105 16 "Number/Pager" ascii16.fnt White)
     ;; The actual phonebook
     (set! phonebook-list
-       (glgui-list gui:phonebook 0 (- y 5 (* 10 30)) (glgui-width-get) (* 10 30) 30 (build-phonebook-list) phonebook-edit-callback)
+       (glgui-list gui:phonebook 0 (- y 5 (* 10 30)) (glgui-width-get) (* 10 30) 30 (build-phonebook-list) phonebook-select-callback)
     )
     ;; Bottom row with secondary navigation buttons
     (set! phonebook-edit-button
@@ -2079,10 +2080,12 @@
   )
 )
 
-(define (phonebook-edit-callback g w t x y)
+(define (phonebook-select-callback g w t x y)
   (if (and (not (glgui-widget-get g phonebook-edit-button 'hidden)) (fx> x 155) (fx< x 310)) 
-    (let ((lst (list-keep (store-ref "main" "Users" '()) (lambda (l) (fx= (cadr l) 1))))
-          (cur (glgui-widget-get g w 'current)))
+    (let* ((login (store-ref "main" "UserName"))
+           (lst (list-keep (list-keep (store-ref "main" "Users" '()) (lambda (l) (fx= (cadr l) 1))) 
+             (lambda (l) (not (string=? (car l) login)))))
+           (cur (glgui-widget-get g w 'current)))
       (if (fx< cur (length lst)) 
         (call-voip (car (list-ref lst cur)))
       )
@@ -2273,7 +2276,7 @@
 (define gui:voip #f)	
 (define (init-gui-voip)
   (set! gui:voip (make-glgui))
-  (let ((x 10)(y (- (glgui-height-get) gui:menu-height 16 3))(w (glgui-width-get)))
+  (let ((x 10)(y (- (glgui-height-get) gui:menu-height 24 3))(w (glgui-width-get)))
     ;; Some text about call
     (set! voip-caller-label (glgui-label gui:voip x y w 24 "Call with: " ascii24.fnt White))
     (set! voip-state-label (glgui-label gui:voip x (- y 125) w 24 "" ascii24.fnt White))
@@ -2291,18 +2294,29 @@
     (set! terminate-voip-button
       (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Hang up / Disconnect" ascii24.fnt terminate-voip-callback)
     ) 
-    (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)
+    (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)    
+    (set! return-phonebook-button
+      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Back to Phonebook" ascii24.fnt return-phonebook-callback)
+    ) 
+    (glgui-widget-set! gui:voip return-phonebook-button 'hidden #t)
   )
+)
+
+(define (return-phonebook-callback g wgt t x y)
+  (log-remote "Screen: Phonebook")
+  (set! mode MODE_PHONEBOOK)
 )
 
 (define (hide-voip-init-buttons b)
   (glgui-widget-set! gui:voip accept-voip-button 'hidden b)
   (glgui-widget-set! gui:voip reject-voip-button 'hidden b)
   (glgui-widget-set! gui:voip terminate-voip-button 'hidden (not b))
+  (glgui-widget-set! gui:voip return-phonebook-button 'hidden #t)
 )
 
 
 (define (accept-voip-callback g wgt t x y)
+  (set! voip:ring #f)
   (hide-voip-init-buttons #t)
   (let ((ip (store-ref "main" "VOIPipaddr")))
     (if ip (begin 
@@ -2312,14 +2326,16 @@
       ;;Tell the other side to open their VOIP too
       ;;Syntax is (CALL pin DestinationName host-ipaddr state)
       (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) 
-       (store-ref "main" "VOIPcaller") (host-ipaddr) 1)
+        (store-ref "main" "VOIPcaller") (host-ipaddr) 1)
     ))
   )
 )
 
 (define (reject-voip-callback g wgt t x y)
+  (set! voip:ring #f)
   (glgui-widget-set! g wgt 'hidden #t)
   (glgui-widget-set! g accept-voip-button 'hidden #t)
+  (glgui-widget-set! g return-phonebook-button 'hidden #f)
   (glgui-widget-set! g voip-state-label 'label "CALL REJECTED")
   (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) (store-ref "main" "VOIPcaller") (host-ipaddr) 0)
 )
@@ -2327,8 +2343,15 @@
 (define (terminate-voip-callback g wgt t x y)
   (set! voip:ring #f)
   (glgui-widget-set! g wgt 'hidden #t)
+  (glgui-widget-set! g return-phonebook-button 'hidden #f)
   (glgui-widget-set! g voip-state-label 'label "CONNECTION CLOSED")
   (rtaudio-stop)
+  (let ((caller (store-ref "main" "VOIPcaller")))
+    (if caller  
+      (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) caller (host-ipaddr) 0)
+    )
+  )
+  (store-set! "main" "VOIPcaller" #f)
   (log-remote "Closed call")
 )
 
@@ -2337,6 +2360,7 @@
   (store-set! "main" "VOIPcaller" caller)
   (glgui-widget-set! gui:voip voip-caller-label 'label (string-append "Call with: " caller))
   (glgui-widget-set! gui:voip voip-state-label 'label "RINGING")
+  (log-remote "Screen: VOIP")
   (set! mode MODE_VOIP)
   ;; Make the call
   (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) caller (host-ipaddr) 9)
@@ -2347,20 +2371,33 @@
 )
 
 (define (handle-voip caller ip state)
+  (glgui-widget-set! gui:voip voip-ip-label 'label (string-append "IP: " (ipaddr->string (s32->u8vector ip))))
   (if (fx= state 1)
+    ;; Add the Call to the Chat log
     (begin
-      (rtaudio-start ip voip:volume)
+      (store-set! "main" "ChatMessages" (append
+        (list (list ##now caller (string-append "Made VOIP call to " caller) 0))
+        (store-ref "main" "ChatMessages" '())
+      ))
+      (glgui-widget-set! gui:voip voip-state-label 'label "CALL ACTIVE")
       (hide-voip-init-buttons #t)
       (set! voip:ring #f)
+      (rtaudio-start ip voip:volume)
     )
   )
   (if (fx= state 9)
     (begin 
+      ;; Add the Call to the Chat log
+      (store-set! "main" "ChatMessages" (append
+        (list (list ##now caller (string-append "Received VOIP call by " caller) 1))
+        (store-ref "main" "ChatMessages" '())
+      ))
       (hide-voip-init-buttons #f)
       (store-set! "main" "VOIPipaddr" ip)
       (store-set! "main" "VOIPcaller" caller)
-      (glgui-widget-set! gui:voip voip-caller-label 'label (string-append "Call with: " caller))
-      (glgui-widget-set! gui:voip voip-ip-label 'label (string-append "IP: " (ipaddr->string (s32->u8vector ip))))
+      (glgui-widget-set! gui:voip voip-state-label 'label "RINGING")
+      (glgui-widget-set! gui:voip voip-caller-label 'label (string-append "Call from: " caller))
+      (log-remote "Screen: VOIP")
       (set! mode MODE_VOIP)
       ;; Init the audio parts  
       (audiofile-play audio:phone)
@@ -2370,10 +2407,13 @@
   )
   (if (fx= state 0)
     (begin
+      (set! voip:ring #f)
+      (rtaudio-stop)
       (glgui-widget-set! gui:voip reject-voip-button 'hidden #t)
       (glgui-widget-set! gui:voip accept-voip-button 'hidden #t)
-      (glgui-widget-set! gui:voip voip-state-label 'label "CALL REJECTED")
-      (set! voip:ring #f)
+      (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)
+      (glgui-widget-set! gui:voip voip-state-label 'label "CALL HUNG UP")
+      (glgui-widget-set! gui:voip return-phonebook-button 'hidden #f)
     )
   )
 )
@@ -2618,11 +2658,11 @@
   ;; Start the main communication thread
   (store-set! store "Thread" (thread-start! (make-safe-thread (lambda ()
     (let loop ()
-      (let ((ctime (store-ref store "LastUpdateTime" 0.))
+      (let ((lastupdatetime (store-ref store "LastUpdateTime" 0.))
             (rupi  (store-ref store "RupiClient" #f))
             (key   (store-ref store "Key"))
             (timeout 2.))
-        (let ((data (rupi-cmd rupi "GETMESSAGES" key ctime)))
+        (let ((data (rupi-cmd rupi "GETMESSAGES" key lastupdatetime)))
           (if (pair? data) ;; Always a list
             (begin
               (store-update-messages data)
