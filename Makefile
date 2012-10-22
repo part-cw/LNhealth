@@ -3,6 +3,6 @@
 
 include ../../PLATFORM.mk
 include ./TARGET
-SRCS=constants.scm  datatypes.scm lookup.scm storage.scm parser.scm ivueparser.scm
+SRCS=constants.scm crc.scm datatypes.scm lookup.scm storage.scm parser.scm ivueparser.scm
 include ../s-makefile.stub
 

@@ -4,6 +4,7 @@
 (include "../s-optimize.inc")
 
 (include "constants.scm")
+(include "crc.scm")
 (include "datatypes.scm")
 (include "lookup.scm")
 (include "storage.scm")

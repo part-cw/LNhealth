@@ -25,5 +25,20 @@
 (define NOM_ATTR_ID_LABEL		#x0924)
 (define NOM_ATTR_METRIC_INFO_LABEL	2364)
 (define NOM_ATTR_ID_BED_LABEL 		#x091E)
+(define NOM_ATTR_POLL_RTSA_PRIO_LIST 62010)
+(define NOM_ATTR_ALL_GROUPS 0)
+
+;; poll object types
+(define NOM_MOC_VMO_METRIC_NU 6)
+(define NOM_MOC_VMO_METRIC_SA_RT 9)
+(define NOM_MOC_VMS_MDS 33)
+(define NOM_MOC_VMS_T_DEMOG 42)
+(define NOM_MOC_VMP_AL_MON 54)
+
+;; misc request variables
+(define NOM_ACT_POLL_MDIB_DATA 3094)
+(define NOM_ACT_POLL_MDIB_DATA_EXT 61755)
+(define NOM_ATTR_POLL_OBJ_PRIO_NUM #xF228)
+(define NOM_PART_OBJ 1)
 
 ;; eof

@@ -9,8 +9,89 @@
 
 (define ivueparser:handleid 0)
 (define ivueparser:cmd_type 0)
-
+(define ivueparser:priolist '())
 (define ivueparser:handlelut (make-table init: 0))
+
+
+;; parse a raw (unvalidated) frame from the monitor
+;; returns true if more messages are pending
+(define (ivueparser:parseframe buf)
+  (if (u8data:sane? buf)
+    (let ((msg (ivueparser:decodemessage buf)))
+      (if (u8data:sane? msg) 
+        (ivueparser:parsemessage msg)
+        (begin 
+          (log-error "ivueparser: parseframe: malformed frame")
+          #f
+        )
+      )
+    ) 
+    #f
+))
+
+(define (ivueparser:decodeframe ibuf)
+  (let ((buflen (u8data-length ibuf)))
+    (if (not (and (fx= (u8data-ref ibuf 0) #xC0)
+                  (fx= (u8data-ref ibuf (- buflen 1))) #xC1))
+      (begin 
+        (log-error "Invalid input frame") 
+        #f
+      )
+      (let loop ((i 1)(obuf (u8vector))(escaped #f))
+        (if (fx= i (fx- buflen 1)) (u8vector->u8data obuf)
+          (let* ((c (u8data-ref ibuf i))
+                 (newescaped (fx= c #x7D)))
+            (loop (fx+ i 1) (u8vector-append obuf
+              (if newescaped (u8vector) (if escaped (u8vector (bitwise-xor c #x20)) (u8vector c)))) newescaped)
+           )
+         )
+       )
+     )
+))
+
+(define (ivueparser:decodecrc buf)
+  (let* ((buflen (u8data-length buf))
+         (bufcrc (bitwise-ior (arithmetic-shift (u8data-ref buf (fx- buflen 1)) 8) 
+           (u8data-ref buf (fx- buflen 2)))
+         )
+         (mycrc (ivueparser:crc (u8data->u8vector buf) 0 (fx- buflen 2))))
+      ;; the bitwise and's are needed to eliminate sign!
+   (if (not (fx= (bitwise-and bufcrc #xffff)
+                 (bitwise-and mycrc #xffff))) 
+     (begin
+       (log-error "ivueparser: bad input frame crc") 
+       #f
+     )
+     (subu8data buf 0 (fx- buflen 2))
+    )
+))
+ 
+(define (ivueparser:decodeheader buf)
+  (if (or (not (= (u8data-ref buf 0) #x11))
+           (not (= (u8data-ref buf 1) #x01)))
+    (begin (log-error "ivueparser: bad input frame header") #f)
+      (let ((buflen (u8data-length buf))
+            (mylen (fx+ (arithmetic-shift (u8data-ref buf 2) 8)
+                (u8data-ref buf 3))))
+        (if (not (fx= (fx- buflen 4) mylen)) 
+          (begin
+            (log-error "ivueparser: input frame length mismatch") 
+            #f
+          )
+          (subu8data buf 4 buflen)))))
+
+(define (ivueparser:decodemessage buf)
+  (let ((f (ivueparser:decodeframe buf)))
+    (if (u8data:sane? f)
+      (let ((c (ivueparser:decodecrc f)))
+        (if (u8data:sane? c) 
+          (ivueparser:decodeheader c) 
+          #f
+        )
+      )
+      #f
+    )
+))
 
 ;; parse an (already validated) message from the monitor 
 ;; returns true if more messages are pending
@@ -313,9 +394,34 @@
        (ivueparser:parseAttrScaleSpec payload))
     ((fx= id NOM_ATTR_ID_LABEL) ;; AttrIdLabel
        (ivueparser:parseAttrIdLabel payload))
+    ((fx= id NOM_ATTR_POLL_RTSA_PRIO_LIST)  ;; PrioList
+       (ivueparser:parsePrioList payload))
     (else (log-debug "ivueparser: unknown attribute " id " [" len "]" 1) )
     )
    (ivueparser:skip payload len)))
+
+
+(define (ivueparser:parsePrioList buf)
+  (let ((payload (ivueparser:skip buf 4))
+        (count (ivueparser:decodeu16 (subu8data buf 0 2)))
+        (len (ivueparser:decodeu16 (subu8data buf 2 4))))
+  (set! ivueparser:priolist '())
+  (let loop ((n 0)(p payload)) 
+    (if (fx< n count) 
+      (loop (fx+ n 1) 
+      (ivueparser:parseTextId p))
+    )
+  )
+  (ivueparser:skip payload len)
+))
+
+(define (ivueparser:parseTextId buf)
+  (let ((payload (ivueparser:skip buf 4))
+        (text_id (ivueparser:decodeu32 (subu8data buf 0 4))))
+;;    (log-status (string-append "ivueparser: TextId=" (number->string text_id)))
+    (set! ivueparser:priolist (append ivueparser:priolist (list text_id)))
+    payload
+))
 
 (define (ivueparser:parseNuObsValueCmp buf)
   (let ((payload (ivueparser:skip buf 4))
@@ -332,10 +438,6 @@
 ;;      (unit (ivueparser:decodeu16 (subu8data buf 4 6)))
         (value (ivueparser:decodef32 (subu8data buf 6 10))))
 ;;     (log-debug (format "NuObsValue: data [~D] ~F" physio_id value) 1)
-
-;;     (let ((localvar (metadata-mcode physio_id)))
-;;       (if (and (string? localvar) (not (= value 8388607.))) ;; ignore invalid data
-;;         (data-set! ivueparser:store localvar value)))
 
        (if (not (or (= value 8388607.) (> (bitwise-and state #xff00) 0))) ;; ignore invalid data
          (ivueparser:setphys! ivueparser:store physio_id 
