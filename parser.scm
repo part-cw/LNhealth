@@ -126,7 +126,7 @@
                   (ivueparser:parsedataresult buf #t) #t)
                 ((fx= roapdus ROER_APDU)
                   (set! ivueparser:error #t)
-                  (log-error "ivueparser: error message") #f)
+                  (log-error "ivueparser: error message " (u8data->u8vector buf)) #f)
                 (else 
                   (set! ivueparser:error #t)
                   (log-error "ivueparser: data export protocol error") #f))))
@@ -438,11 +438,13 @@
 ;;      (unit (ivueparser:decodeu16 (subu8data buf 4 6)))
         (value (ivueparser:decodef32 (subu8data buf 6 10))))
 ;;     (log-debug (format "NuObsValue: data [~D] ~F" physio_id value) 1)
-
        (if (not (or (= value 8388607.) (> (bitwise-and state #xff00) 0))) ;; ignore invalid data
          (ivueparser:setphys! ivueparser:store physio_id 
-            (table-ref ivueparser:labellut ivueparser:handleid)
-             value))
+           (table-ref ivueparser:labellut ivueparser:handleid) value)
+         (let ((name (ivueparser:findphys physio_id (table-ref ivueparser:labellut ivueparser:handleid))))
+           (if name (store-clear! ivueparser:store name))
+         )
+       )
 
      payload))
 

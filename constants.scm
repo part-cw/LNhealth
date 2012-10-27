@@ -7,6 +7,7 @@
 (define ROLRS_APDU 5)
 
 ;; command types
+(define CMD_CONFIRMED_EVENT_REPORT 1)
 (define CMD_CONFIRMED_ACTION 7)
 (define CMD_CONFIRMED_SET 5)
 (define CMD_GET 3)
