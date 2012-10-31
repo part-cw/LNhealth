@@ -28,7 +28,7 @@
          (val (s5parser:validate value scale)))
     (if s5parser:group_active? 
       (store-set! store name val "s5")
-      (store-clear! store name val)
+      (store-clear! store name)
     )
   ))
     
