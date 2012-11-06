@@ -204,6 +204,7 @@
        "CVPmean" "CO2e" "CO2imin" "awRR"))
     (if (file-exists? config-file)
       (let ((data (with-input-from-file (list path: config-file) (lambda () (read)))))
+        (log-status "Loaded configuration from " config-file)
         (for-each (lambda (l) (store-set! "main" (car l) (cadr l))) data)
       )
     )
