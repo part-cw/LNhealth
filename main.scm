@@ -1,6 +1,7 @@
 ;; telePORT [formerly known as iFishAA]
 ;; Matthias Görges 2011-2012
 (include "../s-optimize.inc")
+(define voip:enabled #f) ;; Disable until stable
 
 ;; -----------------------------------------------------------------------------
 ;;  LOADING OF TEXTURES AND FONTS and definition of texture lists
@@ -206,7 +207,7 @@
 	    (init-gui-reminder)
 	    (init-gui-users)
 	    (init-gui-rooms)
-            (init-gui-voip)
+            (if voip:enabled (init-gui-voip))
 	    (init-gui-phonebook)
 	    (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
 	    (init-gui-overview)
@@ -217,8 +218,22 @@
 	    (set! gui:battery-tstamp 0.) ;; This allows me to record battery timestamps
  	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
 	    (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
+            (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
 	  )
-	  (store-set! store "Key" "") ;; Clear the string and try again.
+          (if rupi:error
+            (begin
+              (glgui-widget-set! gui:popup popup-box 'callback #f)
+              (store-set! "main" "popup-text" (list "VITALNODE LOST" "Can't connect to VitalNode. Please check the Wifi connection is active and retry."))
+              (show-popup)
+              (store-set! store "Key" "") ;; Clear the string and try again.
+            )
+            (begin
+              (glgui-widget-set! gui:popup popup-box 'callback #f)
+              (store-set! "main" "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias if you need one.)"))
+              (show-popup)
+              (store-set! store "Key" "") 
+            )
+          )
 	)
 	(glgui-widget-set! gui:login login-pin 'label "")	
       )
@@ -703,7 +718,7 @@
       ((fx= prio 3) (audiofile-play audio:emergency))
     )
     ;; Handle a recent voice call request
-    (if (and (fx= prio 0) (fl< (fl- ##now time) 15.))
+    (if (and (fx= prio 0) (fl< (fl- ##now time) 15.) voip:enabled)
       (handle-voip (car mid) (string->number (car str)) (string->number (cadr str)))
     )
     ;; This is the transfer message acceptance
@@ -2086,7 +2101,7 @@
            (lst (list-keep (list-keep (store-ref "main" "Users" '()) (lambda (l) (fx= (cadr l) 1))) 
              (lambda (l) (not (string=? (car l) login)))))
            (cur (glgui-widget-get g w 'current)))
-      (if (fx< cur (length lst)) 
+      (if (and (fx< cur (length lst) voip:enabled)) 
         (call-voip (car (list-ref lst cur)))
       )
     )
@@ -2194,7 +2209,7 @@
   (lambda (g wgt x y w h s)
     (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 145 24 (car entry) ascii24.fnt White)   
     (if (string=? (cadr entry) "VOIP") 
-      (glgui:draw-pixmap-left (+ x 155) (+ y 2) 76 24 voip-small.img White) 
+      (glgui:draw-pixmap-left (+ x 155) (+ y 2) 76 24 voip-small.img (if voip:enabled gui:active-color gui:inactive-color)) 
       (glgui:draw-text-left (+ x 155) (+ y (/ (- h 24) 2)) (- (glgui-width-get) 155 10) 24 (cadr entry) ascii24.fnt White)  
     )
     (if (glgui-widget-get g phonebook-edit-button 'hidden)
@@ -2833,6 +2848,7 @@
         (set! audio:alert (audiofile-load "Alert"))
         (set! audio:emergency (audiofile-load "Emergency"))
         (set! audio:phone (audiofile-load "Phone"))
+        (set! audio:disconnect (audiofile-load "Disconnect"))
       )
       (begin 
 	(set! gui:login (make-glgui))
@@ -2952,7 +2968,7 @@
         (glgui-widget-set! gui:popup popup-timer 'w 
           (fix (* (glgui-widget-get gui:popup popup-text 'w ) (fl/ (fl- timeout (fl- ##now tstamp)) timeout))))
       )
-      (if (and (not hidden) (fl> (fl- ##now tstamp) timeout))
+      (if (and (not hidden) (fl> (fl- ##now tstamp) (if (glgui-widget-get gui:popup popup-box 'callback) timeout (fl/ timeout 2.))))
 	(begin
 	  (hide-popup)
 	  (if (not rupi:addr) (force-terminate)) ;;(terminate) doesn't do it on the iPod/iPhone
@@ -2979,6 +2995,9 @@
 	      (log-status logstr)
 	      (glgui-widget-set! gui:menu clock 'label "OFFLINE")
               (store-set! "main" "popup-text" (list "Connection Lost" (string-append logstr ". Trying to reconnect!")))
+              (if (fx<= (modulo (fix (fl- ##now lstmsg)) 60) 10)
+                (audiofile-play audio:disconnect)
+              )
 	    )
 	  )
 	  (store-set! "main" "ConnChkTime" ##now)
