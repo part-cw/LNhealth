@@ -1007,9 +1007,9 @@
   (let ((gui gui:chat)
         (lst-wgt chat-list)
         (button-wgt chat-input-button)
-        (dh (if (fx= new-gui gui:messaging-keyboard) gui:messaging-keyboard-height gui:messaging-quicktext-height))
-        (im (if (fx= new-gui gui:messaging-keyboard) (list "Quicktext") (list "Keyboard")))
-        (cb (if (fx= new-gui gui:messaging-keyboard) quicktext-button-callback keyboard-button-callback)))
+        (dh (if (eq? new-gui gui:messaging-keyboard) gui:messaging-keyboard-height gui:messaging-quicktext-height))
+        (im (if (eq? new-gui gui:messaging-keyboard) (list "Quicktext") (list "Keyboard")))
+        (cb (if (eq? new-gui gui:messaging-keyboard) quicktext-button-callback keyboard-button-callback)))
     ;; Restore previous height if response option currently shown
     (restore-chat-list-height)
     ;; Trim the chat list to fit the response option and toggle the button
@@ -1026,13 +1026,13 @@
   (let ((gui gui:chat)
         (lst-wgt chat-list))
     ;; Restore previous height if response option currently shown
-    (if (fx= gui:messaging-detail-shown gui:messaging-quicktext)
+    (if (eq? gui:messaging-detail-shown gui:messaging-quicktext)
       (begin    
         (glgui-widget-set! gui lst-wgt 'h (+ (glgui-widget-get gui lst-wgt 'h) gui:messaging-quicktext-height))
         (glgui-widget-set! gui lst-wgt 'y (- (glgui-widget-get gui lst-wgt 'y) gui:messaging-quicktext-height))
       )
     ) 
-    (if (fx= gui:messaging-detail-shown gui:messaging-keyboard)
+    (if (eq? gui:messaging-detail-shown gui:messaging-keyboard)
       (begin    
         (glgui-widget-set! gui lst-wgt 'h (+ (glgui-widget-get gui lst-wgt 'h) gui:messaging-keyboard-height))
         (glgui-widget-set! gui lst-wgt 'y (- (glgui-widget-get gui lst-wgt 'y) gui:messaging-keyboard-height))
@@ -1044,7 +1044,7 @@
 ;; Function to send a chat message
 (define (send-message-callback g w t x y)
   ;; Send the actual message
-  (if (fx= gui:messaging-detail-shown gui:messaging-quicktext) 
+  (if (eq? gui:messaging-detail-shown gui:messaging-quicktext) 
     (reply-callback g w #f 0 0)
     (begin 
       (glgui-widget-set! g message-string 'image (list (glgui-widget-get gui:messaging-keyboard message-string 'label)))
@@ -1055,9 +1055,9 @@
   ;; And reset the chat list while hiding response option 
   (let ((gui gui:chat)
         (button-wgt chat-input-button)
-        (im (if (fx= gui:messaging-detail-shown gui:messaging-quicktext) 
+        (im (if (eq? gui:messaging-detail-shown gui:messaging-quicktext) 
           (list "Quicktext") (list "Keyboard")))
-        (cb (if (fx= gui:messaging-detail-shown gui:messaging-quicktext) 
+        (cb (if (eq? gui:messaging-detail-shown gui:messaging-quicktext) 
           quicktext-button-callback keyboard-button-callback)))
     (restore-chat-list-height)
     (set! gui:messaging-detail-shown #f)
@@ -1066,7 +1066,7 @@
     (glgui-widget-set! gui button-wgt 'callback cb)
   )
   ;; Hide the return key highlight on the keyboard if pressed instead of send
-  (if (fx= g gui:messaging-keyboard)
+  (if (eq? g gui:messaging-keyboard)
     (glgui-widget-set! g keypad 'highlight #f)
   )
 )
