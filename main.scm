@@ -2105,7 +2105,7 @@
            (lst (list-keep (list-keep (store-ref "main" "Users" '()) (lambda (l) (fx= (cadr l) 1))) 
              (lambda (l) (not (string=? (car l) login)))))
            (cur (glgui-widget-get g w 'current)))
-      (if (and (fx< cur (length lst) voip:enabled)) 
+      (if (and (fx< cur (length lst)) voip:enabled)
         (call-voip (car (list-ref lst cur)))
       )
     )
