@@ -2996,7 +2996,7 @@
 	  (if (and (fl> lstmsg 0.) (fl> (fl- ##now lstmsg) age))
 	    (let* ((delta-time (fix (fl- ##now lstmsg)))
                    (logstr (string-append "No communication with VitalNode for " 
-		                         delta-time "sec")))
+		                         (number->string delta-time) "sec")))
 	      (log-status logstr)
 	      (glgui-widget-set! gui:menu clock 'label "OFFLINE")
               (store-set! "main" "popup-text" (list "Connection Lost" (string-append logstr ". Trying to reconnect!")))
