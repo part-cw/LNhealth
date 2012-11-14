@@ -3,10 +3,6 @@
 (include "../s-optimize.inc")
 (define voip:enabled #f) ;; Disable until stable
 
-(define (list-notempty? lst)
-  (and (list? lst) (not (null? lst)))
-)
-
 ;; -----------------------------------------------------------------------------
 ;;  LOADING OF TEXTURES AND FONTS and definition of texture lists
 ;; -----------------------------------------------------------------------------
@@ -216,6 +212,7 @@
 	    (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
 	    (init-gui-overview)
 	    (init-gui-waves)    
+            (init-gui-waves-landscape)
             (init-gui-trends)
 	    (init-gui-reminder-setup)
             (init-gui-phonebook-editor)
@@ -1331,12 +1328,14 @@
 (define (goto-overview-button-callback g w t x y)
   (log-remote "Screen: Overview")
   (set! mode MODE_OVERVIEW)
+  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
 )
 ;; Going to the trend screen
 (define (goto-trends-button-callback g w t x y)
   (log-remote "Screen: Trends")
   (set! rupi:last-trend-update 0.) ;; Force immediate update
   (set! mode MODE_TRENDS)
+  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
 )
 
 ;; Allow sliding motion to change rooms
@@ -1367,6 +1366,7 @@
 (define (update-waves or-name)
   ;; Set Title row to reflect which OR's waveforms we are looking at
   (glgui-widget-set! gui:menu title 'label or-name)
+  (glgui-widget-set! gui:waves-landscape location-landscape 'label or-name)
 
   ;;Request new values
   (if (fl> (fl- ##now rupi:last-wave-update) rupi:wave-update-frequency)
@@ -1460,6 +1460,17 @@
 	  )(glgui-widget-set! gui:waves agent_name 'label "")
 	)
       )
+      ;; Update the labels in the landscape gui mode
+      (if landscape? (begin
+        (glgui-widget-set! gui:waves-landscape agent_name-landscape 'label (glgui-widget-get gui:waves agent_name 'label))
+        (glgui-widget-set! gui:waves-landscape agent_name-landscape 'color (glgui-widget-get gui:waves agent_name 'color))
+        (glgui-widget-set! gui:waves-landscape hr_value-landscape 'label (glgui-widget-get gui:waves hr_value 'label))
+        (glgui-widget-set! gui:waves-landscape hr_value-landscape 'color (glgui-widget-get gui:waves hr_value 'color))
+        (glgui-widget-set! gui:waves-landscape spo2_value-landscape 'label (glgui-widget-get gui:waves spo2_value 'label))
+        (glgui-widget-set! gui:waves-landscape etco2_value-landscape 'label (glgui-widget-get gui:waves etco2_value 'label))
+        (glgui-widget-set! gui:waves-landscape nibp_value-landscape 'label (glgui-widget-get gui:waves nibp_value 'label))
+        (glgui-widget-set! gui:waves-landscape nibp_value-landscape 'image (glgui-widget-get gui:waves nibp_value 'image))
+      ))
     )
   )
 )
@@ -1511,6 +1522,45 @@
 	)
       )
     )
+  )
+)
+
+;; -----------------------------------------------------------------------------
+;;  SIMPLIFIED HORIZONTAL WAVEFORM SCREEN FUNCTIONS
+;; -----------------------------------------------------------------------------
+;; Initialize the landscape waveform gui parts
+(define gui:waves-landscape #f)	
+(define (init-gui-waves-landscape)
+  (set! gui:waves-landscape (make-glgui))
+
+  ;; Need this to catch the callback of dragging in the screen
+  (set! wave-canvas (glgui-box-dragable gui:waves-landscape 5 5 (- (glgui-height-get) 10) (- (glgui-width-get) 10) Black wave-canvas-callback))
+
+  ;;Define Widgets to present current value numbers
+  ;; glgui-trend has parameters: gui, x y label texture, font, color)
+  (set! hr_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 50) label_hr.img num40.fnt Green))
+  (set! spo2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 105) label_spo2.img num40.fnt White))
+  (set! etco2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 150) label_etco2.img num40.fnt Orange))
+  (set! art_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 195) label_art.img num40.fnt Red))
+  (set! nibp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num40.fnt Red))
+  (set! temp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 285) label_temp.img num40.fnt White))
+  (set! agent_value-landscape (glgui-trend gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 285) label_agent.img num40.fnt White))
+  (set! agent_name-landscape (glgui-label gui:waves-landscape 5 (- (glgui-height-get) 285) 60 24 "" ascii24.fnt White))  
+
+  ;;Place the Trace Widgets
+  (set! ecg-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 60) 350 40 ecg-trace Green))    
+  (set! pleth-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 105) 350 40 pleth-trace White))  
+  (set! co2-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 150) 350 40 co2-trace Orange))  
+  (set! art-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 195) 350 40 art-trace Red))  
+  
+  ;; Screen Indicator 
+  (set! screenindicator-landscape (glgui-screenindicator gui:waves-landscape 0 5 (glgui-height-get) 20 White))
+  (set! location-landscape (glgui-label gui:waves-landscape 10 (- (glgui-width-get) 30) 70 25 "Room" ascii24.fnt White))
+
+  ;; Bottom row with secondary navigation buttons
+  (let ((w (/ (glgui-width-get) 3)))
+    (glgui-button-string gui:waves-landscape 5 5 w 30 "Overview" ascii24.fnt goto-overview-button-callback)
+    (glgui-button-string gui:waves-landscape (- (glgui-height-get) w 10) 5 w 30 "Trends" ascii24.fnt goto-trends-button-callback)
   )
 )
 
@@ -2502,7 +2552,9 @@
   (glgui-widget-set! gui:menu navigation-bar 'value MODE_MESSAGING)
   (log-remote "Screen: Messaging")
   (set! mode MODE_MESSAGING)
+  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
 )
+
 (define (hide-popup)
   (glgui-widget-set! gui:popup popup-box 'hidden #t)
   (glgui-widget-set! gui:popup popup-label 'hidden #t)
@@ -2513,6 +2565,8 @@
 )
 
 (define (show-popup)
+  (glgui-set! gui:popup 'yofs (if landscape? -125 0))
+  (glgui-set! gui:popup 'xofs (if landscape? 75 0))
   (glgui-widget-set! gui:popup popup-box 'hidden #f)
   (glgui-widget-set! gui:popup popup-label 'hidden #f)
   (glgui-widget-set! gui:popup popup-text 'hidden #f)
@@ -2640,7 +2694,7 @@
   (let loop ((i 0))
     (if (< i (length lst))
       (let ((row (list-ref lst i)))
-	(store-update-list (car row) (cdr row))
+	(if (list-notempty? (cdr row)) (store-update-list (car row) (cdr row)))
 	(loop (+ i 1))
       )
     )
@@ -2744,6 +2798,11 @@
 ;; -----------------------------------------------------------------------------
 ;;  OTHER FUNCTIONS
 ;; -----------------------------------------------------------------------------
+
+;; Check for empty lists - this one is better than using pair? for it!
+(define (list-notempty? lst)
+  (and (list? lst) (not (null? lst)))
+)
 
 ;; keep only alerts/pages/requests/message that are younger than age seconds
 (define (expire-messages lst age)
@@ -2870,11 +2929,22 @@
 ;; events (and their handling) - Here updates are done after guis are already defined
 ;;
   (lambda (t x y) 
+    ;; Check if a screen is in landscape orientation
+    (set! landscape? (> (glgui-width-get) (glgui-height-get)))
+    ;; Rotation change events
+    (if (fx= t EVENT_ORIENTATION)
+      (if (fx= mode MODE_WAVES) (glgui-orientation-set! x))
+    )
+    ;; Keyboard events
     (if (fx= t EVENT_KEYRELEASE) 
       (begin
         ;; These are key presses, in case of ESC exit
         (if (fx= x EVENT_KEYESCAPE)
           (terminate)
+        )
+        ;; Change orientation with TAB
+        (if (fx= x EVENT_KEYTAB)
+          (if (fx= mode MODE_WAVES) (glgui-orientation-set! (if (fx= glgui:rotate 0) 2 1)))
         )
 	;; Keyboard events:
 	(if (fx= mode MODE_CHAT)
@@ -2914,6 +2984,8 @@
 	    ;; also update the screen indicator
 	    (glgui-widget-set! gui:waves screenindicator 'idx wav-room)
 	    (glgui-widget-set! gui:waves screenindicator 'screens (length rooms))
+	    (glgui-widget-set! gui:waves-landscape screenindicator-landscape 'idx wav-room)
+	    (glgui-widget-set! gui:waves-landscape screenindicator-landscape 'screens (length rooms))
 	  )
 	)
       )
@@ -3038,7 +3110,7 @@
       (list gui:login gui:popup)
       (list 
         (cond ((fx= mode MODE_OVERVIEW) gui:overview)
-              ((fx= mode MODE_WAVES) gui:waves)
+              ((fx= mode MODE_WAVES) (if landscape? gui:waves-landscape gui:waves))
               ((fx= mode MODE_MESSAGING) gui:messaging)
               ((fx= mode MODE_REMINDER) gui:reminder)
               ((fx= mode MODE_REMINDER_SETUP) gui:reminder-setup)
@@ -3052,7 +3124,7 @@
               (else gui:login)
         )
         (if (and (fx= mode MODE_CHAT) gui:messaging-detail-shown) gui:messaging-detail-shown gui:empty)
-        gui:menu
+        (if (and (fx= mode MODE_WAVES) landscape?) gui:empty gui:menu)
         gui:popup
       )
     ) t x y)
