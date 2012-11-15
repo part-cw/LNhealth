@@ -120,6 +120,12 @@
 ;; Message expiration settings
 (define gui:alert-max-age (* 60 60 6))
 (define gui:chat-max-age (* 60 60 24 7))
+(define gui:alert-expire-answered-age 300.)
+(define gui:alert-expire-unanswered-age 3600.)
+
+;; Misc repeated task timestamps
+(define gui:battery-tstamp #f)
+(define gui:alertcheck-tstamp #f)
 
 ;; Voip setting information
 (define voip:ring #f)
@@ -217,6 +223,7 @@
 	    (init-gui-reminder-setup)
             (init-gui-phonebook-editor)
 	    (set! gui:battery-tstamp 0.) ;; This allows me to record battery timestamps
+            (set! gui:alertcheck-tstamp 0.);; Needed to clean up old alert messages
  	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
 	    (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
             (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
@@ -840,8 +847,9 @@
     ;; Prompt and message string
     (set! message-string (glgui-label g (+ x 5) (+ y (/ h 3) 5) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1)))
     (glgui-widget-set! g message-string 'align GUI_ALIGNRIGHT)
-
+    
     ;;[default apple height is 216px]    
+    ;;(set! keypad (glgui-ioskeypad g x y))
     (set! keypad (glgui-keypad g x y (glgui-width-get) (/ h 3) ascii24.fnt keypad:simplified))
     (glgui-button-string g (- w 65 5) (+ y (/ h 3) 5) 65 30 "Send" ascii24.fnt send-message-callback)
 
@@ -2634,11 +2642,12 @@
         (if (fx= i (length chats)) result
           (let* ((msg (list-ref chats i))
                  (person (cadr msg))
+                 (tstamp (car msg))
                  (send (cadddr msg)))
             ;; Test if the list already has an entry of a given person, if not add the first one we occur.
             ;; List is in display order, so append on the bottom!
             (loop (fx+ i 1)
-                  (if (member person people) result (if (fx= send 0) (fx+ result 1) result))
+                  (if (member person people) result (if (and (fl< (fl- ##now tstamp) 3600.)(fx= send 0)) (fx+ result 1) result))
                   (if (member person people) people (append people (list person))))
           )
         )
@@ -2920,8 +2929,6 @@
 	(show-popup)
       )
     )
-    ;; Needed here otherwise rupi dies with an exception before connection is made
-    (set! gui:battery-tstamp #f)
     ;; I want logfiles so the logile directory needs to be made here
     (if (not (file-exists? log:path)) (create-directory log:path)) 
   )
@@ -3051,6 +3058,25 @@
 	)
       )
     )
+
+    ;; Remove old messages from alert list
+    (let ((age 30.))
+      (if (and gui:alertcheck-tstamp (fl> (fl- ##now gui:alertcheck-tstamp) age))
+        (begin
+          (set! gui:alertcheck-tstamp ##now)
+          (store-set! "main" "AlertMessages"
+            (maps (lambda (lst) (if (fl> (fl- ##now (car lst)) (if (fx< (cadddr lst) 0) gui:alert-expire-answered-age gui:alert-expire-unanswered-age)) 
+              '() 
+              lst)) 
+              (store-ref "main" "AlertMessages" '())
+            )
+          )
+          (glgui-widget-set! gui:messaging alert-list 'list (build-alert-list)) 
+          (glgui-widget-set! gui:messaging alert-list 'offset 0) 
+        )
+      )
+    )
+
     ;; Add logging of battery level every 5min
     (let ((age 300.))
       (if (and gui:battery-tstamp (fl> (fl- ##now gui:battery-tstamp) age))
