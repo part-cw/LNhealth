@@ -10,8 +10,8 @@
 
 ;; Load Textures for Overview Screen: Anesthesia Phase Icons, labels and size 24 font
 (include "./pixmaps/induction.scm")(include "./pixmaps/maintenance.scm")(include "./pixmaps/emergence.scm")
-(include "./pixmaps/empty.scm")
-(define phase-labels (list empty.img induction.img maintenance.img emergence.img))
+(include "./pixmaps/empty.scm")(include "./pixmaps/repeat-empty.scm")
+(define phase-labels (list empty.img induction.img maintenance.img emergence.img repeat-empty.img))
 (include "./textures/location.scm")(include "./textures/phase.scm")(include "./textures/hr.scm")
 (include "./textures/spo2.scm")(include "./textures/etco2.scm") (include "./textures/alert.scm")
 (include "./pixmaps/popup.scm")
@@ -1805,6 +1805,7 @@
           (time-change-button-callback gui:reminder-setup w t x y) 
 	)
 	(begin
+          (phase-button-unselect)
 	  (glgui-widget-set! gui:reminder-setup (list-ref phase-selector (caddr entry)) 'color gui:active-color)
 	  (time-selection-unselect)
 	)
@@ -1932,7 +1933,7 @@
     )
   )
 
-  (let ((x 5)(y 200))
+  (let ((x 5)(y 205))
     (glgui-label gui:reminder-setup (+ x 12) (+ y 40 40 3) 110 16 "Reminder Time" ascii16.fnt White)
     ;;Hour field
     (set! hour (glgui-vwheel gui:reminder-setup (+ x 12) (- y 58) 55 135 #f #f #f #f gui:active-color gui:inactive-color
@@ -1953,12 +1954,12 @@
   )
   
   ;; Phase Selector Row
-  (let ((x 230)(y 155))
-    (glgui-label gui:reminder-setup (+ x 5) (+ y 90 35 3) 100 16 "Phase" ascii16.fnt White)
+  (let ((x 230)(y 160))
+    (glgui-label gui:reminder-setup (+ x 5 10) (+ y 90 35 3) 100 16 "Phase" ascii16.fnt White)
     (set! phase-selector 
       (let loop ((i 0) (result (list)))
         (if (= i (length phase-labels)) result
-	   (loop (+ i 1)(append result (list (glgui-button gui:reminder-setup (+ x 5) (- (+ y 90) (* i 45)) 65 35 (list-ref phase-labels i) phase-button-callback))))
+	   (loop (+ i 1)(append result (list (glgui-button gui:reminder-setup (+ x 5) (- (+ y 93) (* i 35)) 65 30 (list-ref phase-labels i) phase-button-callback))))
         )
       )
     )
@@ -2527,7 +2528,7 @@
     (glgui-widget-set! gui:menu message-number 'align GUI_ALIGNCENTER)
 
     ;; Number of reminders
-    (set! reminder-number (glgui-label gui:menu (* MODE_REMINDER (/ (glgui-width-get) (length icon-list))) 19 64 24 "" ascii24.fnt gui:toggle-normal-color))
+    (set! reminder-number (glgui-label gui:menu (- (* MODE_REMINDER (/ (glgui-width-get) (length icon-list))) 4) 19 64 24 "" ascii24.fnt gui:toggle-normal-color))
     (glgui-widget-set! gui:menu reminder-number 'align GUI_ALIGNCENTER)
 )
 
