@@ -13,7 +13,7 @@
 # #define USE_AUDIOVOLUMEINIT
 #
 # generate device orientation events
-# #define USE_ORIENTATION
+#C #define USE_ORIENTATION
 #
 
 ### hide top status bar

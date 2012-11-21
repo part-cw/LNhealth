@@ -1515,6 +1515,8 @@
         (glgui-widget-set! gui:waves-landscape etco2_value-landscape 'label (glgui-widget-get gui:waves etco2_value 'label))
         (glgui-widget-set! gui:waves-landscape nibp_value-landscape 'label (glgui-widget-get gui:waves nibp_value 'label))
         (glgui-widget-set! gui:waves-landscape nibp_value-landscape 'image (glgui-widget-get gui:waves nibp_value 'image))
+        (glgui-widget-set! gui:waves-landscape agent_value-landscape 'label (glgui-widget-get gui:waves agent_value 'label))
+        (glgui-widget-set! gui:waves-landscape temp_value-landscape 'label (glgui-widget-get gui:waves temp_value 'label))
       ))
     )
   )
@@ -1588,9 +1590,9 @@
   (set! etco2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 150) label_etco2.img num40.fnt Orange))
   (set! art_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 195) label_art.img num40.fnt Red))
   (set! nibp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num40.fnt Red))
-  (set! temp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 285) label_temp.img num40.fnt White))
-  (set! agent_value-landscape (glgui-trend gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 285) label_agent.img num40.fnt White))
-  (set! agent_name-landscape (glgui-label gui:waves-landscape 5 (- (glgui-height-get) 285) 60 24 "" ascii24.fnt White))  
+  (set! temp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 280) label_temp.img num40.fnt White))
+  (set! agent_value-landscape (glgui-trend gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 280) label_agent.img num40.fnt White))
+  (set! agent_name-landscape (glgui-label gui:waves-landscape 5 (- (glgui-width-get) 280) 60 24 "" ascii24.fnt White))  
 
   ;;Place the Trace Widgets
   (set! ecg-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 60) 350 40 ecg-trace Green))    
@@ -3009,7 +3011,7 @@
 	    )
 	    ;; Return
 	    (if (fx= x 1)
-	      (send-message-callback gui:messaging-keyboard message-string #f 0 0)
+	      (send-message-callback (if landscape? gui:chat-landscape gui:messaging-keyboard) message-string #f 0 0)
 	    )
             ;; Update the message string in the landscape version too
             (glgui-widget-set! gui:chat-landscape message-string-landscape 'label 
@@ -3219,7 +3221,10 @@
   ;; suspension
   ;;
   (lambda () 
-    (if (fx= mode MODE_WAVES) (set! mode MODE_OVERVIEW))
+    (if (fx= mode MODE_WAVES) (begin
+      (set! mode MODE_OVERVIEW)
+      (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
+    ))
     (if (fx= mode MODE_TRENDS) (set! mode MODE_OVERVIEW))
     (glgui-suspend)
   )
