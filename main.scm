@@ -1516,6 +1516,7 @@
         (glgui-widget-set! gui:waves-landscape nibp_value-landscape 'label (glgui-widget-get gui:waves nibp_value 'label))
         (glgui-widget-set! gui:waves-landscape nibp_value-landscape 'image (glgui-widget-get gui:waves nibp_value 'image))
         (glgui-widget-set! gui:waves-landscape agent_value-landscape 'label (glgui-widget-get gui:waves agent_value 'label))
+        (glgui-widget-set! gui:waves-landscape agent_value-landscape 'color (glgui-widget-get gui:waves agent_value 'color))
         (glgui-widget-set! gui:waves-landscape temp_value-landscape 'label (glgui-widget-get gui:waves temp_value 'label))
       ))
     )
@@ -1592,7 +1593,7 @@
   (set! nibp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num40.fnt Red))
   (set! temp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 280) label_temp.img num40.fnt White))
   (set! agent_value-landscape (glgui-trend gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 280) label_agent.img num40.fnt White))
-  (set! agent_name-landscape (glgui-label gui:waves-landscape 5 (- (glgui-width-get) 280) 60 24 "" ascii24.fnt White))  
+  (set! agent_name-landscape (glgui-label gui:waves-landscape 85 (- (glgui-width-get) 280) 60 24 "" ascii24.fnt White))  
 
   ;;Place the Trace Widgets
   (set! ecg-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 60) 350 40 ecg-trace Green))    
