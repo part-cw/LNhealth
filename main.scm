@@ -210,6 +210,7 @@
 	    (init-gui-messaging)
             (init-gui-alert)
             (init-gui-chat)
+            (init-gui-chat-landscape)
 	    (init-gui-reminder)
 	    (init-gui-users)
 	    (init-gui-rooms)
@@ -577,6 +578,7 @@
           (store-ref "main" "ChatMessages" '())
         ))
         (glgui-widget-set! gui:chat chat-list 'list (build-chat-list destination))
+        (glgui-widget-set! gui:chat-landscape chat-list-landscape 'list (glgui-widget-get gui:chat chat-list 'list))
         ;; Update Messaging screen
         (glgui-widget-set! gui:messaging chat-user-list 'list (build-chat-user-list))
       ))
@@ -700,7 +702,10 @@
               ;; For chat screen check receiver first
               (if (string=? (cadar msgs) (store-ref "main" "ChatReceiver" ""))
                 ;; The chat message list needs updating
-                (glgui-widget-set! gui:chat chat-list 'list (build-chat-list (store-ref "main" "ChatReceiver")))
+                (begin 
+                  (glgui-widget-set! gui:chat chat-list 'list (build-chat-list (store-ref "main" "ChatReceiver")))
+                  (glgui-widget-set! gui:chat-landscape chat-list-landscape 'list (glgui-widget-get gui:chat chat-list 'list))
+                )
                 ;; Otherwise we still need a popup anyway
                 (store-set! "main" "popup-text" (list (string-append (cadar msgs) " send:") (caddar msgs)))
               )
@@ -808,6 +813,36 @@
     (set! clear-alert-screen-button
       (glgui-button-string gui:alert (+ (/ w 2) 10) (+ gui:navigation-height 10 40) (- (/ w 2) 20) 30 "Remove/Clear" ascii24.fnt clear-message-button-callback)	
     )
+  )
+)
+
+;; -----------------------------------------------------------------------------
+;; LANDSCAPE CHAT SCREEN RELATED FUNCTIONS
+;; -----------------------------------------------------------------------------
+(define (init-gui-chat-landscape)
+  (set! gui:chat-landscape (make-glgui))
+  (let ((x 0)
+        (y 0)
+        (w (glgui-height-get))
+        (h (glgui-width-get))
+        (g gui:chat-landscape))
+
+    ;;List of chat messages
+    (set! chat-list-landscape
+      (glgui-chat g (+ x 5) (+ (/ h 2) 30) (- w 65 5 5 5) (- (/ h 2) 30) 16 (list) ascii16.fnt #f)
+    )
+    ;; Prompt and message string
+    (set! message-string-landscape
+      (glgui-label g (+ x 5) (/ h 2) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1))
+    )
+    (glgui-widget-set! g message-string-landscape 'align GUI_ALIGNRIGHT)
+    (glgui-button-string g (- w 65 5) (/ h 2) 65 30 "Send" ascii24.fnt send-message-callback)
+
+    ;;[default landscape apple height is 162px]
+    (set! keypad-landscape (glgui-keypad g x y w (/ h 2) ascii24.fnt keypad:simplified))
+
+    ;; Bottom row with secondary navigation buttons
+    (glgui-button-string g (- w 65 5) (* (/ h 4) 3) 65 (/ h 8) "Back" ascii24.fnt return-messaging-button-callback)
   )
 )
 
@@ -954,6 +989,7 @@
           (begin
             (glgui-widget-set! gui:menu title 'label lbl)
             (glgui-widget-set! gui:chat chat-list 'list (build-chat-list username))
+            (glgui-widget-set! gui:chat-landscape chat-list-landscape 'list (glgui-widget-get gui:chat chat-list 'list))
             (store-set! "main" "ChatReceiver" username)
             ;; Hide the main navigation bar
             (glgui-widget-set! gui:menu navigation-bar 'hidden #t)
@@ -999,6 +1035,7 @@
   (set! gui:messaging-detail-shown #f)
   (log-remote "Screen: Messaging")
   (set! mode MODE_MESSAGING)
+  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
 )
 
 ;; Functions to switch between keyboard and quicktext
@@ -2941,7 +2978,9 @@
     (set! landscape? (> (glgui-width-get) (glgui-height-get)))
     ;; Rotation change events
     (if (fx= t EVENT_ORIENTATION)
-      (if (fx= mode MODE_WAVES) (glgui-orientation-set! x))
+      (if (or (fx= mode MODE_WAVES) (fx= mode MODE_CHAT))
+        (glgui-orientation-set! x)
+      )
     )
     ;; Keyboard events
     (if (fx= t EVENT_KEYRELEASE) 
@@ -2952,7 +2991,9 @@
         )
         ;; Change orientation with TAB
         (if (fx= x EVENT_KEYTAB)
-          (if (fx= mode MODE_WAVES) (glgui-orientation-set! (if (fx= glgui:rotate 0) 2 1)))
+          (if (or (fx= mode MODE_WAVES) (fx= mode MODE_CHAT))
+            (glgui-orientation-set! (if (fx= glgui:rotate 0) 2 1))
+          )
         )
 	;; Keyboard events:
 	(if (fx= mode MODE_CHAT)
@@ -2970,6 +3011,10 @@
 	    (if (fx= x 1)
 	      (send-message-callback gui:messaging-keyboard message-string #f 0 0)
 	    )
+            ;; Update the message string in the landscape version too
+            (glgui-widget-set! gui:chat-landscape message-string-landscape 'label 
+              (glgui-widget-get gui:messaging-keyboard message-string 'label)
+            )
 	  )
 	)
       )
@@ -3143,14 +3188,14 @@
               ((fx= mode MODE_REMINDER_SETUP) gui:reminder-setup)
               ((fx= mode MODE_ROOMS) gui:rooms)
               ((fx= mode MODE_USERS) gui:users)
-              ((fx= mode MODE_CHAT) gui:chat)
+              ((fx= mode MODE_CHAT) (if landscape? gui:chat-landscape gui:chat))
               ((fx= mode MODE_ALERT) gui:alert)
               ((fx= mode MODE_TRENDS) gui:trends)
               ((fx= mode MODE_VOIP) gui:voip)
               ((fx= mode MODE_PHONEBOOK) (if gui:phonebook-editor-shown gui:phonebook-editor gui:phonebook))
               (else gui:login)
         )
-        (if (and (fx= mode MODE_CHAT) gui:messaging-detail-shown) gui:messaging-detail-shown gui:empty)
+        (if (and (fx= mode MODE_CHAT) gui:messaging-detail-shown (not landscape?)) gui:messaging-detail-shown gui:empty)
         (if (and (fx= mode MODE_WAVES) landscape?) gui:empty gui:menu)
         gui:popup
       )
