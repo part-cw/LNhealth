@@ -2744,7 +2744,7 @@
   (let loop ((i 0))
     (if (< i (length lst))
       (let ((row (list-ref lst i)))
-	(if (list-notempty? (cdr row)) (store-update-list (car row) (cdr row)))
+	(if (and (list? row) (fx> (length row) 1) (list-notempty? (cdr row))) (store-update-list (car row) (cdr row)))
 	(loop (+ i 1))
       )
     )
