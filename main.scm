@@ -829,19 +829,20 @@
 
     ;;List of chat messages
     (set! chat-list-landscape
-      (glgui-chat g (+ x 5) (+ (/ h 2) 30) (- w 65 5 5 5) (- (/ h 2) 30) 16 (list) ascii16.fnt #f)
+      (glgui-chat g (+ x 5) (+ (/ h 2) 35) (- w 65 5 5 5) (- (/ h 2) 35) 16 (list) ascii16.fnt #f)
     )
     ;; Prompt and message string
     (set! message-string-landscape
-      (glgui-label g (+ x 5) (/ h 2) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1))
+      (glgui-label g (+ x 5) (+ (/ h 2) 5) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1))
     )
     (glgui-widget-set! g message-string-landscape 'align GUI_ALIGNRIGHT)
-    (glgui-button-string g (- w 65 5) (/ h 2) 65 30 "Send" ascii24.fnt send-message-callback)
+    (glgui-button-string g (- w 65 5) (+ (/ h 2) 5) 65 30 "Send" ascii24.fnt send-message-callback)
 
-    ;;[default landscape apple height is 162px]
-    (set! keypad-landscape (glgui-keypad g x y w (/ h 2) ascii24.fnt keypad:simplified))
+    ;; Add landscape keyboard
+    (set! keypad-landscape (glgui-ioskeypad g x y))
+    (glgui-widget-set! g keypad-landscape 'landscape #t)
 
-    ;; Bottom row with secondary navigation buttons
+    ;; Return button - needed to move to the top right corner.
     (glgui-button-string g (- w 65 5) (* (/ h 4) 3) 65 (/ h 8) "Back" ascii24.fnt return-messaging-button-callback)
   )
 )
@@ -880,16 +881,14 @@
   (let ((w (glgui-width-get))
         (h (glgui-height-get)))    
     ;; Prompt and message string
-    (set! message-string (glgui-label g (+ x 5) (+ y (/ h 3) 5) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1)))
+    (set! message-string (glgui-label g (+ x 5) (+ y (/ (glgui-width-get) 1.5) 5) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1)))
     (glgui-widget-set! g message-string 'align GUI_ALIGNRIGHT)
     
-    ;;[default apple height is 216px]    
-    ;;(set! keypad (glgui-ioskeypad g x y))
-    (set! keypad (glgui-keypad g x y (glgui-width-get) (/ h 3) ascii24.fnt keypad:simplified))
-    (glgui-button-string g (- w 65 5) (+ y (/ h 3) 5) 65 30 "Send" ascii24.fnt send-message-callback)
-
-    ;; Save for later
-    (set! gui:messaging-keyboard-height (+ (/ h 3) 5 30 5))
+    ;; Add the keyboard and the send button.
+    (set! keypad (glgui-ioskeypad g x y))
+    (glgui-button-string g (- w 65 5) (+ y (/ (glgui-width-get) 1.5) 5) 65 30 "Send" ascii24.fnt send-message-callback)
+    ;; Save value for later
+    (set! gui:messaging-keyboard-height (+ (/ (glgui-width-get) 1.5) 5 30 5))
   )
 )
 
@@ -2342,7 +2341,7 @@
     (set! phonebook-number (glgui-inputlabel g (+ x 150) 270 150 24 "" ascii24.fnt White))
     (glgui-widget-set! g phonebook-number 'callback phonebook-editor-number-callback)
     ;; Keyboard for editing
-    (set! phonebook-keyboard (glgui-keypad g x y (glgui-width-get) (/ h 3) ascii24.fnt keypad:simplified))
+    (set! phonebook-keyboard (glgui-ioskeypad g x y))
     ;; Bottom row with secondary navigation buttons
     (glgui-button-string g 10 3 (- (/ (glgui-width-get) 2) 20) 30 "Cancel" ascii24.fnt phonebook-editor-cancel-button-callback)
     (glgui-button-string g (+ (/ (glgui-width-get) 2) 10) 3 (- (/ (glgui-width-get) 2) 20) 30 "Save" ascii24.fnt phonebook-editor-save-button-callback)
@@ -3206,9 +3205,8 @@
 
     ;; Try this to see if it reduces CPU usage
     (##gc)                      ;; This calls the garbage collector 
-    (thread-sleep! 0.01)        ;; Sleep for 10 usec
     (if (and (fx= t EVENT_REDRAW) (not (fx= mode MODE_CHAT)))
-      (thread-sleep! 0.03) ;; If all we do is redraw sleep a bit more
+      (thread-sleep! 0.04) ;; If all we do is redraw sleep a bit more 40usec (10 was from normal sleep)
     )
   )
   ;;

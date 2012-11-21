@@ -1,1 +1,1 @@
-init core glcore glgui store audiofile rtaudio opusvoip
+init core glcore glgui store audiofile rtaudio opusvoip ioskeypad
