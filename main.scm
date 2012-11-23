@@ -1440,14 +1440,14 @@
 	    ;; Flush the local stores first then append the new data
 	    (store-update-data data)
 	    (for-each (lambda (l) (set-waveform-length or-name l)) '("ECG1" "PLETH" "CO2" "INVP1"))
+            (store-set! or-name "temp1" (rupi-cmd rupi "GETVALUE" pin or-name "temp1"))
+            (store-set! or-name "aa_et" (rupi-cmd rupi "GETVALUE" pin or-name "aa_et"))
+            (store-set! or-name "aa_name" (rupi-cmd rupi "GETVALUE" pin or-name "aa_name"))		
+            (store-set! or-name "p1_mean" (rupi-cmd rupi "GETVALUE" pin or-name "p1_mean"))		
+            (store-set! or-name "p1_dia" (rupi-cmd rupi "GETVALUE" pin or-name "p1_dia"))
+            (store-set! or-name "p1_sys" (rupi-cmd rupi "GETVALUE" pin or-name "p1_sys"))
 	  )
 	)
-	(store-set! or-name "temp1" (rupi-cmd rupi "GETVALUE" pin or-name "temp1"))
-	(store-set! or-name "aa_et" (rupi-cmd rupi "GETVALUE" pin or-name "aa_et"))
-	(store-set! or-name "aa_name" (rupi-cmd rupi "GETVALUE" pin or-name "aa_name"))		
-	(store-set! or-name "p1_mean" (rupi-cmd rupi "GETVALUE" pin or-name "p1_mean"))		
-	(store-set! or-name "p1_dia" (rupi-cmd rupi "GETVALUE" pin or-name "p1_dia"))
-	(store-set! or-name "p1_sys" (rupi-cmd rupi "GETVALUE" pin or-name "p1_sys"))
       )
       
       ;; Update the Trend Numerics
@@ -1789,7 +1789,7 @@
 
 (define (update-room-lists)
   (let ((data (rupi-cmd (store-ref "main" "RupiClient" #f) "GETROOMS" (store-ref "main" "Key"))))
-    (if data 
+    (if (list? data)
       (begin
 	;; Room list
 	(store-set! "main" "Rooms" (sort-rooms data))
@@ -2249,7 +2249,7 @@
 (define (phonebook-modify-button-callback g w t x y)
   ;; Make sure we have the latest version of the phonebook
   (let ((data (rupi-cmd (store-ref "main" "RupiClient" #f) "GETPHONEBOOK" (store-ref "main" "Key"))))
-    (if data (begin
+    (if (list-notempty? data) (begin
       (store-set! "main" "Phonebook" data)
       (glgui-widget-set! g phonebook-list 'list (build-phonebook-list))
     ))
@@ -2767,8 +2767,10 @@
 (define (init-server-communication store)
   (let ((rc (rupi-client 0 rupi:key rupi:addr rupi:port)))
     (store-set! store "RupiClient" rc) ;;stores the handle to a RUPI client
-    (store-set! store "myRooms" (rupi-cmd rc "GETMYROOMS" (store-ref store "Key"))) ;; Load our subscribed rooms from the last logout
-    (store-set! store "Rooms" (rupi-cmd rc "GETROOMS" (store-ref store "Key")))
+    (let ((data (rupi-cmd rc "GETMYROOMS" (store-ref store "Key")))) 
+       (store-set! store "myRooms" data)) ;; Load our subscribed rooms from the last logout
+    (let ((data (rupi-cmd rc "GETROOMS" (store-ref store "Key"))))
+       (store-set! store "Rooms" (if (list-notempty? data) data '())))
     (for-each (lambda (l) (make-store (car l))) (store-ref store "Rooms")) ;; For the list of rooms we got make stores
   )
 
@@ -2796,12 +2798,13 @@
                   )
                 )
               )
-            )
+            ) 
+            (loop)
           )
         )
         (if (not app:suspended) (begin
           (let ((data (rupi-cmd rupi "GETOVERVIEW" key)))
-            (if (list-notempty? data) (store-update-data data)) ;; Always a list
+            (if (list-notempty? data) (store-update-data data) (loop)) ;; Always a list
           )
           (let ((data (rupi-cmd rupi "GETUSERS" key)))
             (if (list-notempty? data) ;; Always a list
@@ -2812,7 +2815,8 @@
                 (if (not (glgui-widget-get gui:phonebook phonebook-edit-button 'hidden))
                   (glgui-widget-set! gui:phonebook phonebook-list 'list (build-voip-phonebook-list))
                 )
-              )
+              ) 
+              (loop)
             )
           )
           (let ((data (rupi-cmd rupi "GETROOMS" key)))
@@ -2821,6 +2825,7 @@
                 (store-set! store "Rooms" (sort-rooms data))
                 (glgui-widget-set! gui:rooms room-list 'list (build-room-list))
               )
+              (loop)
             )
           )
         ))
@@ -2834,6 +2839,7 @@
                 )
               )
             )
+            (loop)
           )
         )
         (thread-receive timeout #f) ;; this way we can instant sync with (thread-send curstore #f)
@@ -3151,6 +3157,7 @@
               )
 	    )
 	  )
+          (log-system "IP: " (host-ipaddr ""))
 	  (store-set! "main" "ConnChkTime" ##now)
 	)
       )
