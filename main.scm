@@ -2983,7 +2983,12 @@
 ;;
   (lambda (t x y) 
     ;; Check if a screen is in landscape orientation
-    (set! landscape? (> (glgui-width-get) (glgui-height-get)))
+    (let ((w (glgui-width-get))
+          (h (glgui-height-get)))
+      (if (and w h)
+        (set! landscape? (> w h))
+      )
+    )
     ;; Rotation change events
     (if (fx= t EVENT_ORIENTATION)
       (if (or (fx= mode MODE_WAVES) (fx= mode MODE_CHAT))
@@ -3157,7 +3162,6 @@
               )
 	    )
 	  )
-          (log-system "IP: " (host-ipaddr ""))
 	  (store-set! "main" "ConnChkTime" ##now)
 	)
       )
