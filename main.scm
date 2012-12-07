@@ -131,6 +131,10 @@
 (define voip:ring #f)
 (define voip:ring-count 0)
 (define voip:volume 0.8)
+
+;; Information needed to relogin on crash
+(define login-file (string-append (system-directory) (system-pathseparator) "login"))
+
 ;; -----------------------------------------------------------------------------
 ;;   LOGIN SCREEN
 ;; -----------------------------------------------------------------------------
@@ -180,7 +184,7 @@
   ;; Check if a correct pin is entered and start the system
   (let* ((store "main")
          (login (store-ref store "Key" ""))
-         (key (car (glgui-widget-get g wgt 'image))))
+         (key (if wgt (car (glgui-widget-get g wgt 'image)) "")))
     (store-set! store "Key" (string-append login key))
     ;; Connect to demo system if pin 0000-0009
     (if (and (>= (string-length login) (- rupi:pin-length 1)))
@@ -228,11 +232,13 @@
  	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
 	    (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
             (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
+            ;; Allow relogin on crash
+            (with-output-to-file login-file (lambda () (display (store-ref store "Key"))))
 	  )
           (if rupi:error
             (begin
               (glgui-widget-set! gui:popup popup-box 'callback #f)
-              (store-set! "main" "popup-text" (list "VITALNODE LOST" "Can't connect to VitalNode. Please check the Wifi connection is active and retry."))
+              (store-set! store "popup-text" (list "VITALNODE LOST" "Can't connect to VitalNode. Please check the Wifi connection is active and retry."))
               (show-popup)
               (store-set! store "Key" "") ;; Clear the string and try again.
             )
@@ -2870,6 +2876,10 @@
     (store-ref "main" "Key") (store-ref "main" "LastUpdateTime") 
     (store-ref "main" "AlertMessages") (store-ref "main" "ChatMessages")
   )
+  ;; Delete the file which would log us in again automatically
+  (if (file-exists? login-file)
+    (delete-file login-file)
+  )
 )
 
 ;; I need a function to find the position of a string in a list
@@ -2977,6 +2987,14 @@
     )
     ;; I want logfiles so the logile directory needs to be made here
     (if (not (file-exists? log:path)) (create-directory log:path)) 
+    ;; Load the login-file if we crashed and log us back in
+    (if (file-exists? login-file) 
+      (begin 
+        (store-set! "main" "Key" (with-input-from-file login-file (lambda () (read-line))))
+        (delete-file login-file)
+        (login-callback gui:login #f 0 0 0)
+      )
+    )
   )
 ;;
 ;; events (and their handling) - Here updates are done after guis are already defined
