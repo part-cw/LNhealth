@@ -2805,12 +2805,11 @@
                 )
               )
             ) 
-            (loop)
           )
         )
         (if (not app:suspended) (begin
           (let ((data (rupi-cmd rupi "GETOVERVIEW" key)))
-            (if (list-notempty? data) (store-update-data data) (loop)) ;; Always a list
+            (if (list-notempty? data) (store-update-data data)) ;; Always a list
           )
           (let ((data (rupi-cmd rupi "GETUSERS" key)))
             (if (list-notempty? data) ;; Always a list
@@ -2822,7 +2821,6 @@
                   (glgui-widget-set! gui:phonebook phonebook-list 'list (build-voip-phonebook-list))
                 )
               ) 
-              (loop)
             )
           )
           (let ((data (rupi-cmd rupi "GETROOMS" key)))
@@ -2831,7 +2829,6 @@
                 (store-set! store "Rooms" (sort-rooms data))
                 (glgui-widget-set! gui:rooms room-list 'list (build-room-list))
               )
-              (loop)
             )
           )
         ))
@@ -2845,7 +2842,6 @@
                 )
               )
             )
-            (loop)
           )
         )
         (thread-receive timeout #f) ;; this way we can instant sync with (thread-send curstore #f)
