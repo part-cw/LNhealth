@@ -232,8 +232,12 @@
  	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
 	    (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
             (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
-            ;; Allow relogin on crash
-            (with-output-to-file login-file (lambda () (display (store-ref store "Key"))))
+            ;; Allow relogin on crash for Android and iOS only [and Linux for testing]
+            (if (or (string=? (system-platform) "iphone")
+                    (string=? (system-platform) "android")
+                    (string=? (system-platform) "linux"))
+              (with-output-to-file login-file (lambda () (display (store-ref store "Key"))))
+            )
 	  )
           (if rupi:error
             (begin
