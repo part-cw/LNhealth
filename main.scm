@@ -77,26 +77,15 @@
 (define MODE_REMINDER_SETUP 9)
 (define MODE_TRENDS 10)
 (define MODE_VOIP 11)
+(define MODE_SETUP 98)
 (define mode MODE_LOGIN)
 
 ; RUPI settings 
+(define hostname-file (string-append (system-directory) (system-pathseparator) "server"))
 (define rupi:port 8031)
-(define rupi:hostname "bcch-or.dnsd.info")
-(define rupi:demo-hostname "bcch-vitalnode-demo.dnsd.info")
-;; DNSdynamic.org account info	User:mgorges@cw.bc.ca Pwd: Vitalnod3
-(define rupi:bcch-addr 
-  (with-exception-catcher
-    (lambda (e) #f)
-    (lambda () (car (host-info-addresses (host-info rupi:hostname))))
-  )
-)
-(define rupi:demo-addr 
-  (with-exception-catcher
-    (lambda (e) #f)
-    (lambda () (car (host-info-addresses (host-info rupi:demo-hostname))))
-  )
-)
-(define rupi:addr rupi:bcch-addr)
+;; DNSdynamic.org account info User:mgorges@cw.bc.ca Pwd: Vitalnod3
+(define rupi:hostname "bcch.ece.ubc.ca") ;; This is the default hostname
+(define rupi:addr #f)
 (define rupi:key (u8vector 77 71 148 114 103 101 115 31))
 (define rupi:pin-length 4)
 (define rupi:last-wave-request 0.) ;;Timestamp of last waveform request
@@ -186,75 +175,79 @@
          (login (store-ref store "Key" ""))
          (key (if wgt (car (glgui-widget-get g wgt 'image)) "")))
     (store-set! store "Key" (string-append login key))
-    ;; Connect to demo system if pin 0000-0009
-    (if (and (>= (string-length login) (- rupi:pin-length 1)))
-      (set! rupi:addr (if (string<? (store-ref store "Key" "") "0010") rupi:demo-addr rupi:bcch-addr))
-    )
     ;; Check if we reached pin length [Login isn't queried again so its rupi:pin-length - 1]
-    (if (>= (string-length login) (- rupi:pin-length 1)) 
-      (let* ((rc (rupi-client 0 rupi:key rupi:addr rupi:port))
-             ;;Include build date so we can send messages to ask users to upgrade
-             ;; We will try 3 times and fail otherwise
-             (success3 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))
-             (success2 (if (rupi-valid? rc) success3
-               (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
-             ))
-             (success (if (rupi-valid? rc) success2
-               (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
-             ))) 
-	(if success
-	  (begin ;;If pin is acceptable run the app
-	    (store-set! store "UserName" (car success))
-	    (store-set! store "LastUpdateTime" (cadr success)) ;;This way we only request the new messages
-	    (store-set! store "AlertMessages" (expire-messages (caddr success) gui:alert-max-age)) ;; and we also keep the list of already answered things
-	    (store-set! store "Reminders" (cadddr success)) ;; and also keep the old reminders
-            (if (= (length success) 5) ;; added here as to not break compatibility of old clients
-	      (store-set! store "ChatMessages" (expire-messages (list-ref success 4) gui:chat-max-age)) 
+    (if (>= (string-length login) (- rupi:pin-length 1))
+      (if (not (string=? (store-ref store "Key") "9999"))
+        (let* ((rc (rupi-client 0 rupi:key rupi:addr rupi:port))
+               ;;Include build date so we can send messages to ask users to upgrade
+               ;; We will try 3 times and fail otherwise
+               (success3 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))
+               (success2 (if (rupi-valid? rc) success3
+                 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
+               ))
+               (success (if (rupi-valid? rc) success2
+                 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
+               ))) 
+          (if success
+            (begin ;;If pin is acceptable run the app
+              (store-set! store "UserName" (car success))
+              (store-set! store "LastUpdateTime" (cadr success)) ;;This way we only request the new messages
+              (store-set! store "AlertMessages" (expire-messages (caddr success) gui:alert-max-age)) ;; and we also keep the list of already answered things
+              (store-set! store "Reminders" (cadddr success)) ;; and also keep the old reminders
+              (if (= (length success) 5) ;; added here as to not break compatibility of old clients
+                (store-set! store "ChatMessages" (expire-messages (list-ref success 4) gui:chat-max-age)) 
+              )
+              (init-gui-messaging)
+              (init-gui-alert)
+              (init-gui-chat)
+              (init-gui-chat-landscape)
+              (init-gui-reminder)
+              (init-gui-users)
+              (init-gui-rooms)
+              (if voip:enabled (init-gui-voip))
+              (init-gui-phonebook)
+              (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
+              (init-gui-overview)
+              (init-gui-waves)    
+              (init-gui-waves-landscape)
+              (init-gui-trends)
+              (init-gui-reminder-setup)
+              (init-gui-phonebook-editor)
+              (set! gui:battery-tstamp 0.) ;; This allows me to record battery timestamps
+              (set! gui:alertcheck-tstamp 0.);; Needed to clean up old alert messages
+              (set! mode MODE_OVERVIEW) ;; Both of these need to happen
+              (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
+              (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
+              ;; Allow relogin on crash for Android and iOS only [and Linux for testing]
+              (if (or (string=? (system-platform) "iphone")
+                      (string=? (system-platform) "android")
+                      (string=? (system-platform) "linux"))
+                (with-output-to-file login-file (lambda () (display (store-ref store "Key"))))
+              )
             )
-	    (init-gui-messaging)
-            (init-gui-alert)
-            (init-gui-chat)
-            (init-gui-chat-landscape)
-	    (init-gui-reminder)
-	    (init-gui-users)
-	    (init-gui-rooms)
-            (if voip:enabled (init-gui-voip))
-	    (init-gui-phonebook)
-	    (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
-	    (init-gui-overview)
-	    (init-gui-waves)    
-            (init-gui-waves-landscape)
-            (init-gui-trends)
-	    (init-gui-reminder-setup)
-            (init-gui-phonebook-editor)
-	    (set! gui:battery-tstamp 0.) ;; This allows me to record battery timestamps
-            (set! gui:alertcheck-tstamp 0.);; Needed to clean up old alert messages
- 	    (set! mode MODE_OVERVIEW) ;; Both of these need to happen
-	    (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
-            (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
-            ;; Allow relogin on crash for Android and iOS only [and Linux for testing]
-            (if (or (string=? (system-platform) "iphone")
-                    (string=? (system-platform) "android")
-                    (string=? (system-platform) "linux"))
-              (with-output-to-file login-file (lambda () (display (store-ref store "Key"))))
-            )
-	  )
-          (if rupi:error
-            (begin
-              (glgui-widget-set! gui:popup popup-box 'callback #f)
-              (store-set! store "popup-text" (list "VITALNODE LOST" "Can't connect to VitalNode. Please check the Wifi connection is active and retry."))
-              (show-popup)
-              (store-set! store "Key" "") ;; Clear the string and try again.
-            )
-            (begin
-              (glgui-widget-set! gui:popup popup-box 'callback #f)
-              (store-set! "main" "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias if you need one.)"))
-              (show-popup)
-              (store-set! store "Key" "") 
+            (if rupi:error
+              (begin
+                (glgui-widget-set! gui:popup popup-box 'callback #f)
+                (store-set! store "popup-text" (list "VITALNODE LOST" "Can't connect to VitalNode. Please check the Wifi connection is active and retry."))
+                (show-popup)
+                (store-set! store "Key" "") ;; Clear the string and try again.
+              )
+              (begin
+                (glgui-widget-set! gui:popup popup-box 'callback #f)
+                (store-set! "main" "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias if you need one.)"))
+                (show-popup)
+                (store-set! store "Key" "") 
+              )
             )
           )
-	)
-	(glgui-widget-set! gui:login login-pin 'label "")	
+          (glgui-widget-set! gui:login login-pin 'label "")
+        )
+        (begin
+          (glgui-widget-set! gui:login login-pin 'label "") 
+          (store-set! store "Key" "") 
+          (glgui-widget-set! gui:popup popup-box 'callback #f)
+          (set! mode MODE_SETUP)
+        )
       )
     )
   )
@@ -2682,7 +2675,6 @@
   )
 )
 
-
 ;; Number of yet unanswered alert messages for the menu icon
 (define (unanswered-message-number-get) 
 (+ ;; Add number of unanswered chat messages and pages
@@ -2736,6 +2728,43 @@
 ;; -----------------------------------------------------------------------------
 ;;  NETWORK COMMUNICATION FUNCTIONALITY
 ;; -----------------------------------------------------------------------------
+(define gui:setup #f)	
+(define (init-gui-setup)
+  (set! gui:setup (make-glgui))
+  (let ((x 0)(y 0)(h (glgui-height-get))(w (glgui-width-get))(g gui:setup))
+    (glgui-pixmap g (/ (fx- w (car telePORT-logo.img)) 2) (- h (cadr telePORT-logo.img) 20) telePORT-logo.img)  
+    ;;Header row
+    (glgui-label g (+ x 10) 350 (- w 20) 24 "Please set your VitalNode" ascii24.fnt White)
+    (glgui-label g (+ x 10) 320 (- w 20) 24 "server name:" ascii24.fnt White)
+    ;; Labels and Data value
+    (set! server-name
+      (glgui-inputlabel g (+ x 5) (- (/ h 2) 15) (- w 65 5 5 5) 30 rupi:hostname ascii24.fnt White (color-shade White 0.1))
+    )
+    (glgui-widget-set! g server-name 'callback server-name-callback)
+    (glgui-widget-set! g server-name 'focus #t)
+    (glgui-widget-set! g server-name 'align GUI_ALIGNRIGHT)
+    (glgui-button-string g (- w 65 5) (- (/ h 2) 15) 65 30 "Save" ascii24.fnt server-name-callback)
+    ;; Keyboard for editing
+    (glgui-ioskeypad g x y)
+  )
+)
+
+(define (server-name-callback g wgt t x y)
+  (set! rupi:addr 
+    (with-exception-catcher
+      (lambda (e) #f)
+      (lambda () (car (host-info-addresses (host-info (glgui-widget-get gui:setup server-name 'label)))))
+    )
+  )
+  (if rupi:addr
+    (begin
+      (with-output-to-file hostname-file (lambda () (display rupi:hostname)))
+      (set! mode MODE_LOGIN)
+    )
+    (store-set! "main" "popup-text" (list "Invalid Hostname" "Please select a valid VitalNode server name."))
+  )
+)
+
 ;; Log some data to the status store
 (define (log-remote str)
   (if (string? str) 
@@ -2966,6 +2995,16 @@
     ;; Initialize the menu and the popup
     (init-gui-menu)
     (init-gui-popup)
+    ;; Get the server hostname
+    (if (file-exists? hostname-file) 
+        (set! rupi:hostname (with-input-from-file hostname-file (lambda () (read-line))))
+    )
+    (set! rupi:addr 
+      (with-exception-catcher
+        (lambda (e) #f)
+        (lambda () (car (host-info-addresses (host-info rupi:hostname))))
+      )
+    )
     ;; If we can't get a hostname resolved we don't want to bring up login screen
     (if rupi:addr
       (begin
@@ -2977,6 +3016,8 @@
         (set! audio:emergency (audiofile-load "Emergency"))
         (set! audio:phone (audiofile-load "Phone"))
         (set! audio:disconnect (audiofile-load "Disconnect"))
+        ;; Also need to initialize the setup gui
+        (init-gui-setup)
       )
       (begin 
 	(set! gui:login (make-glgui))
@@ -3129,10 +3170,12 @@
           (fix (* (glgui-widget-get gui:popup popup-text 'w ) (fl/ (fl- timeout (fl- ##now tstamp)) timeout))))
       )
       (if (and (not hidden) (fl> (fl- ##now tstamp) (if (glgui-widget-get gui:popup popup-box 'callback) timeout (fl/ timeout 2.))))
-	(begin
-	  (hide-popup)
-	  (if (not rupi:addr) (force-terminate)) ;;(terminate) doesn't do it on the iPod/iPhone
-	)
+        (begin
+          (hide-popup)
+          (if (and (not rupi:addr) (not (fx= mode MODE_SETUP)))
+            (force-terminate) ;;(terminate) doesn't do it on the iPod/iPhone
+          ) 
+        )
       )
     )
 
@@ -3224,10 +3267,11 @@
               ((fx= mode MODE_TRENDS) gui:trends)
               ((fx= mode MODE_VOIP) gui:voip)
               ((fx= mode MODE_PHONEBOOK) (if gui:phonebook-editor-shown gui:phonebook-editor gui:phonebook))
+              ((fx= mode MODE_SETUP) gui:setup)
               (else gui:login)
         )
         (if (and (fx= mode MODE_CHAT) gui:messaging-detail-shown (not landscape?)) gui:messaging-detail-shown gui:empty)
-        (if (and (fx= mode MODE_WAVES) landscape?) gui:empty gui:menu)
+        (if (or (fx= mode MODE_SETUP) (and (fx= mode MODE_WAVES) landscape?)) gui:empty gui:menu)
         gui:popup
       )
     ) t x y)

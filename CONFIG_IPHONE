@@ -52,6 +52,6 @@
 
 ### Specify the version number to be shown in iTunes
 <key>CFBundleVersion</key>
-<string>1.0</string>
+<string>1.4</string>
 
 # eof
