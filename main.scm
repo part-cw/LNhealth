@@ -2750,6 +2750,7 @@
 )
 
 (define (server-name-callback g wgt t x y)
+  (hide-popup)
   (set! rupi:addr 
     (with-exception-catcher
       (lambda (e) #f)
@@ -2758,6 +2759,7 @@
   )
   (if rupi:addr
     (begin
+      (set! rupi:hostname (glgui-widget-get gui:setup server-name 'label))
       (with-output-to-file hostname-file (lambda () (display rupi:hostname)))
       (set! mode MODE_LOGIN)
     )
