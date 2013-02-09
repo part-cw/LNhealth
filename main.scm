@@ -1,4 +1,5 @@
-;; Philips Pleth Waveform and Numerics Logger
+;; Philips Generic Waveform and Numerics Logger
+;; Matthias Görges 2012-2013
 (include "../s-optimize.inc")
 
 ;; Fonts
@@ -7,8 +8,8 @@
 (include "./textures/num40.scm")(include "./textures/num40_fnt.scm")
 (include "./textures/num18.scm")(include "./textures/num18_fnt.scm")
 ;; Labels for Waveform screen
-(include "./textures/label_pr.scm")(include "./textures/label_prl.scm")
-(include "./textures/label_spo2.scm")(include "./textures/label_spo2l.scm")
+(include "./textures/label_pr.scm")(include "./textures/label_spo2.scm")
+(include "./textures/label_map.scm")
 ;; Copyright Line
 (include "./textures/copyright.scm")
 
@@ -17,7 +18,6 @@
 (define delta-update 10) ;;sec
 (define delta-time-update 1) ;;sec
 (define trend-time 3600) ;;sec
-(define config-file (string-append (system-directory) (system-pathseparator) "config" (system-pathseparator) "settings.scm"))
 
 ;; -----------------------------------------------------------------------------
 ;;  MAIN GUI
@@ -34,7 +34,7 @@
   (glgui-menubar gui:main 0 (- (glgui-height-get) 30) (glgui-width-get) 30)
   
   ;; Label in upper left corner
-  (glgui-label gui:main 10 (- (glgui-height-get) 24 3) 350 24 "Philips Pulseoximeter Datalogger" ascii24.fnt White)
+  (glgui-label gui:main 10 (- (glgui-height-get) 24 3) 350 24 "Philips Data Logger" ascii24.fnt White)
 
   ;; Clock in upper right corner
   (set! clock (glgui-label gui:main (- (glgui-width-get) 70) (- (glgui-height-get) 24) 60 16 "" ascii16.fnt White))
@@ -48,8 +48,13 @@
     (set! log-list
       (glgui-list gui:main x (- y 5 (* 12 30)) w (* 12 30) 30 (build-log-list) #f)
     )
+    (glgui-widget-set! gui:main log-list 'hidden #t)
     ;;Text Entry String
     (set! text (glgui-label gui:main (+ x 5) (- y 5 34 (* 12 30)) w 24 "" ascii24.fnt White))
+    ;; Recording start button  
+    (set! recording-start-button 
+      (glgui-button-string gui:main x (- y (* 6 30)) w 50 "Start Recording" ascii24.fnt start-recording-callback)
+    )
   )
 )
 
@@ -79,6 +84,37 @@
   )
 )
 
+;; Start Recording data
+(define (start-recording-callback g w t x y)
+  (let ((lst (store-listcat "main" "ivue")))
+    ;; Check if we have at least one trend variable before starting to log data
+    (if (and (list? lst) (not (null? lst))) (begin
+      ;; Log the trend variables recorded
+      (let* ((trends (map car (store-listcat "main" "ivue")))
+             (buf (string-append "TRENDS: " (string-mapconcat trends ", "))))
+        (make-instance "main" "TRENDOUT" "trendoutput" `("Trends" ,(append (list "time_str") trends)))
+        (store-set! "main" "Log" (append (list (list (floor ##now) buf)) (store-ref "main" "Log" '())))
+        (glgui-widget-set! gui:main log-list 'list (build-log-list))
+        (store-event-add "main" 1 buf)
+      )
+      ;; Log the waveforms recorded
+      (let* ((waves (table-ref (store-wdatatable "main") 'IdList '()))
+             (buf (string-append "WAVES: " (string-mapconcat waves ", "))))
+        (for-each (lambda (l) (make-instance "main" (string-append "WAVEOUT" l) "waveoutput" `("Source" ,l))) waves)
+        (store-set! "main" "Log" (append (list (list (floor ##now) buf)) (store-ref "main" "Log" '())))
+        (glgui-widget-set! gui:main log-list 'list (build-log-list))
+        (store-event-add "main" 1 buf)
+      )
+      ;; Start the case
+      (runtime-startcase "main" (time->timestamp (current-time)))
+      ;; Hide the start button and show the log message list
+      (glgui-widget-set! gui:main recording-start-button 'hidden #t)
+      (glgui-widget-set! gui:main log-list 'hidden #f)
+    ))
+    (glgui-widget-set! gui:main recording-start-button 'color Red)
+  )
+)
+
 ;; -----------------------------------------------------------------------------
 ;;  TREND GUI
 ;; -----------------------------------------------------------------------------
@@ -86,42 +122,45 @@
 (define (init-gui-trends)
   (set! gui:trends (make-glgui))
   ;; Positions of the trend numbers
-  (set! pr_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) 100 (* 80 0)) label_pr.img num40.fnt Green))
-  (set! prl_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) 100 (* 80 0.5)) label_prl.img num40.fnt DarkGreen))
-  (set! spo2_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) 100 (* 80 2.25)) label_spo2.img num40.fnt Aquamarine))
-  (set! spo2l_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) 100 (* 80 2.75)) label_spo2l.img num40.fnt Blue))
+  (set! pr_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 1)) label_pr.img num40.fnt Green))
+  (set! map_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 2)) label_map.img num40.fnt Red))
+  (set! map_nibp_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 2.3)) label_map.img num40.fnt IndianRed))
+  (set! spo2_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 3)) label_spo2.img num40.fnt Aquamarine))
 
  ;; Define scales for Waveforms
   (set! PR_min 45)(set! PR_max 175)
   (set! SPO2_min 75)(set! SPO2_max 101)
+  (set! MAP_min 35)(set! MAP_max 105)
 
   ;;Define traces to plot waveforms
   (let ((trace-mode GLTRACE_SHIFT)
         (trace-len (fix (/ trend-time delta-update))))
-    (set! pr-trace (make-gltrace trace-len 150 trace-mode PR_min PR_max PR_min PR_max))
-    (set! prl-trace (make-gltrace trace-len 150 trace-mode PR_min PR_max PR_min PR_max))
-    (set! spo2-trace (make-gltrace trace-len 200 trace-mode SPO2_min SPO2_max SPO2_min SPO2_max))
-    (set! spo2l-trace (make-gltrace trace-len 200 trace-mode SPO2_min SPO2_max SPO2_min SPO2_max))
+    (set! pr-trace (make-gltrace trace-len 130 trace-mode PR_min PR_max PR_min PR_max))
+    (set! spo2-trace (make-gltrace trace-len 100 trace-mode SPO2_min SPO2_max SPO2_min SPO2_max))
+    (set! map-trace (make-gltrace trace-len 140 trace-mode MAP_min MAP_max MAP_min MAP_max))
+    (set! map_nibp-trace (make-gltrace trace-len 140 trace-mode MAP_min MAP_max MAP_min MAP_max))
   )
   ;; Clear the traces
-  (gltrace:clear pr-trace) (gltrace:clear prl-trace)
-  (gltrace:clear spo2-trace) (gltrace:clear spo2l-trace)
+  (gltrace:clear pr-trace)
+  (gltrace:clear spo2-trace)
+  (gltrace:clear map-trace)
+  (gltrace:clear map_nibp-trace)
 
   ;; Add a grid
-  (glgui-box gui:trends 5 (- (glgui-height-get) 110 (* 80 4)) 2 (* 80 5) DimGray)
-  (glgui-box gui:trends (+ 5 133) (- (glgui-height-get) 110 (* 80 4)) 2 (* 80 5) DimGray)
-  (glgui-box gui:trends (+ 5 267) (- (glgui-height-get) 110 (* 80 4)) 2 (* 80 5) DimGray)
-  (glgui-box gui:trends (+ 5 400) (- (glgui-height-get) 110 (* 80 4)) 2 (* 80 5) DimGray)
-  (set! time63 (glgui-label gui:main 0 (- (glgui-height-get) 110 (* 80 4) 20) 60 16 "" ascii16.fnt DarkGray))
-  (set! time43 (glgui-label gui:main (+ 5 133 -17) (- (glgui-height-get) 110 (* 80 4) 20) 60 16 "" ascii16.fnt DarkGray))
-  (set! time23 (glgui-label gui:main (+ 5 266 -17) (- (glgui-height-get) 110 (* 80 4) 20) 60 16 "" ascii16.fnt DarkGray))
-  (set! time03 (glgui-label gui:main (+ 5 400 -17) (- (glgui-height-get) 110 (* 80 4) 20) 60 16 "" ascii16.fnt DarkGray))
+  (glgui-box gui:trends 5 (- (glgui-height-get) 50 (* 120 3)) 2 (* 120 4) DimGray)
+  (glgui-box gui:trends (+ 5 133) (- (glgui-height-get) 50 (* 120 3)) 2 (* 120 3) DimGray)
+  (glgui-box gui:trends (+ 5 267) (- (glgui-height-get) 50 (* 120 3)) 2 (* 120 3) DimGray)
+  (glgui-box gui:trends (+ 5 400) (- (glgui-height-get) 50 (* 120 3)) 2 (* 120 3) DimGray)
+  (set! time63 (glgui-label gui:main 0 (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
+  (set! time43 (glgui-label gui:main (+ 5 133 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
+  (set! time23 (glgui-label gui:main (+ 5 266 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
+  (set! time03 (glgui-label gui:main (+ 5 400 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
 
   ;;Place the Trace Widgets
-  (set! pr-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 110 (* 80 1)) 400 150 pr-trace Green ascii16.fnt))    
-  (set! prl-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 110 (* 80 1)) 400 150 prl-trace DarkGreen ascii16.fnt))
-  (set! spo2-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 110 (* 80 4)) 400 200 spo2-trace Aquamarine ascii16.fnt))
-  (set! spo2l-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 110 (* 80 4)) 400 200 spo2l-trace Blue ascii16.fnt))
+  (set! pr-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 1)) 400 110 pr-trace Green ascii16.fnt))    
+  (set! spo2-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 3)) 400 110 spo2-trace Aquamarine ascii16.fnt))
+  (set! map-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map-trace Red ascii16.fnt))
+  (set! map_nibp-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map_nibp-trace IndianRed ascii16.fnt))
 )
 
 ;; (update-trends store)
@@ -134,15 +173,15 @@
       (set! last-trend-update ##now)	
       ;; Update the Trend Numerics and Waveform
       (gltrace-add pr-trace (store-timedref store "PR(SpO2)"))
-      (gltrace-add prl-trace (store-timedref store "PR(SpO2l)"))
       (gltrace-add spo2-trace (store-timedref store "SpO2"))
-      (gltrace-add spo2l-trace (store-timedref store "SpO2l"))
+      (gltrace-add map_nibp-trace (store-timedref store "NIBPmean"))
+      (gltrace-add map-trace (store-timedref store "ABPmean"))
 
       ;; Update the traces
       (gltrace-update pr-trace) 
-      (gltrace-update prl-trace) 
       (gltrace-update spo2-trace)
-      (gltrace-update spo2l-trace)
+      (gltrace-update map-trace)
+      (gltrace-update map_nibp-trace)
     )
   )
 )
@@ -159,14 +198,14 @@
       (let ((pr-val (store-timedref store "PR(SpO2)")))
         (glgui-widget-set! gui:trends pr_value 'label (if pr-val (number->string (fix pr-val)) ""))
       )
-      (let ((prl-val (store-timedref store "PR(SpO2l)")))
-        (glgui-widget-set! gui:trends prl_value 'label (if prl-val (number->string (fix prl-val)) ""))
-      )
       (let ((spo2-val (store-timedref store "SpO2")))
         (glgui-widget-set! gui:trends spo2_value 'label (if spo2-val (number->string (fix spo2-val)) ""))
       )
-      (let ((spo2l-val (store-timedref store "SpO2l")))
-        (glgui-widget-set! gui:trends spo2l_value 'label (if spo2l-val (number->string (fix spo2l-val)) ""))
+      (let ((map-val (store-timedref store "ABPmean")))
+        (glgui-widget-set! gui:trends map_value 'label (if map-val (number->string (fix map-val)) ""))
+      )
+      (let ((map-val (store-timedref store "NIBPmean")))
+        (glgui-widget-set! gui:trends map_nibp_value 'label (if map-val (number->string (fix map-val)) ""))
       )
       ;; Update times everywhere
       (store-set! "main" "time_str" (seconds->string ##now "%H%M%S"))              
@@ -196,29 +235,11 @@
     (init-gui-trends)    
     (make-store "main")
 
-    ;; Load the configuration from files (otherwise use defaults)
-    (store-set! "main" "waves" (list "Pleth" "PLETHl" "PLETHr"))
-    (store-set! "main" "trends" (list "HR(ECG)" "RR" "STi" "STii" "STiii" "STavr" "STavl" "STavf" "STv"
-       "PR(SpO2)" "SpO2" "Perf" "PR(SpO2l)" "SpO2l" "Perfl" "PR(SpO2r)" "SpO2r" "Perfr" 
-       "NIBPsys" "NIBPdia" "NIBPmean" "ARTsys" "ARTdia" "ARTmean" "PRabp"
-       "CVPmean" "CO2e" "CO2imin" "awRR"))
-    (if (file-exists? config-file)
-      (let ((data (with-input-from-file (list path: config-file) (lambda () (read)))))
-        (log-status "Loaded configuration from " config-file)
-        (for-each (lambda (l) (store-set! "main" (car l) (cadr l))) data)
-      )
-    )
-    (store-set! "main" "trends" (append (list "time_str") (store-ref "main" "trends" '())))
-
     ;; Initialize the Philips monitor plugin
-    (runtime-startcase "main" (time->timestamp (current-time)))
     (make-instance "main" "PHILIPSmonitor" "monitor" `("Port" ,(cond 
       ((string=? (system-platform) "linux") "/dev/ttyUSB0")
       ((string=? (system-platform) "win32") "COM3")
       (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
-    (make-instance "main" "TRENDOUT" "trendoutput" `("Trends" ,(store-ref "main" "trends" '())))
-    (for-each (lambda (l) (make-instance "main" (string-append "WAVEOUT" l) "waveoutput" `("Source" ,l)))
-      (store-ref "main" "waves" '()))
 
     ;;Make sure that runtime actually runs !!!
     (runtime-init)

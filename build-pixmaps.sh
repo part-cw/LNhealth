@@ -11,9 +11,8 @@ font=cmssdc
 #Small two column labels
 size=16
 ../../utils/txt2scm "PR\\\\[-1mm] bpm"    $font $size label_pr  > ./$texture_dir/label_pr.scm
-../../utils/txt2scm "PRl\\\\[-1mm] bpm"    $font $size label_prl  > ./$texture_dir/label_prl.scm
 ../../utils/txt2scm "SpO2\\\\[-1mm] \\%"    $font $size label_spo2  > ./$texture_dir/label_spo2.scm
-../../utils/txt2scm "SPO2l\\\\[-1mm] \\%"    $font $size label_spo2l  > ./$texture_dir/label_spo2l.scm
+../../utils/txt2scm "MAP\\\\[-1mm] mmHg"    $font $size label_map  > ./$texture_dir/label_map.scm
 
 #Full text
 size=24
@@ -36,6 +35,6 @@ size=18
 ../../utils/scm2fnt ./$texture_dir/num18.scm 48,49,50,51,52,53,54,55,56,57,58,46 > ./$texture_dir/num18_fnt.scm
 
 size=12;
-../../utils/txt2scm "PhilipsDataLogger \\copyright \\ 2011-2012 UBC \\&  BC Children's Hospital" $font $size copyright > ./$texture_dir/copyright.scm
+../../utils/txt2scm "PhilipsDataLogger \\copyright \\ 2011-2013 UBC \\&  BC Children's Hospital" $font $size copyright > ./$texture_dir/copyright.scm
 
 #eof
