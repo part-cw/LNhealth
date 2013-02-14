@@ -180,11 +180,8 @@
       (if (not (string=? (store-ref store "Key") "9999"))
         (let* ((rc (rupi-client 0 rupi:key rupi:addr rupi:port))
                ;;Include build date so we can send messages to ask users to upgrade
-               ;; We will try 3 times and fail otherwise
-               (success3 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))
-               (success2 (if (rupi-valid? rc) success3
-                 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
-               ))
+               ;; We will try 2 times and fail otherwise
+               (success2 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))
                (success (if (rupi-valid? rc) success2
                  (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
                ))) 
@@ -234,7 +231,7 @@
               )
               (begin
                 (glgui-widget-set! gui:popup popup-box 'callback #f)
-                (store-set! "main" "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias if you need one.)"))
+                (store-set! store "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias if you need one.)"))
                 (show-popup)
                 (store-set! store "Key" "") 
               )
@@ -3171,7 +3168,10 @@
         (glgui-widget-set! gui:popup popup-timer 'w 
           (fix (* (glgui-widget-get gui:popup popup-text 'w ) (fl/ (fl- timeout (fl- ##now tstamp)) timeout))))
       )
-      (if (and (not hidden) (fl> (fl- ##now tstamp) (if (glgui-widget-get gui:popup popup-box 'callback) timeout (fl/ timeout 2.))))
+      ;; We do a hack here: The ##now-3.0 is because the rupi timout in Login takes 3 sec and we still want the popup.
+      (if (and (not hidden) 
+               (fl> (fl- (if rupi:error (fl- ##now 2.) ##now) tstamp) (if (glgui-widget-get gui:popup popup-box 'callback) timeout (fl/ timeout 2.)))
+          )
         (begin
           (hide-popup)
           (if (and (not rupi:addr) (not (fx= mode MODE_SETUP)))
