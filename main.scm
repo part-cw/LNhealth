@@ -82,7 +82,7 @@
 
 ; RUPI settings 
 (define hostname-file (string-append (system-directory) (system-pathseparator) "server"))
-(define rupi:port 8031)
+(define rupi:port 8080)
 ;; DNSdynamic.org account info User:mgorges@cw.bc.ca Pwd: Vitalnod3
 (define rupi:hostname "bcch.ece.ubc.ca") ;; This is the default hostname
 (define rupi:addr #f)
@@ -225,7 +225,7 @@
             (if rupi:error
               (begin
                 (glgui-widget-set! gui:popup popup-box 'callback #f)
-                (store-set! store "popup-text" (list "VITALNODE LOST" "Can't connect to VitalNode. Please check the Wifi connection is active and retry."))
+                (store-set! store "popup-text" (list "VITALNODE MISSING" "Can't connect to VitalNode. Please check the Wifi connection is active and retry. Also check that port 8080/tcp is not blocked by your firewall."))
                 (show-popup)
                 (store-set! store "Key" "") ;; Clear the string and try again.
               )
