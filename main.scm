@@ -134,16 +134,16 @@
   ;; Logo and Build Information
   (glgui-pixmap gui:login (/ (fx- (glgui-width-get) (car telePORT-logo.img)) 2) (- (glgui-height-get) (cadr telePORT-logo.img) 20) telePORT-logo.img)
   (let ((x (- (glgui-width-get) 90))(y 45))
-    (glgui-label gui:login x (+ y 18) 85 16 "Build:" ascii16.fnt DarkGray)
-    (glgui-label gui:login x y 85 16 (system-builddate) ascii16.fnt DarkGray)
+    (glgui-label gui:login x (+ y 18) 85 16 "Build:" ascii_16.fnt DarkGray)
+    (glgui-label gui:login x y 85 16 (system-builddate) ascii_16.fnt DarkGray)
   )    
   
   ;; Message and *s as response
-  (set! login-text (glgui-label gui:login 50 (- (glgui-height-get) 150) 250 25 "Please enter your pin:" ascii24.fnt White))
-  (set! login-pin (glgui-label gui:login 50 (- (glgui-height-get) 175) 250 25 "" ascii24.fnt Green))
+  (set! login-text (glgui-label gui:login 50 (- (glgui-height-get) 150) 250 25 "Please enter your pin:" ascii_24.fnt White))
+  (set! login-pin (glgui-label gui:login 50 (- (glgui-height-get) 175) 250 25 "" ascii_24.fnt Green))
   ;; 10 keypad
   (let ((row 3) (col 1))
-    (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) 235 (* row 70)) 60 60 "0" num40.fnt login-callback)
+    (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) 235 (* row 70)) 60 60 "0" num_40.fnt login-callback)
   )
   (let loop ((row 0))
     (if (<= row 2)
@@ -151,7 +151,7 @@
 	(let loop2 ((col 0))
 	  (if (<= col 2)
 	    (begin 
-	      (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) 235 (* row 70)) 60 60 (number->string (+ (* row 3) col 1)) num40.fnt login-callback)
+	      (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) 235 (* row 70)) 60 60 (number->string (+ (* row 3) col 1)) num_40.fnt login-callback)
 	      (loop2 (+ col 1))
 	    )
 	  )
@@ -302,7 +302,7 @@
 	   (popup-color (priority-color-get highest-priority-value)))
 
       ;; Place the correct OR label
-      (glgui:draw-text-left (+ x 3) y_shift 82 24 or-name ascii24.fnt 
+      (glgui:draw-text-left (+ x 3) y_shift 82 24 or-name ascii_24.fnt 
 	(if (= number-of-messages 0) White (if (>= highest-priority-value 0) popup-color White)))
 
       ;; Put correct phase icon
@@ -317,15 +317,15 @@
       (let ((hr-val (store-ref or-name "hr"))
 	    (hr-src (store-ref or-name "hr_source"))
 	  )
-	(if hr-val (glgui:draw-text-right (+ x 143) y_shift 37 24 (number->string (fix hr-val)) num24.fnt (if hr-src (cond 
+	(if hr-val (glgui:draw-text-right (+ x 143) y_shift 37 24 (number->string (fix hr-val)) num_24.fnt (if hr-src (cond 
 		((string=? hr-src "ECG1") Green)((string=? hr-src "PLETH") White)((string=? hr-src "BP1") Red)(else DarkGray)) Green)))
       )
 
       (let ((spo2-val (store-ref or-name "spo2")))
-	(if spo2-val (glgui:draw-text-right (+ x 188) y_shift 37 24 (number->string (fix spo2-val)) num24.fnt White))
+	(if spo2-val (glgui:draw-text-right (+ x 188) y_shift 37 24 (number->string (fix spo2-val)) num_24.fnt White))
       )      
       (let ((etco2-val (store-ref or-name "co2_et")))
-	(if etco2-val (glgui:draw-text-right (+ x 233) y_shift 37 24 (number->string (fix (* 7.5 etco2-val))) num24.fnt Orange))
+	(if etco2-val (glgui:draw-text-right (+ x 233) y_shift 37 24 (number->string (fix (* 7.5 etco2-val))) num_24.fnt Orange))
       )
 
       ;; Place message popup windows to the right
@@ -333,7 +333,7 @@
       (if (> number-of-messages 0)
 	(begin
 	  (glgui:draw-pixmap-left (- w 30) y_shift 30 28 popup.img popup-color)
-	  (glgui:draw-text-center (- w 30) (+ y_shift 3) 30 28 (number->string number-of-messages) num18.fnt popup-color)
+	  (glgui:draw-text-center (- w 30) (+ y_shift 3) 30 28 (number->string number-of-messages) num_18.fnt popup-color)
 	)
       )
     )
@@ -421,7 +421,7 @@
     ;;Header row
     (glgui-pixmap gui:messaging (+ x 5) y source.img)
     (glgui-pixmap gui:messaging (+ x 80) (- y 3) message.img)
-    (glgui-label gui:messaging (+ x 265) (- y 3) 50 18 "When" ascii16.fnt White)
+    (glgui-label gui:messaging (+ x 265) (- y 3) 50 18 "When" ascii_16.fnt White)
     ;;List of received alerts
     (set! alert-list
       (glgui-list gui:messaging 0 (+ 60 (- y 65 (* 3 40))) (glgui-width-get) (* 3 40) 40 (build-alert-list) alert-select)
@@ -432,7 +432,7 @@
     )
     ;; Bottom row with secondary navigation buttons
     (set! compose-button
-      (glgui-button-string gui:messaging 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Compose New Message" ascii24.fnt compose-button-callback)	
+      (glgui-button-string gui:messaging 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Compose New Message" ascii_24.fnt compose-button-callback)	
     )
   )
 )
@@ -468,7 +468,7 @@
       (if (not (= priority 0)) (glgui:draw-box x y 75 h (priority-color-get priority)))	
     )
     ;;Add the Source name
-    (set! source (glgui:draw-text-left (+ x 5) y_shift 70 24 (list-ref alert 1)  ascii16.fnt White))
+    (set! source (glgui:draw-text-left (+ x 5) y_shift 70 24 (list-ref alert 1)  ascii_16.fnt White))
     
     ;;Add received time
     (let ((time (- (store-ref "main" "LastUpdateTime") (list-ref alert 0))))
@@ -480,8 +480,8 @@
 	      ((and (> time 60) (< time 3600)) (string-append (number->string (fix (/ time 60))) "min"))
 	      ((and (> time 3600) (< time 86400)) (string-append (number->string (fix (/ time 3600))) "hr"))
 	      (else (string-append (number->string (fix (/ time 86400))) "days"))
-	    )) ascii16.fnt DarkGray)
-	  (glgui:draw-text-left (+ x 265) (+ y 3) 90 16 "ago" ascii16.fnt DarkGray)
+	    )) ascii_16.fnt DarkGray)
+	  (glgui:draw-text-left (+ x 265) (+ y 3) 90 16 "ago" ascii_16.fnt DarkGray)
 	)
       )
     )
@@ -491,12 +491,12 @@
         (if (> (string-length (list-ref alert 4)) 0) 
           (glgui:draw-pixmap-left (+ x 75 2) (- y_shift 7) 23 14 reply-arrow.img LightGray)
         )
-        (set! reply (glgui:draw-text-left (+ x 75 2 25) (- y_shift 5) 150 16 (list-ref alert 4) ascii16.fnt LightGray))
+        (set! reply (glgui:draw-text-left (+ x 75 2 25) (- y_shift 5) 150 16 (list-ref alert 4) ascii_16.fnt LightGray))
         (set! y_shift (+ y_shift 6))
       )
     )
     ;; And finally the message itself
-    (set! message (glgui:draw-text-left (+ x 75) y_shift 185 24 (list-ref alert 2) ascii24.fnt White))
+    (set! message (glgui:draw-text-left (+ x 75) y_shift 185 24 (list-ref alert 2) ascii_24.fnt White))
   )
 )
 
@@ -785,33 +785,33 @@
     ;;Header row
     (glgui-pixmap gui:alert (+ x 5) y source.img)
     (glgui-pixmap gui:alert (+ x 80) (- y 3) message.img)
-    (glgui-label gui:alert (+ x 265) (- y 3) 50 18 "When" ascii16.fnt White)
+    (glgui-label gui:alert (+ x 265) (- y 3) 50 18 "When" ascii_16.fnt White)
     ;;List of received alerts
     (set! alert-detail-list
       (glgui-list gui:alert 0 (+ 60 (- y 65 40)) (glgui-width-get) 40 40 '() #f)
     )
     ;;Text response part
-    (set! response-string (glgui-label gui:alert x (- y 175) w 40 "" ascii24.fnt White))
+    (set! response-string (glgui-label gui:alert x (- y 175) w 40 "" ascii_24.fnt White))
     (glgui-widget-set! gui:alert response-string 'align GUI_ALIGNCENTER)
   
-    (set! response-detail (glgui-label gui:alert x (- y 210) w 40 "" ascii24.fnt White))
+    (set! response-detail (glgui-label gui:alert x (- y 210) w 40 "" ascii_24.fnt White))
     (glgui-widget-set! gui:alert response-detail 'align GUI_ALIGNCENTER)
-    (set! response-vitals (glgui-label gui:alert (+ x 5) (- y 255) (- w 10) 40 "" ascii20.fnt White))
-    (set! response-vitals2 (glgui-label gui:alert (+ x 5) (- y 255 20) (- w 10) 40 "" ascii20.fnt White))
-    (set! response-vitals3 (glgui-label gui:alert (+ x 5) (- y 255 20 20) (- w 10) 40 "" ascii20.fnt White))
+    (set! response-vitals (glgui-label gui:alert (+ x 5) (- y 255) (- w 10) 40 "" ascii_20.fnt White))
+    (set! response-vitals2 (glgui-label gui:alert (+ x 5) (- y 255 20) (- w 10) 40 "" ascii_20.fnt White))
+    (set! response-vitals3 (glgui-label gui:alert (+ x 5) (- y 255 20 20) (- w 10) 40 "" ascii_20.fnt White))
     
     ;; Buttons on the bottom to accept, ignore or return to main screen
     (set! ignore-alert-screen-button
-      (glgui-button-string gui:alert 10 (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Ignore" ascii24.fnt reply-callback)
+      (glgui-button-string gui:alert 10 (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Ignore" ascii_24.fnt reply-callback)
     )
     (set! accept-alert-screen-button
-      (glgui-button-string gui:alert (+ (/ w 2) 10) (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Okay" ascii24.fnt reply-callback)
+      (glgui-button-string gui:alert (+ (/ w 2) 10) (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Okay" ascii_24.fnt reply-callback)
     )
     (set! close-alert-screen-button
-      (glgui-button-string gui:alert 10 (+ gui:navigation-height 10) (- w 20) 30 "Return to Messages" ascii24.fnt return-message-screen-button-callback)
+      (glgui-button-string gui:alert 10 (+ gui:navigation-height 10) (- w 20) 30 "Return to Messages" ascii_24.fnt return-message-screen-button-callback)
     )
     (set! clear-alert-screen-button
-      (glgui-button-string gui:alert (+ (/ w 2) 10) (+ gui:navigation-height 10 40) (- (/ w 2) 20) 30 "Remove/Clear" ascii24.fnt clear-message-button-callback)	
+      (glgui-button-string gui:alert (+ (/ w 2) 10) (+ gui:navigation-height 10 40) (- (/ w 2) 20) 30 "Remove/Clear" ascii_24.fnt clear-message-button-callback)	
     )
   )
 )
@@ -829,21 +829,21 @@
 
     ;;List of chat messages
     (set! chat-list-landscape
-      (glgui-chat g (+ x 5) (+ (/ h 2) 35) (- w 65 5 5 5) (- (/ h 2) 35) 16 (list) ascii16.fnt #f)
+      (glgui-chat g (+ x 5) (+ (/ h 2) 35) (- w 65 5 5 5) (- (/ h 2) 35) 16 (list) ascii_16.fnt #f)
     )
     ;; Prompt and message string
     (set! message-string-landscape
-      (glgui-label g (+ x 5) (+ (/ h 2) 5) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1))
+      (glgui-label g (+ x 5) (+ (/ h 2) 5) (- w 65 5 5 5) 30 "" ascii_20.fnt White (color-shade White 0.1))
     )
     (glgui-widget-set! g message-string-landscape 'align GUI_ALIGNRIGHT)
-    (glgui-button-string g (- w 65 5) (+ (/ h 2) 5) 65 30 "Send" ascii24.fnt send-message-callback)
+    (glgui-button-string g (- w 65 5) (+ (/ h 2) 5) 65 30 "Send" ascii_24.fnt send-message-callback)
 
     ;; Add landscape keyboard
     (set! keypad-landscape (glgui-ioskeypad g x y))
     (glgui-widget-set! g keypad-landscape 'landscape #t)
 
     ;; Return button - needed to move to the top right corner.
-    (glgui-button-string g (- w 65 5) (* (/ h 4) 3) 65 (/ h 8) "Back" ascii24.fnt return-messaging-button-callback)
+    (glgui-button-string g (- w 65 5) (* (/ h 4) 3) 65 (/ h 8) "Back" ascii_24.fnt return-messaging-button-callback)
   )
 )
 
@@ -858,7 +858,7 @@
 
     ;;List of chat messages
     (set! chat-list
-      (glgui-chat gui:chat x y (glgui-width-get) (* 23 18) 16 (list) ascii16.fnt #f)
+      (glgui-chat gui:chat x y (glgui-width-get) (* 23 18) 16 (list) ascii_16.fnt #f)
     )
 
     ;; Pre-defined quick text messages
@@ -871,9 +871,9 @@
 
   ;; Bottom row with secondary navigation buttons
   (glgui-button-string gui:chat 10 3
-    (- (/ (glgui-width-get) 2) 20) 30 "Back" ascii24.fnt return-messaging-button-callback)
+    (- (/ (glgui-width-get) 2) 20) 30 "Back" ascii_24.fnt return-messaging-button-callback)
   (set! chat-input-button (glgui-button-string gui:chat (+ (/ (glgui-width-get) 2) 10) 3 
-    (- (/ (glgui-width-get) 2) 20) 30 "Quicktext" ascii24.fnt quicktext-button-callback))
+    (- (/ (glgui-width-get) 2) 20) 30 "Quicktext" ascii_24.fnt quicktext-button-callback))
 )
 
 ;; Make the on-screen keyboard for text entry
@@ -881,12 +881,12 @@
   (let ((w (glgui-width-get))
         (h (glgui-height-get)))    
     ;; Prompt and message string
-    (set! message-string (glgui-label g (+ x 5) (+ y (/ (glgui-width-get) 1.5) 5) (- w 65 5 5 5) 30 "" ascii20.fnt White (color-shade White 0.1)))
+    (set! message-string (glgui-label g (+ x 5) (+ y (/ (glgui-width-get) 1.5) 5) (- w 65 5 5 5) 30 "" ascii_20.fnt White (color-shade White 0.1)))
     (glgui-widget-set! g message-string 'align GUI_ALIGNRIGHT)
     
     ;; Add the keyboard and the send button.
     (set! keypad (glgui-ioskeypad g x y))
-    (glgui-button-string g (- w 65 5) (+ y (/ (glgui-width-get) 1.5) 5) 65 30 "Send" ascii24.fnt send-message-callback)
+    (glgui-button-string g (- w 65 5) (+ y (/ (glgui-width-get) 1.5) 5) 65 30 "Send" ascii_24.fnt send-message-callback)
     ;; Save value for later
     (set! gui:messaging-keyboard-height (+ (/ (glgui-width-get) 1.5) 5 30 5))
   )
@@ -897,8 +897,8 @@
   (let loop ((i 0))
     (if (< i 6)
       (let ((w (/ (- (glgui-width-get) 60) 2)))	
-	(glgui-button-string g (+ x 20) (+ y (* 45 i)) w 35 (list-ref message-texts (+ (* i 2) 0)) ascii16.fnt send-message-callback)
-	(glgui-button-string g (+ x w 20 20) (+ y (* 45 i)) w 35 (list-ref message-texts (+ (* i 2) 1)) ascii16.fnt send-message-callback)
+	(glgui-button-string g (+ x 20) (+ y (* 45 i)) w 35 (list-ref message-texts (+ (* i 2) 0)) ascii_16.fnt send-message-callback)
+	(glgui-button-string g (+ x w 20 20) (+ y (* 45 i)) w 35 (list-ref message-texts (+ (* i 2) 1)) ascii_16.fnt send-message-callback)
 	(loop (+ i 1))
       )
       (set! gui:messaging-quicktext-height (+ (* 45 i) 5))
@@ -942,9 +942,9 @@
     (let ((y_shift (+ y (/ (- h 24) 2))))
       ;;Add the Source name
       (if (fx= (cadddr msg) 0)
-        (glgui:draw-text-left (+ x 5) y_shift 70 24 (cadr msg) ascii16.fnt White)
+        (glgui:draw-text-left (+ x 5) y_shift 70 24 (cadr msg) ascii_16.fnt White)
         (begin
-          (glgui:draw-text-left (+ x 5) (+ y 14) 70 24 (cadr msg) ascii16.fnt White)
+          (glgui:draw-text-left (+ x 5) (+ y 14) 70 24 (cadr msg) ascii_16.fnt White)
           (glgui:draw-pixmap-left (+ x 5 23) (+ y 4) 23 14 reply-arrow.img LightGray)
         )
       )
@@ -958,18 +958,18 @@
                 ((and (> time 60) (< time 3600)) (string-append (number->string (fix (/ time 60))) "min"))
                 ((and (> time 3600) (< time 86400)) (string-append (number->string (fix (/ time 3600))) "hr"))
                 (else (string-append (number->string (fix (/ time 86400))) "days"))
-              )) ascii16.fnt DarkGray)
-            (glgui:draw-text-left (+ x 265) (+ y 3) 90 16 "ago" ascii16.fnt DarkGray)
+              )) ascii_16.fnt DarkGray)
+            (glgui:draw-text-left (+ x 265) (+ y 3) 90 16 "ago" ascii_16.fnt DarkGray)
           )
         )
       )
       ;; And finally the message itself
-      (let ((str (string-split-width (caddr msg) 185 ascii16.fnt)))
+      (let ((str (string-split-width (caddr msg) 185 ascii_16.fnt)))
         (if (= (length str) 1) 
-          (glgui:draw-text-left (+ x 75) y_shift 185 24 (car str) ascii16.fnt White)
+          (glgui:draw-text-left (+ x 75) y_shift 185 24 (car str) ascii_16.fnt White)
           (begin
-            (glgui:draw-text-left (+ x 75) (+ y 16 1) 185 24 (car str) ascii16.fnt White)
-            (glgui:draw-text-left (+ x 75) y 185 24 (cadr str) ascii16.fnt White)
+            (glgui:draw-text-left (+ x 75) (+ y 16 1) 185 24 (car str) ascii_16.fnt White)
+            (glgui:draw-text-left (+ x 75) y 185 24 (cadr str) ascii_16.fnt White)
           )
         )
       )
@@ -1120,7 +1120,7 @@
   (set! gui:users (make-glgui))
   (let ((x 0)(y (- (glgui-height-get) gui:menu-height 16 3)))
     ;;Header row
-    (glgui-label gui:users (+ x 5) y 160 16 "Compose Message To" ascii16.fnt White)
+    (glgui-label gui:users (+ x 5) y 160 16 "Compose Message To" ascii_16.fnt White)
 
     ;;List of users (bright are online, dark are not)
     (set! user-list
@@ -1128,7 +1128,7 @@
     )
     ;; Button to return to message screen
     (set! return-message-screen-button
-      (glgui-button-string gui:users 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Return to Messages" ascii24.fnt return-message-screen-button-callback)	
+      (glgui-button-string gui:users 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Return to Messages" ascii_24.fnt return-message-screen-button-callback)	
     )
   )
 )
@@ -1171,7 +1171,7 @@
     (if gui:messaging-detail-shown ;;Highlight selected in DimGray [% Jonathan didn't like the Blue]
       (if (= idx selected-alert-number) (glgui:draw-box x y w h DimGray))
     )
-    (glgui:draw-text-left (+ x 5) y_shift 200 24 (car user) ascii24.fnt (if (string=? (car user) (store-ref "main" "UserName" "")) Blue (if (= (cadr user) 1) White DarkGray)))  
+    (glgui:draw-text-left (+ x 5) y_shift 200 24 (car user) ascii_24.fnt (if (string=? (car user) (store-ref "main" "UserName" "")) Blue (if (= (cadr user) 1) White DarkGray)))  
   )
 )
 
@@ -1216,13 +1216,13 @@
     ;; Coordinate system
     (glgui-box gui:trends x y 2 h c)
     (glgui-box gui:trends x (- y 110) 2 hsmall c)
-    (glgui-label gui:trends (+ x 3) (- (+ y h) 3) 20 12 "200" ascii12.fnt LightGray)
-    (glgui-label gui:trends (+ x 3) (- (+ y (/ h 2)) 3) 20 12 "100" ascii12.fnt LightGray)
+    (glgui-label gui:trends (+ x 3) (- (+ y h) 3) 20 12 "200" ascii_12.fnt LightGray)
+    (glgui-label gui:trends (+ x 3) (- (+ y (/ h 2)) 3) 20 12 "100" ascii_12.fnt LightGray)
     (glgui-box gui:trends x y w 2 c)
     (glgui-box gui:trends  x (- y 110) w 2 c)
-    (glgui-label gui:trends (+ x 3) (+ (- y 110 3) hsmall) 20 12 "100" ascii12.fnt LightGray)
+    (glgui-label gui:trends (+ x 3) (+ (- y 110 3) hsmall) 20 12 "100" ascii_12.fnt LightGray)
     ;; OR Case Time Label
-    (set! case-time (glgui-label gui:trends (+ x (/ w 4)) (- (+ y h) 12) (/ w 2) 12 "" ascii16.fnt LightGray))
+    (set! case-time (glgui-label gui:trends (+ x (/ w 4)) (- (+ y h) 12) (/ w 2) 12 "" ascii_16.fnt LightGray))
     (glgui-widget-set! gui:trends case-time 'align GUI_ALIGNCENTER)
     ;; And now the widgets
     (let loop ((i 0))
@@ -1239,7 +1239,7 @@
   (let ((x (fx+ 5 270))(y (- (glgui-height-get) gui:menu-height 200)))
     (let loop ((i 0) (ret (list)))
       (if (fx= i (length trend-label-texts)) (set! trend-labels ret)
-        (loop (fx+ i 1) (append ret (list (glgui-label gui:trends (if (fx= i 1) (fx+ x 25) x) (if (fx> i 12) (fx- y 110) y) 50 12 (list-ref trend-label-texts i) ascii12.fnt (list-ref trend-trace-colors i)))))
+        (loop (fx+ i 1) (append ret (list (glgui-label gui:trends (if (fx= i 1) (fx+ x 25) x) (if (fx> i 12) (fx- y 110) y) 50 12 (list-ref trend-label-texts i) ascii_12.fnt (list-ref trend-trace-colors i)))))
       )
     )
   )
@@ -1247,13 +1247,13 @@
 
   ;; Add Time Labels
   (let ((y (- (glgui-height-get) gui:menu-height 200 110 20)))
-    (set! time30 (glgui-label gui:trends 0 y 60 16 "" ascii16.fnt DarkGray))
-    (set! time00 (glgui-label gui:trends 255 y 60 16 "" ascii16.fnt DarkGray))
+    (set! time30 (glgui-label gui:trends 0 y 60 16 "" ascii_16.fnt DarkGray))
+    (set! time00 (glgui-label gui:trends 255 y 60 16 "" ascii_16.fnt DarkGray))
   )
 
   ;; Bottom row with secondary navigation buttons
-  (glgui-button-string gui:trends 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Overview" ascii24.fnt goto-overview-button-callback)
-  (glgui-button-string gui:trends (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Waveforms" ascii24.fnt goto-waveforms-button-callback)
+  (glgui-button-string gui:trends 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Overview" ascii_24.fnt goto-overview-button-callback)
+  (glgui-button-string gui:trends (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Waveforms" ascii_24.fnt goto-waveforms-button-callback)
 )
 
 (define (goto-waveforms-button-callback g w t x y)
@@ -1324,15 +1324,15 @@
 
   ;;Define Widgets to present current value numbers
   ;; glgui-trend has parameters: gui, x y label texture, font, color)
-  (set! hr_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 20) label_hr.img num40.fnt Green))
-  (set! spo2_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 65) label_spo2.img num40.fnt White))
-  (set! etco2_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 110) label_etco2.img num40.fnt Orange))
-  (set! art_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 155) label_art.img num40.fnt Red))
-  (set! nibp_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 200) label_nibp.img num40.fnt Red))
-  (set! temp_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 245) label_temp.img num40.fnt White))
-  (set! agent_value (glgui-trend gui:waves (- (/ (glgui-width-get) 2) 50) (- (glgui-height-get) gui:navigation-height 245) label_agent.img num40.fnt White))
+  (set! hr_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 20) label_hr.img num_40.fnt Green))
+  (set! spo2_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 65) label_spo2.img num_40.fnt White))
+  (set! etco2_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 110) label_etco2.img num_40.fnt Orange))
+  (set! art_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 155) label_art.img num_40.fnt Red))
+  (set! nibp_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 200) label_nibp.img num_40.fnt Red))
+  (set! temp_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 245) label_temp.img num_40.fnt White))
+  (set! agent_value (glgui-trend gui:waves (- (/ (glgui-width-get) 2) 50) (- (glgui-height-get) gui:navigation-height 245) label_agent.img num_40.fnt White))
   ;;(glgui-label g x y w h label fnt color)
-  (set! agent_name (glgui-label gui:waves 5 (- (glgui-height-get) gui:navigation-height 245) 60 24 "" ascii24.fnt White))  
+  (set! agent_name (glgui-label gui:waves 5 (- (glgui-height-get) gui:navigation-height 245) 60 24 "" ascii_24.fnt White))  
 
   ;; Define scales for Waveforms
   (set! ECG_min (- 0.5))(set! ECG_max 2)
@@ -1358,14 +1358,14 @@
   (set! art-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 155) 200 40 art-trace Red))  
   
   ;; If I wanted labels to the side indicated low and high values the font needs to be set
-  ;;(glgui-widget-set! gui:waves art_wave 'limfnt num18.fnt)
+  ;;(glgui-widget-set! gui:waves art_wave 'limfnt num_18.fnt)
 
   ;; Screen Indicator 
   (set! screenindicator (glgui-screenindicator gui:waves 0 (+ gui:navigation-height 40) (glgui-width-get) 20 White))
 
   ;; Bottom row with secondary navigation buttons
-  (glgui-button-string gui:waves 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Overview" ascii24.fnt goto-overview-button-callback)
-  (glgui-button-string gui:waves (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Trends" ascii24.fnt goto-trends-button-callback)
+  (glgui-button-string gui:waves 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Overview" ascii_24.fnt goto-overview-button-callback)
+  (glgui-button-string gui:waves (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Trends" ascii_24.fnt goto-trends-button-callback)
 )
 
 ;; Give an easy and consistent way of returning to the overview screen.
@@ -1585,14 +1585,14 @@
 
   ;;Define Widgets to present current value numbers
   ;; glgui-trend has parameters: gui, x y label texture, font, color)
-  (set! hr_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 50) label_hr.img num40.fnt Green))
-  (set! spo2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 105) label_spo2.img num40.fnt White))
-  (set! etco2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 150) label_etco2.img num40.fnt Orange))
-  (set! art_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 195) label_art.img num40.fnt Red))
-  (set! nibp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num40.fnt Red))
-  (set! temp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 280) label_temp.img num40.fnt White))
-  (set! agent_value-landscape (glgui-trend gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 280) label_agent.img num40.fnt White))
-  (set! agent_name-landscape (glgui-label gui:waves-landscape 85 (- (glgui-width-get) 280) 60 24 "" ascii24.fnt White))  
+  (set! hr_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 50) label_hr.img num_40.fnt Green))
+  (set! spo2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 105) label_spo2.img num_40.fnt White))
+  (set! etco2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 150) label_etco2.img num_40.fnt Orange))
+  (set! art_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 195) label_art.img num_40.fnt Red))
+  (set! nibp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num_40.fnt Red))
+  (set! temp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 280) label_temp.img num_40.fnt White))
+  (set! agent_value-landscape (glgui-trend gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 280) label_agent.img num_40.fnt White))
+  (set! agent_name-landscape (glgui-label gui:waves-landscape 85 (- (glgui-width-get) 280) 60 24 "" ascii_24.fnt White))  
 
   ;;Place the Trace Widgets
   (set! ecg-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 60) 350 40 ecg-trace Green))    
@@ -1602,12 +1602,12 @@
   
   ;; Screen Indicator 
   (set! screenindicator-landscape (glgui-screenindicator gui:waves-landscape 0 5 (glgui-height-get) 20 White))
-  (set! location-landscape (glgui-label gui:waves-landscape 10 (- (glgui-width-get) 30) 70 25 "Room" ascii24.fnt White))
+  (set! location-landscape (glgui-label gui:waves-landscape 10 (- (glgui-width-get) 30) 70 25 "Room" ascii_24.fnt White))
 
   ;; Bottom row with secondary navigation buttons
   (let ((w (/ (glgui-width-get) 3)))
-    (glgui-button-string gui:waves-landscape 5 5 w 30 "Overview" ascii24.fnt goto-overview-button-callback)
-    (glgui-button-string gui:waves-landscape (- (glgui-height-get) w 10) 5 w 30 "Trends" ascii24.fnt goto-trends-button-callback)
+    (glgui-button-string gui:waves-landscape 5 5 w 30 "Overview" ascii_24.fnt goto-overview-button-callback)
+    (glgui-button-string gui:waves-landscape (- (glgui-height-get) w 10) 5 w 30 "Trends" ascii_24.fnt goto-trends-button-callback)
   )
 )
 
@@ -1624,9 +1624,9 @@
 	 (height (* number-rows gui:row-height))
 	 (y (- (glgui-height-get) gui:menu-height 16 3)))
     ;;Header row
-    (glgui-label gui:rooms (+ x 5) y 70 16 "Room" ascii16.fnt White)
-    (glgui-label gui:rooms (+ x 85) y (- (glgui-width-get) 80 5) 16 "Subscribers" ascii16.fnt White)
-    (glgui-label gui:rooms (+ x 270) y (- (glgui-width-get) 50 5) 16 "Status" ascii16.fnt White)
+    (glgui-label gui:rooms (+ x 5) y 70 16 "Room" ascii_16.fnt White)
+    (glgui-label gui:rooms (+ x 85) y (- (glgui-width-get) 80 5) 16 "Subscribers" ascii_16.fnt White)
+    (glgui-label gui:rooms (+ x 270) y (- (glgui-width-get) 50 5) 16 "Status" ascii_16.fnt White)
     (set! room-list
        (glgui-list gui:rooms 0 (- y 2 height) (glgui-width-get) height gui:row-height (build-room-list) room-callback)
     )
@@ -1635,7 +1635,7 @@
     )
     (glgui-widget-set! gui:rooms transfer-user-list 'hidden #t)
     (set! transfer-user-label
-       (glgui-label gui:rooms 0 (- y (* 5 gui:row-height)) (glgui-width-get) 18 "Transfer rooms to :" ascii16.fnt White)
+       (glgui-label gui:rooms 0 (- y (* 5 gui:row-height)) (glgui-width-get) 18 "Transfer rooms to :" ascii_16.fnt White)
     )
     (glgui-widget-set! gui:rooms transfer-user-label 'align GUI_ALIGNCENTER)
     (glgui-widget-set! gui:rooms transfer-user-label 'hidden #t)
@@ -1643,10 +1643,10 @@
     ;; Bottom row with secondary navigation buttons
     (set! pacu-button
       (glgui-button-string gui:rooms (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) 
-	(- (/ (glgui-width-get) 2) 20) 30 "Show PACU" ascii24.fnt pacu-button-callback)
+	(- (/ (glgui-width-get) 2) 20) 30 "Show PACU" ascii_24.fnt pacu-button-callback)
     )
     (set! transfer-button
-      (glgui-button-string gui:rooms 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Transfer To?" ascii24.fnt transfer-button-callback)
+      (glgui-button-string gui:rooms 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Transfer To?" ascii_24.fnt transfer-button-callback)
     )
   )
 )
@@ -1723,17 +1723,17 @@
 	   (color (if (and myrooms (member (car room) myrooms)) White (if (list-notempty? users) LightSlateGray Black)))
 	   (user-name (store-ref "main" "UserName"))
 	   (rooms-send (store-ref "main" "RoomSendTime")))
-      (glgui:draw-text-left (+ x 3) y_shift 82 24 (car room) ascii24.fnt color)   
+      (glgui:draw-text-left (+ x 3) y_shift 82 24 (car room) ascii_24.fnt color)   
       (if (> num-users 0)
 	(let loop ((i 0))
 	  (if (not (or (= i num-users) (= i 5)))
 	    (begin
-	      (if (< i 2) (glgui:draw-text-left (+ x 85 (* i 75)) (+ y (/ h 2)) 70 16 (list-ref users i) ascii16.fnt 
+	      (if (< i 2) (glgui:draw-text-left (+ x 85 (* i 75)) (+ y (/ h 2)) 70 16 (list-ref users i) ascii_16.fnt 
 		(if (string=? (list-ref users i) user-name) White LightSlateGray)))
-	      (if (and (> i 1)(< i 4)) (glgui:draw-text-left (+ x 85 (* (- i 2) 75)) (+ y 2) 70 16 (list-ref users i) ascii16.fnt 
+	      (if (and (> i 1)(< i 4)) (glgui:draw-text-left (+ x 85 (* (- i 2) 75)) (+ y 2) 70 16 (list-ref users i) ascii_16.fnt 
 		(if (string=? (list-ref users i) user-name) White LightSlateGray)))
 	      (if (= i 4) (glgui:draw-text-left (+ x 85 (* (- i 2) 75)) (+ y 2) 70 16 
-		(string-append "(+" (number->string (- num-users 4)) "...)") ascii16.fnt White)
+		(string-append "(+" (number->string (- num-users 4)) "...)") ascii_16.fnt White)
 	      )
 	      (loop (+ i 1))
 	    )
@@ -1812,17 +1812,17 @@
 
  (let ((x 0)(y (- (glgui-height-get) gui:menu-height 16 3)))
     ;;Header row
-    (glgui-label gui:reminder (+ x 5) y 50 16 "Room" ascii16.fnt White)
-    (glgui-label gui:reminder (+ x 85) y 50 16 "Action" ascii16.fnt White)
-    (glgui-label gui:reminder (+ x 230) y 30 16 "Edit" ascii16.fnt White)
-    (glgui-label gui:reminder (+ x 268) y 50 16 "Delete" ascii16.fnt White)
+    (glgui-label gui:reminder (+ x 5) y 50 16 "Room" ascii_16.fnt White)
+    (glgui-label gui:reminder (+ x 85) y 50 16 "Action" ascii_16.fnt White)
+    (glgui-label gui:reminder (+ x 230) y 30 16 "Edit" ascii_16.fnt White)
+    (glgui-label gui:reminder (+ x 268) y 50 16 "Delete" ascii_16.fnt White)
 
     (set! reminder-list
        (glgui-list gui:reminder 0 (- y 5 (* 5 60)) (glgui-width-get) (* 5 60) 60 (build-reminder-list) reminder-list-callback)
     )
   )
   ;; Bottom row with secondary navigation buttons
-  (glgui-button-string gui:reminder 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Add Reminder" ascii24.fnt reminder-add-button-callback)
+  (glgui-button-string gui:reminder 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Add Reminder" ascii_24.fnt reminder-add-button-callback)
 )
 
 (define (reminder-list-callback g w t x y)
@@ -1926,18 +1926,18 @@
 
 (define (reminder-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 70 24 (car entry) ascii24.fnt White)  
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 70 24 (car entry) ascii_24.fnt White)  
     (if (list-notempty? (caddr entry))
       (let ((then (caaddr entry)))
 	(glgui:draw-text-left (+ x 85) (+ y 5) 140 16 (string-append (seconds->string then "%H:%M") " (in "
-								    (number->string (fix (/ (- then ##now) 60))) "min)") ascii16.fnt White) 
+								    (number->string (fix (/ (- then ##now) 60))) "min)") ascii_16.fnt White) 
 	(if (> (cadr (caddr entry)) 0)
 	  (glgui:draw-pixmap-left (+ x 66) (+ y 5) 16 16 repeat-small.img White)
 	)
       )
       (glgui:draw-pixmap-left (+ x 85) (+ y 5) 50 21 (list-ref phase-labels (caddr entry)) White)
     )
-    (glgui:draw-text-left (+ x 85) (+ y 30) 150 24 (cadr entry) ascii24.fnt White)    
+    (glgui:draw-text-left (+ x 85) (+ y 30) 150 24 (cadr entry) ascii_24.fnt White)    
    
     ;;Delete and Edit buttons
     (glgui:draw-pixmap-left (+ x 225) (+ y 10) 40 40 edit.img White)
@@ -1960,41 +1960,41 @@
 
   ;; Room list and Task selector
   (let ((x 5)(y (- (glgui-height-get) gui:menu-height 16 3)))
-    (glgui-label gui:reminder-setup x y 40 16 "Room" ascii16.fnt White)
+    (glgui-label gui:reminder-setup x y 40 16 "Room" ascii_16.fnt White)
     (set! reminder-room-list
       (glgui-list gui:reminder-setup x (- y (* 3 40)) (- (/ (glgui-width-get) 2) 10) (* 3 40) 40 (build-reminder-room-list) reminder-room-list-callback)
     )
 
     (store-set! "main" "task-names" '("Check Room" "Draw ABG" "Meeting"))
-    (glgui-label gui:reminder-setup (+ x (/ (glgui-width-get) 2)) y 40 16 "Task" ascii16.fnt White)    
+    (glgui-label gui:reminder-setup (+ x (/ (glgui-width-get) 2)) y 40 16 "Task" ascii_16.fnt White)    
     (set! reminder-task-list
       (glgui-list gui:reminder-setup (+ x (/ (glgui-width-get) 2)) (- y (* 3 40)) (- (/ (glgui-width-get) 2) 10) (* 3 40) 40 (build-reminder-task-list) reminder-task-list-callback)
     )
   )
 
   (let ((x 5)(y 205))
-    (glgui-label gui:reminder-setup (+ x 12) (+ y 40 40 3) 110 16 "Reminder Time" ascii16.fnt White)
+    (glgui-label gui:reminder-setup (+ x 12) (+ y 40 40 3) 110 16 "Reminder Time" ascii_16.fnt White)
     ;;Hour field
     (set! hour (glgui-vwheel gui:reminder-setup (+ x 12) (- y 58) 55 135 #f #f #f #f gui:active-color gui:inactive-color
-        num40.fnt num24.fnt #f gui:reminder-hours-list))
+        num_40.fnt num_24.fnt #f gui:reminder-hours-list))
     (glgui-widget-set! gui:reminder-setup hour 'callback time-change-button-callback)
     (glgui-widget-set! gui:reminder-setup hour 'cycle #t)
     (set! minute (glgui-vwheel gui:reminder-setup (+ x 72) (- y 58) 45 135 #f #f #f #f gui:active-color gui:inactive-color
-        num40.fnt num24.fnt #f gui:reminder-minutes-list))
+        num_40.fnt num_24.fnt #f gui:reminder-minutes-list))
     (glgui-widget-set! gui:reminder-setup minute 'callback time-change-button-callback)
     (glgui-widget-set! gui:reminder-setup minute 'cycle #t)
 
     ;; The image needs to be shifted by 15px
-    (glgui-label gui:reminder-setup (+ x 150) (+ y 40 40 3) 50 16 "Repeat" ascii16.fnt White)
+    (glgui-label gui:reminder-setup (+ x 150) (+ y 40 40 3) 50 16 "Repeat" ascii_16.fnt White)
     (set! repeat (glgui-vwheel gui:reminder-setup (+ x 145) (- y 58) 50 135 #f #f #f #f gui:active-color gui:inactive-color
-        num24.fnt num24.fnt #f gui:reminder-repeat-minutes-list))
+        num_24.fnt num_24.fnt #f gui:reminder-repeat-minutes-list))
     (glgui-widget-set! gui:reminder-setup repeat 'callback time-change-button-callback)
     (set! repeat-line (glgui-pixmap gui:reminder-setup (+ x 145) (- y 15) repeat.img))
   )
   
   ;; Phase Selector Row
   (let ((x 230)(y 160))
-    (glgui-label gui:reminder-setup (+ x 5 10) (+ y 90 35 3) 100 16 "Phase" ascii16.fnt White)
+    (glgui-label gui:reminder-setup (+ x 5 10) (+ y 90 35 3) 100 16 "Phase" ascii_16.fnt White)
     (set! phase-selector 
       (let loop ((i 0) (result (list)))
         (if (= i (length phase-labels)) result
@@ -2005,8 +2005,8 @@
   )
   
   ;; Bottom row with secondary navigation buttons
-  (glgui-button-string gui:reminder-setup 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Cancel" ascii24.fnt reminder-cancel-button-callback)
-  (glgui-button-string gui:reminder-setup (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Save" ascii24.fnt reminder-save-button-callback)
+  (glgui-button-string gui:reminder-setup 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Cancel" ascii_24.fnt reminder-cancel-button-callback)
+  (glgui-button-string gui:reminder-setup (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Save" ascii_24.fnt reminder-save-button-callback)
 )
 
 
@@ -2031,7 +2031,7 @@
 (define (reminder-room-list-element room idx)
   (lambda (g wgt x y w h s)
     (let ((y_shift (+ y (/ (- h 24) 2))))
-      (glgui:draw-text-left (+ x 5) y_shift 100 24 room ascii24.fnt (if (= idx gui:reminder-room-list-pos) gui:active-color gui:inactive-color))   
+      (glgui:draw-text-left (+ x 5) y_shift 100 24 room ascii_24.fnt (if (= idx gui:reminder-room-list-pos) gui:active-color gui:inactive-color))   
     )
   )
 )
@@ -2058,7 +2058,7 @@
 (define (reminder-task-list-element room idx)
   (lambda (g wgt x y w h s)
     (let ((y_shift (+ y (/ (- h 24) 2))))
-      (glgui:draw-text-left (+ x 5) y_shift 130 24 room ascii24.fnt (if (= idx gui:reminder-task-list-pos) gui:active-color gui:inactive-color))   
+      (glgui:draw-text-left (+ x 5) y_shift 130 24 room ascii_24.fnt (if (= idx gui:reminder-task-list-pos) gui:active-color gui:inactive-color))   
     )
   )
 )
@@ -2176,21 +2176,21 @@
 
   (let ((x 0)(y (- (glgui-height-get) gui:menu-height 16 3)))
     ;;Header row
-    (glgui-label gui:phonebook (+ x 5) y 70 16 "Name" ascii16.fnt White)
-    (glgui-label gui:phonebook (+ x 155) y 105 16 "Number/Pager" ascii16.fnt White)
+    (glgui-label gui:phonebook (+ x 5) y 70 16 "Name" ascii_16.fnt White)
+    (glgui-label gui:phonebook (+ x 155) y 105 16 "Number/Pager" ascii_16.fnt White)
     ;; The actual phonebook
     (set! phonebook-list
        (glgui-list gui:phonebook 0 (- y 5 (* 10 30)) (glgui-width-get) (* 10 30) 30 (build-phonebook-list) phonebook-select-callback)
     )
     ;; Bottom row with secondary navigation buttons
     (set! phonebook-edit-button
-      (glgui-button-string gui:phonebook 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Modify Phonebook" ascii24.fnt phonebook-modify-button-callback)
+      (glgui-button-string gui:phonebook 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Modify Phonebook" ascii_24.fnt phonebook-modify-button-callback)
     )
     (set! phonebook-add-button
-      (glgui-button-string gui:phonebook 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Add Entry" ascii24.fnt phonebook-add-button-callback)
+      (glgui-button-string gui:phonebook 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Add Entry" ascii_24.fnt phonebook-add-button-callback)
     )
     (set! phonebook-save-button
-      (glgui-button-string gui:phonebook (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Save Update" ascii24.fnt phonebook-save-button-callback)
+      (glgui-button-string gui:phonebook (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Save Update" ascii_24.fnt phonebook-save-button-callback)
     )
     (glgui-widget-set! gui:phonebook phonebook-add-button 'hidden #t)
     (glgui-widget-set! gui:phonebook phonebook-save-button 'hidden #t)
@@ -2309,10 +2309,10 @@
   
 (define (phonebook-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 145 24 (car entry) ascii24.fnt White)   
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 145 24 (car entry) ascii_24.fnt White)   
     (if (string=? (cadr entry) "VOIP") 
       (glgui:draw-pixmap-left (+ x 155) (+ y 2) 76 24 voip-small.img (if voip:enabled gui:active-color gui:inactive-color)) 
-      (glgui:draw-text-left (+ x 155) (+ y (/ (- h 24) 2)) (- (glgui-width-get) 155 10) 24 (cadr entry) ascii24.fnt White)  
+      (glgui:draw-text-left (+ x 155) (+ y (/ (- h 24) 2)) (- (glgui-width-get) 155 10) 24 (cadr entry) ascii_24.fnt White)  
     )
     (if (glgui-widget-get g phonebook-edit-button 'hidden)
       (begin 
@@ -2331,20 +2331,20 @@
 
   (let ((x 0)(y (+ 30 10))(h (glgui-height-get))(g gui:phonebook-editor))
     ;;Header row
-    (glgui-label g (+ x 150) 330 50 16 "Value:" ascii16.fnt White)
+    (glgui-label g (+ x 150) 330 50 16 "Value:" ascii_16.fnt White)
     ;; Labels
-    (glgui-label g (+ x 5) 300 70 24 "Name" ascii24.fnt White)
-    (glgui-label g (+ x 5) 270 145 24 "Number/Pager" ascii24.fnt White)
+    (glgui-label g (+ x 5) 300 70 24 "Name" ascii_24.fnt White)
+    (glgui-label g (+ x 5) 270 145 24 "Number/Pager" ascii_24.fnt White)
     ;;Data values
-    (set! phonebook-name (glgui-inputlabel g (+ x 150) 300 150 24 "" ascii24.fnt White))
+    (set! phonebook-name (glgui-inputlabel g (+ x 150) 300 150 24 "" ascii_24.fnt White))
     (glgui-widget-set! g phonebook-name 'callback phonebook-editor-name-callback)
-    (set! phonebook-number (glgui-inputlabel g (+ x 150) 270 150 24 "" ascii24.fnt White))
+    (set! phonebook-number (glgui-inputlabel g (+ x 150) 270 150 24 "" ascii_24.fnt White))
     (glgui-widget-set! g phonebook-number 'callback phonebook-editor-number-callback)
     ;; Keyboard for editing
     (set! phonebook-keyboard (glgui-ioskeypad g x y))
     ;; Bottom row with secondary navigation buttons
-    (glgui-button-string g 10 3 (- (/ (glgui-width-get) 2) 20) 30 "Cancel" ascii24.fnt phonebook-editor-cancel-button-callback)
-    (glgui-button-string g (+ (/ (glgui-width-get) 2) 10) 3 (- (/ (glgui-width-get) 2) 20) 30 "Save" ascii24.fnt phonebook-editor-save-button-callback)
+    (glgui-button-string g 10 3 (- (/ (glgui-width-get) 2) 20) 30 "Cancel" ascii_24.fnt phonebook-editor-cancel-button-callback)
+    (glgui-button-string g (+ (/ (glgui-width-get) 2) 10) 3 (- (/ (glgui-width-get) 2) 20) 30 "Save" ascii_24.fnt phonebook-editor-save-button-callback)
   )
 )
 
@@ -2395,25 +2395,25 @@
   (set! gui:voip (make-glgui))
   (let ((x 10)(y (- (glgui-height-get) gui:menu-height 24 3))(w (glgui-width-get)))
     ;; Some text about call
-    (set! voip-caller-label (glgui-label gui:voip x y w 24 "Call with: " ascii24.fnt White))
-    (set! voip-state-label (glgui-label gui:voip x (- y 125) w 24 "" ascii24.fnt White))
+    (set! voip-caller-label (glgui-label gui:voip x y w 24 "Call with: " ascii_24.fnt White))
+    (set! voip-state-label (glgui-label gui:voip x (- y 125) w 24 "" ascii_24.fnt White))
     (glgui-widget-set! gui:voip voip-state-label 'align GUI_ALIGNCENTER)
     ;; IP info
-    (set! voip-ip-label (glgui-label gui:voip (+ (/ w 2) x) (+ gui:navigation-height 20 30) (- (/ w 2) 20) 16 "IP:" ascii16.fnt LightGray))
+    (set! voip-ip-label (glgui-label gui:voip (+ (/ w 2) x) (+ gui:navigation-height 20 30) (- (/ w 2) 20) 16 "IP:" ascii_16.fnt LightGray))
 
     ;; Buttons on the bottom to accept or ignore call. 
     (set! accept-voip-button
-      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Accept" ascii24.fnt accept-voip-callback)
+      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Accept" ascii_24.fnt accept-voip-callback)
     )
     (set! reject-voip-button
-      (glgui-button-string gui:voip (+ (/ w 2) x) (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Reject" ascii24.fnt reject-voip-callback)
+      (glgui-button-string gui:voip (+ (/ w 2) x) (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Reject" ascii_24.fnt reject-voip-callback)
     )
     (set! terminate-voip-button
-      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Hang up / Disconnect" ascii24.fnt terminate-voip-callback)
+      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Hang up / Disconnect" ascii_24.fnt terminate-voip-callback)
     ) 
     (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)    
     (set! return-phonebook-button
-      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Back to Phonebook" ascii24.fnt return-phonebook-callback)
+      (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Back to Phonebook" ascii_24.fnt return-phonebook-callback)
     ) 
     (glgui-widget-set! gui:voip return-phonebook-button 'hidden #t)
   )
@@ -2549,9 +2549,9 @@
     ;; Top menu bar with title
     (glgui-menubar gui:menu 0 (- (glgui-height-get) gui:menu-height) (glgui-width-get) gui:menu-height)
   
-    (set! title (glgui-label gui:menu 5 (- (glgui-height-get) 28) 200 24 "" ascii24.fnt White))
+    (set! title (glgui-label gui:menu 5 (- (glgui-height-get) 28) 200 24 "" ascii_24.fnt White))
     ;; Clock in upper right corner
-    (set! clock (glgui-label gui:menu (- (glgui-width-get) 60) (- (glgui-height-get) 24) 60 16 "" ascii16.fnt White))
+    (set! clock (glgui-label gui:menu (- (glgui-width-get) 60) (- (glgui-height-get) 24) 60 16 "" ascii_16.fnt White))
     ;; Battery Indicator left of Clock
     (set! battery (glgui-battery gui:menu (- (glgui-width-get) 100) (- (glgui-height-get) 25) 40 18 100))
 
@@ -2563,11 +2563,11 @@
     
     ;; Number of messages
     ;;glgui-label g x y w h label fnt color
-    (set! message-number (glgui-label gui:menu (* MODE_MESSAGING (/ (glgui-width-get) (length icon-list))) 22 64 24 "0" ascii24.fnt White))
+    (set! message-number (glgui-label gui:menu (* MODE_MESSAGING (/ (glgui-width-get) (length icon-list))) 22 64 24 "0" ascii_24.fnt White))
     (glgui-widget-set! gui:menu message-number 'align GUI_ALIGNCENTER)
 
     ;; Number of reminders
-    (set! reminder-number (glgui-label gui:menu (- (* MODE_REMINDER (/ (glgui-width-get) (length icon-list))) 4) 19 64 24 "" ascii24.fnt gui:toggle-normal-color))
+    (set! reminder-number (glgui-label gui:menu (- (* MODE_REMINDER (/ (glgui-width-get) (length icon-list))) 4) 19 64 24 "" ascii_24.fnt gui:toggle-normal-color))
     (glgui-widget-set! gui:menu reminder-number 'align GUI_ALIGNCENTER)
 )
 
@@ -2585,11 +2585,11 @@
       (set! popup-box (glgui-box gui:popup x y w h (color-fade Black 0.75)))
       (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
       (glgui-widget-set! gui:popup popup-box 'rounded #t)
-      (set! popup-label (glgui-label gui:popup x (- (+ y h) 25) w 25 "" ascii24.fnt White))
+      (set! popup-label (glgui-label gui:popup x (- (+ y h) 25) w 25 "" ascii_24.fnt White))
       (glgui-widget-set! gui:popup popup-label 'align GUI_ALIGNCENTER)
-      (set! popup-text (glgui-label-wrapped gui:popup x (+ y 10) w (- h 25 12) "" ascii16.fnt White))
+      (set! popup-text (glgui-label-wrapped gui:popup x (+ y 10) w (- h 25 12) "" ascii_16.fnt White))
       (glgui-widget-set! gui:popup popup-text 'align GUI_ALIGNCENTER)
-      (set! popup-close-text (glgui-label gui:popup x y w 12 "Touch to see Message" ascii12.fnt White))
+      (set! popup-close-text (glgui-label gui:popup x y w 12 "Touch to see Message" ascii_12.fnt White))
       (glgui-widget-set! gui:popup popup-close-text 'align GUI_ALIGNCENTER)
       (set! popup-timer (glgui-box gui:popup x y w 12 gui:active-color))
     )
@@ -2731,16 +2731,16 @@
   (let ((x 0)(y 0)(h (glgui-height-get))(w (glgui-width-get))(g gui:setup))
     (glgui-pixmap g (/ (fx- w (car telePORT-logo.img)) 2) (- h (cadr telePORT-logo.img) 20) telePORT-logo.img)  
     ;;Header row
-    (glgui-label g (+ x 10) 350 (- w 20) 24 "Please set your VitalNode" ascii24.fnt White)
-    (glgui-label g (+ x 10) 320 (- w 20) 24 "server name:" ascii24.fnt White)
+    (glgui-label g (+ x 10) 350 (- w 20) 24 "Please set your VitalNode" ascii_24.fnt White)
+    (glgui-label g (+ x 10) 320 (- w 20) 24 "server name:" ascii_24.fnt White)
     ;; Labels and Data value
     (set! server-name
-      (glgui-inputlabel g (+ x 5) (- (/ h 2) 15) (- w 65 5 5 5) 30 rupi:hostname ascii24.fnt White (color-shade White 0.1))
+      (glgui-inputlabel g (+ x 5) (- (/ h 2) 15) (- w 65 5 5 5) 30 rupi:hostname ascii_24.fnt White (color-shade White 0.1))
     )
     (glgui-widget-set! g server-name 'callback server-name-callback)
     (glgui-widget-set! g server-name 'focus #t)
     (glgui-widget-set! g server-name 'align GUI_ALIGNRIGHT)
-    (glgui-button-string g (- w 65 5) (- (/ h 2) 15) 65 30 "Save" ascii24.fnt server-name-callback)
+    (glgui-button-string g (- w 65 5) (- (/ h 2) 15) 65 30 "Save" ascii_24.fnt server-name-callback)
     ;; Keyboard for editing
     (glgui-ioskeypad g x y)
   )
@@ -3170,7 +3170,7 @@
       )
       ;; We do a hack here: The ##now-3.0 is because the rupi timout in Login takes 3 sec and we still want the popup.
       (if (and (not hidden) 
-               (fl> (fl- (if rupi:error (fl- ##now 2.) ##now) tstamp) (if (glgui-widget-get gui:popup popup-box 'callback) timeout (fl/ timeout 2.)))
+               (fl> (fl- (if (and rupi:error (fx= mode MODE_LOGIN)) (fl- ##now 2.) ##now) tstamp) (if (glgui-widget-get gui:popup popup-box 'callback) timeout (fl/ timeout 2.)))
           )
         (begin
           (hide-popup)
