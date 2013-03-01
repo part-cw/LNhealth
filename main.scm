@@ -35,10 +35,10 @@
 
 ;; Labels for Messaging screen
 (include "./textures/source.scm")(include "./textures/message.scm")
-(include "./textures/ascii24.scm")(include "./textures/ascii24_fnt.scm")
-(include "./textures/ascii20.scm")(include "./textures/ascii20_fnt.scm")
-(include "./textures/ascii16.scm")(include "./textures/ascii16_fnt.scm")
-(include "./textures/ascii12.scm")(include "./textures/ascii12_fnt.scm")
+(include "./textures/ascii_24.scm")(include "./textures/ascii_24_fnt.scm")
+(include "./textures/ascii_20.scm")(include "./textures/ascii_20_fnt.scm")
+(include "./textures/ascii_16.scm")(include "./textures/ascii_16_fnt.scm")
+(include "./textures/ascii_12.scm")(include "./textures/ascii_12_fnt.scm")
 (include "./pixmaps/reply-arrow.scm")
 
 ;; Labels for Short Messages
@@ -55,9 +55,9 @@
 (define icon-list (list messaging-icon.img phonebook-icon.img home-icon.img rooms-icon.img reminder-icon.img))
 
 ;; Include 24pt font to write Numbers
-(include "./textures/num24.scm")(include "./textures/num24_fnt.scm")
-(include "./textures/num18.scm")(include "./textures/num18_fnt.scm")
-(include "./textures/num40.scm")(include "./textures/num40_fnt.scm")
+(include "./textures/num_24.scm")(include "./textures/num_24_fnt.scm")
+(include "./textures/num_18.scm")(include "./textures/num_18_fnt.scm")
+(include "./textures/num_40.scm")(include "./textures/num_40_fnt.scm")
 
 ;; -----------------------------------------------------------------------------
 ;;  GLOBAL VARIABLES
