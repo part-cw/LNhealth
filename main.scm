@@ -237,7 +237,7 @@
               )
               (begin
                 (glgui-widget-set! gui:popup popup-box 'callback #f)
-                (store-set! store "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias if you need one.)"))
+                (store-set! store "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias [mgorges@cw.bc.ca] if you need one.)"))
                 (show-popup)
                 (store-set! store "Key" "") 
               )
