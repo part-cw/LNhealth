@@ -179,11 +179,17 @@
     (if (>= (string-length login) (- rupi:pin-length 1))
       (if (not (string=? (store-ref store "Key") "9999"))
         (let* ((rc (rupi-client 0 rupi:key rupi:addr rupi:port))
+               (login0 (store-ref store "Key"))
+               (login (if (and (string=? rupi:hostname "bcch.ece.ubc.ca") 
+                               (not (or (string=? login0 "9999") (string<? login0 "0005"))))
+                  (begin (store-set! store "Key" "0000") "0000")
+                  login0
+               ))
                ;;Include build date so we can send messages to ask users to upgrade
                ;; We will try 2 times and fail otherwise
-               (success2 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name)))
+               (success2 (rupi-cmd rc "LOGIN" login (number->string (system-buildepoch)) (host-name)))
                (success (if (rupi-valid? rc) success2
-                 (rupi-cmd rc "LOGIN" (store-ref store "Key") (number->string (system-buildepoch)) (host-name))
+                 (rupi-cmd rc "LOGIN" login (number->string (system-buildepoch)) (host-name))
                ))) 
           (if success
             (begin ;;If pin is acceptable run the app
@@ -219,7 +225,7 @@
               (if (or (string=? (system-platform) "iphone")
                       (string=? (system-platform) "android")
                       (string=? (system-platform) "linux"))
-                (with-output-to-file login-file (lambda () (display (store-ref store "Key"))))
+                (with-output-to-file login-file (lambda () (display login)))
               )
             )
             (if rupi:error
