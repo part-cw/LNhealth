@@ -732,9 +732,9 @@
 	)
     ;; Play alarm sound when receiving message
     (cond
-      ((fx= prio 1) (audiofile-play audio:message))
-      ((fx= prio 2) (audiofile-play audio:alert))
-      ((fx= prio 3) (audiofile-play audio:emergency))
+      ((fx= prio 1) (audiofile-forceplay audio:message))
+      ((fx= prio 2) (audiofile-forceplay audio:alert))
+      ((fx= prio 3) (audiofile-forceplay audio:emergency))
     )
     ;; Handle a recent voice call request
     (if (and (fx= prio 0) (fl< (fl- ##now time) 15.) voip:enabled)
@@ -2488,7 +2488,7 @@
   ;; Make the call
   (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) caller (host-ipaddr) 9)
   ;; Init the audio parts  
-  (audiofile-play audio:phone)
+  (audiofile-forceplay audio:phone)
   (set! voip:ring (fl+ ##now 4.))
   (set! voip:ring-count 3)
 )
@@ -2523,7 +2523,7 @@
       (log-remote "Screen: VOIP")
       (set! mode MODE_VOIP)
       ;; Init the audio parts  
-      (audiofile-play audio:phone)
+      (audiofile-forceplay audio:phone)
       (set! voip:ring (fl+ ##now 4.))
       (set! voip:ring-count 3)
     )
@@ -3144,7 +3144,7 @@
         (begin
           (set! voip:ring (fl+ ##now 4.))
           (set! voip:ring-count (fx- voip:ring-count 1))
-          (audiofile-play audio:phone) 
+          (audiofile-forceplay audio:phone) 
         )
       )
     ))
@@ -3227,7 +3227,7 @@
 	      (glgui-widget-set! gui:menu clock 'label "OFFLINE")
               (store-set! "main" "popup-text" (list "Connection Lost" (string-append logstr ". Trying to reconnect!")))
               (if (and (fx> delta-time 15) (fx<= (modulo delta-time 60) 10))
-                (audiofile-play audio:disconnect)
+                (audiofile-forceplay audio:disconnect)
               )
 	    )
 	  )
