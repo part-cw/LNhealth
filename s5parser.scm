@@ -2,6 +2,8 @@
 ;; this is a separate module in order to reuse the code in monitor+tap plugins
 
 (include "../s-optimize.inc")
+(define s5parser:debuglevel 0)
+(define (s5parser:log level . x) (if (fx>= s5parser:debuglevel level) (apply log-system x)))
 (define s5parser:fromfile #f)
 
 (define (s5parser-setfromfile! v)
@@ -620,7 +622,7 @@
          ;; populate the vector
          (let loop2 ((o (fx+ ofs 6))(n 0)(flag 0))
            (if (fx= n wavelen)  
-             (if (and (> flag 0) (not s5parser:fromfile)) (log-system "s5parser: invalid data in waveform " flag))
+             (if (and (> flag 0) (not s5parser:fromfile)) (s5parser:log 0 "s5parser: invalid data in waveform " flag))
              (let* ((val (u8data-le-s16 (subu8data buf o (fx+ o 2))))
                     (newflag (fx< val -32000))
                     (sval (if newflag 0. (fl* (exact->inexact val) wavescaleinv))))
@@ -629,8 +631,10 @@
             )))
          (store-waveform-append s wavename wavedata)
          (store-waveform-scale s wavename '(0 0 0 0)) ;; This is actually not doing anything 
-       ) (begin (if (and wavename (> wavelen 0) (not wavevalid)) (log-system "s5parser: invalid waveform data: [" buf "]" )) #f))
-
+       ) (begin
+           (if (and wavename (> wavelen 0) (not wavevalid)) (s5parser:log 1 "s5parser: invalid waveform data: [" buf "]" )) 
+           #f
+         ))
      (loop (cdr srs))))))
 
 ;; ----------------
