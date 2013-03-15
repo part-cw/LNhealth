@@ -280,7 +280,7 @@
     
     ;; Garbage collect, sleep and iterate over new plugin data
     (##gc)                     ;; This calls the garbage collector 
-    (thread-sleep! 0.01)        ;; Sleep for 100 usec
+    (thread-sleep! 0.005)        ;; Sleep for 5 usec
     (runtime-iterate)
   )
 ;; termination
