@@ -35,7 +35,7 @@
 ### allow wifi/audio when in background 
 <key>UIBackgroundModes</key>
 <array>
-<string>voip</string>
+#<string>voip</string>
 <string>audio</string>
 </array>
 
