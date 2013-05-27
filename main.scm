@@ -576,8 +576,9 @@
       (if (> (string-length reply) 0) (begin
         ;; Quickly log which message button was used [No logging of messages locally! - unsecure]
         ;; (log-remote (string-append "Message: " reply))
-        ;; Send actual message
-        (rupi-cmd (store-ref "main" "RupiClient" #f) "SENDMESSAGE" (store-ref "main" "Key" #f) destination reply)
+        ;; Send actual message (and replace all colons so we don't choke on them).
+        (rupi-cmd (store-ref "main" "RupiClient" #f) "SENDMESSAGE" (store-ref "main" "Key" #f) destination 
+          (string-replace-char reply #\: #\.))
         ;; Add message to chat store
         (store-set! "main" "ChatMessages" (append
           (list (list ##now destination reply 1))
