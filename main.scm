@@ -1,45 +1,20 @@
 ;; telePORT [formerly known as iFishAA]
 ;; Matthias Görges 2011-2012
-(include "../s-optimize.inc")
 (define voip:enabled #f) ;; Disable until stable
+
+;; Until replaced I need these two to run as they are not in ln_core
+(define float->ccstring float->choppedstring)
+(define float->autostring float->string)
 
 ;; -----------------------------------------------------------------------------
 ;;  LOADING OF TEXTURES AND FONTS and definition of texture lists
 ;; -----------------------------------------------------------------------------
-(include "./pixmaps/telePORT-logo.scm")(include "./textures/copyright.scm")
-
 ;; Load Textures for Overview Screen: Anesthesia Phase Icons, labels and size 24 font
-(include "./pixmaps/induction.scm")(include "./pixmaps/maintenance.scm")(include "./pixmaps/emergence.scm")
-(include "./pixmaps/empty.scm")(include "./pixmaps/repeat-empty.scm")
 (define phase-labels (list empty.img induction.img maintenance.img emergence.img repeat-empty.img))
-(include "./textures/location.scm")(include "./textures/phase.scm")(include "./textures/hr.scm")
-(include "./textures/spo2.scm")(include "./textures/etco2.scm") (include "./textures/alert.scm")
-(include "./pixmaps/popup.scm")
-
-;; Labels for Waveform screen
-(include "./textures/label_hr.scm")(include "./textures/label_spo2.scm")(include "./textures/label_etco2.scm")
-(include "./textures/label_nibp.scm")(include "./textures/label_art.scm")(include "./textures/label_temp.scm")
-(include "./textures/label_agent.scm")
-
-;; Textures for Reminder screen
-(include "./pixmaps/edit.scm")(include "./pixmaps/delete.scm")(include "./pixmaps/repeat.scm")(include "./pixmaps/repeat-small.scm")
-(include "./pixmaps/down-arrow.scm")(include "./pixmaps/up-arrow.scm")
 
 ;; Textures for Phonebook screen
 (define delete-small.img (append (list 24 24) (cddr delete.img)))
 (define edit-small.img (append (list 24 24) (cddr edit.img)))
-(include "./pixmaps/voip-small.scm")
-
-;; Textures for Room subscription screen
-(include "./pixmaps/rooms-transfer.scm")(include "./pixmaps/rooms-subscribed.scm")
-
-;; Labels for Messaging screen
-(include "./textures/source.scm")(include "./textures/message.scm")
-(include "./textures/ascii_24.scm")(include "./textures/ascii_24_fnt.scm")
-(include "./textures/ascii_20.scm")(include "./textures/ascii_20_fnt.scm")
-(include "./textures/ascii_16.scm")(include "./textures/ascii_16_fnt.scm")
-(include "./textures/ascii_12.scm")(include "./textures/ascii_12_fnt.scm")
-(include "./pixmaps/reply-arrow.scm")
 
 ;; Labels for Short Messages
 (define message-texts (list "Can you help?" "Thanks"
@@ -50,14 +25,7 @@
 			    "Yes" "No"))
 
 ;; Navigation Menu Icons
-(include "./pixmaps/home-icon.scm")(include "./pixmaps/messaging-icon.scm")(include "./pixmaps/reminder-icon.scm")
-(include "./pixmaps/rooms-icon.scm")(include "./pixmaps/phonebook-icon.scm")
 (define icon-list (list messaging-icon.img phonebook-icon.img home-icon.img rooms-icon.img reminder-icon.img))
-
-;; Include 24pt font to write Numbers
-(include "./textures/num_24.scm")(include "./textures/num_24_fnt.scm")
-(include "./textures/num_18.scm")(include "./textures/num_18_fnt.scm")
-(include "./textures/num_40.scm")(include "./textures/num_40_fnt.scm")
 
 ;; -----------------------------------------------------------------------------
 ;;  GLOBAL VARIABLES

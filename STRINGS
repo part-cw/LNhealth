@@ -1,19 +1,19 @@
 cmss.ttf 16 "Location" location
 cmss.ttf 16 "Phase" phase
 cmss.ttf 16 "HR" hr
-cmss.ttf 16 "etCO\$_2\$" etco2
-cmss.ttf 16 "SpO\$_2\$" spo2
+cmss.ttf 16 "etCO2" etco2
+cmss.ttf 16 "SpO2" spo2
 cmss.ttf 16 "Alert" alert
 
 cmss.ttf 16 "From" source
 cmss.ttf 16 "Message" message
 
-cmss.ttf 16 "HR\\\\[-1mm] bpm" label_hr
-cmss.ttf 16 "SpO\$_2\$\\\\[-1mm] \\%" label_spo2
-cmss.ttf 16 "etCO\$_2\$\\\\[-1mm] mmHg" label_etco2
-cmss.ttf 16 "NIBP\\\\[-1mm] mmHg" label_nibp
-cmss.ttf 16 "ART\\\\[-1mm] mmHg" label_art
-cmss.ttf 16 "Temp\\\\[-1mm] \$^{\circ}\$C" label_temp
-cmss.ttf 16 "Agent\\\\[-1mm] \\%" label_agent
+cmss.ttf 16 "HRbpm" label_hr
+cmss.ttf 16 "SpO2%" label_spo2
+cmss.ttf 16 "etCO2mmHg" label_etco2
+cmss.ttf 16 "NIBPmmHg" label_nibp
+cmss.ttf 16 "ARTmmHg" label_art
+cmss.ttf 16 "Temp°C" label_temp
+cmss.ttf 16 "Agent%" label_agent
 
-cmss.ttf 12 "telePORT © 2011-2013 UBC & BC Children's Hospital\n CAUTION: NOT FOR CLINICAL USE !!!" copyright
+cmss.ttf 12 "telePORT © 2011-2013 UBC & BC Children's Hospital CAUTION: NOT FOR CLINICAL USE !!!" copyright

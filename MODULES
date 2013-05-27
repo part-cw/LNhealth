@@ -1,1 +1,1 @@
-init core glcore glgui store audiofile rtaudio opusvoip ioskeypad
+config eventloop ln_core ln_glcore glgui ln_store ln_audio rupi ioskeypad #opusvoip
