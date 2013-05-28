@@ -13,7 +13,7 @@ cmss.ttf 16 "SpO2%" label_spo2
 cmss.ttf 16 "etCO2mmHg" label_etco2
 cmss.ttf 16 "NIBPmmHg" label_nibp
 cmss.ttf 16 "ARTmmHg" label_art
-cmss.ttf 16 "Temp°C" label_temp
+cmss.ttf 16 "TempC" label_temp
 cmss.ttf 16 "Agent%" label_agent
 
-cmss.ttf 12 "telePORT © 2011-2013 UBC & BC Children's Hospital CAUTION: NOT FOR CLINICAL USE !!!" copyright
+cmss.ttf 12 "telePORT (c) 2011-2013 UBC & BC Children's Hospital CAUTION: NOT FOR CLINICAL USE !!!" copyright
