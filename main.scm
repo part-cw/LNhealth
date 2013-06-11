@@ -1,5 +1,5 @@
 ;; telePORT [formerly known as iFishAA]
-;; Matthias Görges 2011-2012
+;; Matthias Görges 2011-2013
 (define voip:enabled #f) ;; Disable until stable
 
 ;; Until replaced I need these two to run as they are not in ln_core
@@ -465,8 +465,8 @@
         (if (> (string-length (list-ref alert 4)) 0) 
           (glgui:draw-pixmap-left (+ x 75 2) (- y_shift 7) 23 14 reply-arrow.img LightGray)
         )
-        (set! reply (glgui:draw-text-left (+ x 75 2 25) (- y_shift 5) 150 16 (list-ref alert 4) ascii_16.fnt LightGray))
-        (set! y_shift (+ y_shift 6))
+        (set! reply (glgui:draw-text-left (+ x 75 2 25) (- y_shift 7) 150 16 (list-ref alert 4) ascii_16.fnt LightGray))
+        (set! y_shift (+ y_shift 7))
       )
     )
     ;; And finally the message itself
@@ -1298,14 +1298,14 @@
   (set! wave-canvas (glgui-box-dragable gui:waves 5 (- (glgui-height-get) gui:navigation-height 295) (- (glgui-width-get) 10) (+ 295 20) Black wave-canvas-callback))
 
   ;;Define Widgets to present current value numbers
-  ;; glgui-trend has parameters: gui, x y label texture, font, color)
-  (set! hr_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 20) label_hr.img num_40.fnt Green))
-  (set! spo2_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 65) label_spo2.img num_40.fnt White))
-  (set! etco2_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 110) label_etco2.img num_40.fnt Orange))
-  (set! art_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 155) label_art.img num_40.fnt Red))
-  (set! nibp_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 200) label_nibp.img num_40.fnt Red))
-  (set! temp_value (glgui-trend gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 245) label_temp.img num_40.fnt White))
-  (set! agent_value (glgui-trend gui:waves (- (/ (glgui-width-get) 2) 50) (- (glgui-height-get) gui:navigation-height 245) label_agent.img num_40.fnt White))
+  ;; glgui-valuelabel has parameters: gui, x y label texture, font, color)
+  (set! hr_value (glgui-valuelabel gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 20) label_hr.img num_40.fnt Green))
+  (set! spo2_value (glgui-valuelabel gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 65) label_spo2.img num_40.fnt White))
+  (set! etco2_value (glgui-valuelabel gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 110) label_etco2.img num_40.fnt Orange))
+  (set! art_value (glgui-valuelabel gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 155) label_art.img num_40.fnt Red))
+  (set! nibp_value (glgui-valuelabel gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 200) label_nibp.img num_40.fnt Red))
+  (set! temp_value (glgui-valuelabel gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 245) label_temp.img num_40.fnt White))
+  (set! agent_value (glgui-valuelabel gui:waves (- (/ (glgui-width-get) 2) 50) (- (glgui-height-get) gui:navigation-height 245) label_agent.img num_40.fnt White))
   ;;(glgui-label g x y w h label fnt color)
   (set! agent_name (glgui-label gui:waves 5 (- (glgui-height-get) gui:navigation-height 245) 60 24 "" ascii_24.fnt White))  
 
@@ -1559,14 +1559,14 @@
   (set! wave-canvas (glgui-box-dragable gui:waves-landscape 5 5 (- (glgui-height-get) 10) (- (glgui-width-get) 10) Black wave-canvas-callback))
 
   ;;Define Widgets to present current value numbers
-  ;; glgui-trend has parameters: gui, x y label texture, font, color)
-  (set! hr_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 50) label_hr.img num_40.fnt Green))
-  (set! spo2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 105) label_spo2.img num_40.fnt White))
-  (set! etco2_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 150) label_etco2.img num_40.fnt Orange))
-  (set! art_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 195) label_art.img num_40.fnt Red))
-  (set! nibp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num_40.fnt Red))
-  (set! temp_value-landscape (glgui-trend gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 280) label_temp.img num_40.fnt White))
-  (set! agent_value-landscape (glgui-trend gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 280) label_agent.img num_40.fnt White))
+  ;; glgui-valuelabel has parameters: gui, x y label texture, font, color)
+  (set! hr_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 50) label_hr.img num_40.fnt Green))
+  (set! spo2_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 105) label_spo2.img num_40.fnt White))
+  (set! etco2_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 150) label_etco2.img num_40.fnt Orange))
+  (set! art_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 195) label_art.img num_40.fnt Red))
+  (set! nibp_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num_40.fnt Red))
+  (set! temp_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 280) label_temp.img num_40.fnt White))
+  (set! agent_value-landscape (glgui-valuelabel gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 280) label_agent.img num_40.fnt White))
   (set! agent_name-landscape (glgui-label gui:waves-landscape 85 (- (glgui-width-get) 280) 60 24 "" ascii_24.fnt White))  
 
   ;;Place the Trace Widgets
@@ -1904,16 +1904,16 @@
     (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 70 24 (car entry) ascii_24.fnt White)  
     (if (list-notempty? (caddr entry))
       (let ((then (caaddr entry)))
-	(glgui:draw-text-left (+ x 85) (+ y 5) 140 16 (string-append (seconds->string then "%H:%M") " (in "
-								    (number->string (fix (/ (- then ##now) 60))) "min)") ascii_16.fnt White) 
-	(if (> (cadr (caddr entry)) 0)
-	  (glgui:draw-pixmap-left (+ x 66) (+ y 5) 16 16 repeat-small.img White)
-	)
+        (glgui:draw-text-left (+ x 85) (+ y 5) 140 16 (string-append (seconds->string then "%H:%M") " (in "
+          (number->string (fix (/ (- then ##now) 60))) "min)") ascii_16.fnt White)
+        (if (> (cadr (caddr entry)) 0)
+          (glgui:draw-pixmap-left (+ x 66) (+ y 5) 16 16 repeat-small.img White)
+        )
       )
       (glgui:draw-pixmap-left (+ x 85) (+ y 5) 50 21 (list-ref phase-labels (caddr entry)) White)
     )
     (glgui:draw-text-left (+ x 85) (+ y 30) 150 24 (cadr entry) ascii_24.fnt White)    
-   
+
     ;;Delete and Edit buttons
     (glgui:draw-pixmap-left (+ x 225) (+ y 10) 40 40 edit.img White)
     (glgui:draw-pixmap-left (+ x 270) (+ y 10) 40 43 delete.img White)
@@ -1950,18 +1950,18 @@
   (let ((x 5)(y 205))
     (glgui-label gui:reminder-setup (+ x 12) (+ y 40 40 3) 110 16 "Reminder Time" ascii_16.fnt White)
     ;;Hour field
-    (set! hour (glgui-vwheel gui:reminder-setup (+ x 12) (- y 58) 55 135 #f #f #f #f gui:active-color gui:inactive-color
+    (set! hour (glgui-verticalnumberwheel gui:reminder-setup (+ x 12) (- y 58) 55 135 #f #f #f #f gui:active-color gui:inactive-color
         num_40.fnt num_24.fnt #f gui:reminder-hours-list))
     (glgui-widget-set! gui:reminder-setup hour 'callback time-change-button-callback)
     (glgui-widget-set! gui:reminder-setup hour 'cycle #t)
-    (set! minute (glgui-vwheel gui:reminder-setup (+ x 72) (- y 58) 45 135 #f #f #f #f gui:active-color gui:inactive-color
+    (set! minute (glgui-verticalnumberwheel gui:reminder-setup (+ x 72) (- y 58) 45 135 #f #f #f #f gui:active-color gui:inactive-color
         num_40.fnt num_24.fnt #f gui:reminder-minutes-list))
     (glgui-widget-set! gui:reminder-setup minute 'callback time-change-button-callback)
     (glgui-widget-set! gui:reminder-setup minute 'cycle #t)
 
     ;; The image needs to be shifted by 15px
     (glgui-label gui:reminder-setup (+ x 150) (+ y 40 40 3) 50 16 "Repeat" ascii_16.fnt White)
-    (set! repeat (glgui-vwheel gui:reminder-setup (+ x 145) (- y 58) 50 135 #f #f #f #f gui:active-color gui:inactive-color
+    (set! repeat (glgui-verticalnumberwheel gui:reminder-setup (+ x 145) (- y 58) 50 135 #f #f #f #f gui:active-color gui:inactive-color
         num_24.fnt num_24.fnt #f gui:reminder-repeat-minutes-list))
     (glgui-widget-set! gui:reminder-setup repeat 'callback time-change-button-callback)
     (set! repeat-line (glgui-pixmap gui:reminder-setup (+ x 145) (- y 15) repeat.img))
