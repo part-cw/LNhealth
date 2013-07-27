@@ -1,1 +1,1 @@
-config eventloop ln_core ln_glcore ln_glgui ln_store ln_audio rupi ioskeypad opusvoip
+config eventloop ln_core ln_glcore ln_glgui ln_store ln_audio rupilegacy ioskeypad opusvoip
