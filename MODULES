@@ -1,2 +1,1 @@
-init core store runtime glcore glgui monitor ivueparser trendoutput waveoutput
-
+config eventloop ln_core ln_store scheduler ln_glcore ln_glgui ivueparser serial csv

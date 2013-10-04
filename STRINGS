@@ -1,0 +1,5 @@
+cmssdc.ttf 16 "HR//bpm" label_hr
+cmssdc.ttf 16 "PR//bpm" label_pr
+cmssdc.ttf 16 "SpO\$_2\$" label_spo2
+cmssdc.ttf 16 "MAP//mmHg" label_map
+cmssdc.ttf 12 "PhilipsDataLogger \copyright 2011-2013 UBC \&  BC Children's Hospital" copyright

@@ -1,17 +1,5 @@
 ;; Philips Generic Waveform and Numerics Logger
 ;; Matthias Görges 2012-2013
-(include "../s-optimize.inc")
-
-;; Fonts
-(include "./textures/ascii24.scm")(include "./textures/ascii24_fnt.scm")
-(include "./textures/ascii16.scm")(include "./textures/ascii16_fnt.scm")
-(include "./textures/num40.scm")(include "./textures/num40_fnt.scm")
-(include "./textures/num18.scm")(include "./textures/num18_fnt.scm")
-;; Labels for Waveform screen
-(include "./textures/label_pr.scm")(include "./textures/label_spo2.scm")
-(include "./textures/label_map.scm")
-;; Copyright Line
-(include "./textures/copyright.scm")
 
 ;; Global variables
 (define buf "")
@@ -34,26 +22,26 @@
   (glgui-menubar gui:main 0 (- (glgui-height-get) 30) (glgui-width-get) 30)
   
   ;; Label in upper left corner
-  (glgui-label gui:main 10 (- (glgui-height-get) 24 3) 350 24 "Philips Data Logger" ascii24.fnt White)
+  (glgui-label gui:main 10 (- (glgui-height-get) 24 3) 350 24 "Philips Data Logger" ascii_24.fnt White)
 
   ;; Clock in upper right corner
-  (set! clock (glgui-label gui:main (- (glgui-width-get) 70) (- (glgui-height-get) 24) 60 16 "" ascii16.fnt White))
+  (set! clock (glgui-label gui:main (- (glgui-width-get) 70) (- (glgui-height-get) 24) 60 16 "" ascii_16.fnt White))
 
   ;; Logging List
   (let ((x 525)(y (- (glgui-height-get) 50)) (w 460))
     ;;Header row
-    (glgui-label gui:main (+ x 5) y 70 16 "Time" ascii16.fnt White)
-    (glgui-label gui:main (+ x 75) y (- (glgui-width-get) 75 5) 16 "Log Entry" ascii16.fnt White)
+    (glgui-label gui:main (+ x 5) y 70 16 "Time" ascii_16.fnt White)
+    (glgui-label gui:main (+ x 75) y (- (glgui-width-get) 75 5) 16 "Log Entry" ascii_16.fnt White)
     ;;The actual list itself
     (set! log-list
       (glgui-list gui:main x (- y 5 (* 12 30)) w (* 12 30) 30 (build-log-list) #f)
     )
     (glgui-widget-set! gui:main log-list 'hidden #t)
     ;;Text Entry String
-    (set! text (glgui-label gui:main (+ x 5) (- y 5 34 (* 12 30)) w 24 "" ascii24.fnt White))
+    (set! text (glgui-label gui:main (+ x 5) (- y 5 34 (* 12 30)) w 24 "" ascii_24.fnt White))
     ;; Recording start button  
     (set! recording-start-button 
-      (glgui-button-string gui:main x (- y (* 6 30)) w 50 "Start Recording" ascii24.fnt start-recording-callback)
+      (glgui-button-string gui:main x (- y (* 6 30)) w 50 "Start Recording" ascii_24.fnt start-recording-callback)
     )
   )
 )
@@ -79,8 +67,8 @@
 ;; Draw a log-list element with data from the entry field
 (define (log-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 16) 2)) 70 16 (seconds->string (car entry) "%T") ascii16.fnt White)  
-    (glgui:draw-text-left (+ x 75) (+ y (/ (- h 24) 2)) (- w 90) 24 (cadr entry) ascii24.fnt White)  
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 16) 2)) 70 16 (seconds->string (car entry) "%T") ascii_16.fnt White)  
+    (glgui:draw-text-left (+ x 75) (+ y (/ (- h 24) 2)) (- w 90) 24 (cadr entry) ascii_24.fnt White)  
   )
 )
 
@@ -98,7 +86,7 @@
         (store-event-add "main" 1 buf)
       )
       ;; Log the waveforms recorded
-      (let* ((waves (table-ref (store-wdatatable "main") 'IdList '()))
+      (let* ((waves (table-ref (store:wdatatable "main") 'IdList '()))
              (buf (string-append "WAVES: " (string-mapconcat waves ", "))))
         (for-each (lambda (l) (make-instance "main" (string-append "WAVEOUT" l) "waveoutput" `("Source" ,l))) waves)
         (store-set! "main" "Log" (append (list (list (floor ##now) buf)) (store-ref "main" "Log" '())))
@@ -106,7 +94,7 @@
         (store-event-add "main" 1 buf)
       )
       ;; Start the case
-      (runtime-startcase "main" (time->timestamp (current-time)))
+      (scheduler-startcase "main" (time->timestamp (current-time)))
       ;; Hide the start button and show the log message list
       (glgui-widget-set! gui:main recording-start-button 'hidden #t)
       (glgui-widget-set! gui:main log-list 'hidden #f)
@@ -122,10 +110,10 @@
 (define (init-gui-trends)
   (set! gui:trends (make-glgui))
   ;; Positions of the trend numbers
-  (set! pr_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 1)) label_pr.img num40.fnt Green))
-  (set! map_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 2)) label_map.img num40.fnt Red))
-  (set! map_nibp_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 2.3)) label_map.img num40.fnt IndianRed))
-  (set! spo2_value (glgui-trend gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 3)) label_spo2.img num40.fnt Aquamarine))
+  (set! pr_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 1)) label_pr.img num_40.fnt Green))
+  (set! map_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 2)) label_map.img num_40.fnt Red))
+  (set! map_nibp_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 2.3)) label_map.img num_40.fnt IndianRed))
+  (set! spo2_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) (* 120 3)) label_spo2.img num_40.fnt Aquamarine))
 
  ;; Define scales for Waveforms
   (set! PR_min 45)(set! PR_max 175)
@@ -151,16 +139,16 @@
   (glgui-box gui:trends (+ 5 133) (- (glgui-height-get) 50 (* 120 3)) 2 (* 120 3) DimGray)
   (glgui-box gui:trends (+ 5 267) (- (glgui-height-get) 50 (* 120 3)) 2 (* 120 3) DimGray)
   (glgui-box gui:trends (+ 5 400) (- (glgui-height-get) 50 (* 120 3)) 2 (* 120 3) DimGray)
-  (set! time63 (glgui-label gui:main 0 (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
-  (set! time43 (glgui-label gui:main (+ 5 133 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
-  (set! time23 (glgui-label gui:main (+ 5 266 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
-  (set! time03 (glgui-label gui:main (+ 5 400 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii16.fnt DarkGray))
+  (set! time63 (glgui-label gui:main 0 (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii_16.fnt DarkGray))
+  (set! time43 (glgui-label gui:main (+ 5 133 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii_16.fnt DarkGray))
+  (set! time23 (glgui-label gui:main (+ 5 266 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii_16.fnt DarkGray))
+  (set! time03 (glgui-label gui:main (+ 5 400 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii_16.fnt DarkGray))
 
   ;;Place the Trace Widgets
-  (set! pr-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 1)) 400 110 pr-trace Green ascii16.fnt))    
-  (set! spo2-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 3)) 400 110 spo2-trace Aquamarine ascii16.fnt))
-  (set! map-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map-trace Red ascii16.fnt))
-  (set! map_nibp-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map_nibp-trace IndianRed ascii16.fnt))
+  (set! pr-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 1)) 400 110 pr-trace Green ascii_16.fnt))    
+  (set! spo2-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 3)) 400 110 spo2-trace Aquamarine ascii_16.fnt))
+  (set! map-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map-trace Red ascii_16.fnt))
+  (set! map_nibp-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map_nibp-trace IndianRed ascii_16.fnt))
 )
 
 ;; (update-trends store)
@@ -241,8 +229,8 @@
       ((string=? (system-platform) "win32") "COM3")
       (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
 
-    ;;Make sure that runtime actually runs !!!
-    (runtime-init)
+    ;;Make sure that scheduler actually runs !!!
+    (scheduler-init)
   )
 ;; events
   (lambda (t x y) 
@@ -281,11 +269,11 @@
     ;; Garbage collect, sleep and iterate over new plugin data
     (##gc)                     ;; This calls the garbage collector 
     (thread-sleep! 0.005)        ;; Sleep for 5 usec
-    (runtime-iterate)
+    (scheduler-iterate)
   )
 ;; termination
   (lambda () 
-    (runtime-cleanup)
+    (scheduler-cleanup)
     #t
   )
 ;; suspend
