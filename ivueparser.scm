@@ -1,8 +1,5 @@
 ;; philips monitor trend & waveform parser 
 ;; Christian Leth Petersen 2009/2010
-
-(include "../s-optimize.inc")
-
 (include "constants.scm")
 (include "crc.scm")
 (include "datatypes.scm")

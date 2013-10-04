@@ -1,6 +1,6 @@
 ;; philips monitor numerical data types
 
-(define (ivueparser:decodeu8 v) 
+(define (ivueparser:decodeu8 v)
   (u8data-ref v 0))
 
 (define (ivueparser:decodeu16 v)
