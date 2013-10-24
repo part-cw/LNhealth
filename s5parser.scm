@@ -1,7 +1,5 @@
 ;; datex s5 parser
 ;; this is a separate module in order to reuse the code in monitor+tap plugins
-
-(include "../s-optimize.inc")
 (define s5parser:debuglevel 0)
 (define (s5parser:log level . x) (if (fx>= s5parser:debuglevel level) (apply log-system x)))
 (define s5parser:fromfile #f)
