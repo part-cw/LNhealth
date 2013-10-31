@@ -2982,9 +2982,9 @@
     ;; If we can't get a hostname resolved we don't want to bring up login screen
     (if rupi:addr
       (begin
-	;; Initializers for the different gui screens and parts [the rest is AFTER LOGIN]
-	(init-gui-login)
-	(audiofile-init)
+      	;; Initializers for the different gui screens and parts [the rest is AFTER LOGIN]
+      	(init-gui-login)
+      	(audiofile-init)
         (set! audio:message (audiofile-load "Message"))
         (set! audio:alert (audiofile-load "Alert"))
         (set! audio:emergency (audiofile-load "Emergency"))
@@ -2994,10 +2994,10 @@
         (init-gui-setup)
       )
       (begin 
-	(set! gui:login (make-glgui))
-	(glgui-box gui:login 0 0 (glgui-width-get) (glgui-height-get) (color-shade Red 0.4))
-	(store-set! "main" "popup-text" (list "NO CONNECTION" "FAILURE: Can't find the VitalNode. Please check the Wifi connection is active. We will quit now"))
-	(show-popup)
+        (set! gui:login (make-glgui))
+        (glgui-box gui:login 0 0 (glgui-width-get) (glgui-height-get) (color-shade Red 0.4))
+        (store-set! "main" "popup-text" (list "NO CONNECTION" "FAILURE: Can't find the VitalNode. Please check the Wifi connection is active. We will quit now"))
+        (show-popup)
       )
     )
     ;; I want logfiles so the logile directory needs to be made here
