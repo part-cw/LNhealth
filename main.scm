@@ -102,7 +102,7 @@
   ;; Logo and Build Information
   (glgui-pixmap gui:login (/ (fx- (glgui-width-get) (car telePORT-logo.img)) 2) (- (glgui-height-get) (cadr telePORT-logo.img) 20) telePORT-logo.img)
   (let ((x (- (glgui-width-get) 90))(y 45))
-    (glgui-label gui:login x (+ y 18) 85 16 "Build:" ascii_16.fnt DarkGray)
+    (glgui-label gui:login x (+ y 18) 85 16 (string-append "Version: " (system-appversion)) ascii_16.fnt DarkGray)
     (glgui-label gui:login x y 85 16 (system-builddate) ascii_16.fnt DarkGray)
   )    
   
