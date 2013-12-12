@@ -1009,7 +1009,7 @@
   (set! gui:messaging-detail-shown #f)
   (log-remote "Screen: Messaging")
   (set! mode MODE_MESSAGING)
-  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
+  (orientation-set-portrait!)
 )
 
 ;; Functions to switch between keyboard and quicktext
@@ -1347,14 +1347,14 @@
 (define (goto-overview-button-callback g w t x y)
   (log-remote "Screen: Overview")
   (set! mode MODE_OVERVIEW)
-  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
+  (orientation-set-portrait!)
 )
 ;; Going to the trend screen
 (define (goto-trends-button-callback g w t x y)
   (log-remote "Screen: Trends")
   (set! rupi:last-trend-update 0.) ;; Force immediate update
   (set! mode MODE_TRENDS)
-  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
+  (orientation-set-portrait!)
 )
 
 ;; Allow sliding motion to change rooms
@@ -1480,7 +1480,7 @@
 	)
       )
       ;; Update the labels in the landscape gui mode
-      (if landscape? (begin
+      (if (orientation-landscape?) (begin
         (glgui-widget-set! gui:waves-landscape agent_name-landscape 'label (glgui-widget-get gui:waves agent_name 'label))
         (glgui-widget-set! gui:waves-landscape agent_name-landscape 'color (glgui-widget-get gui:waves agent_name 'color))
         (glgui-widget-set! gui:waves-landscape hr_value-landscape 'label (glgui-widget-get gui:waves hr_value 'label))
@@ -2575,7 +2575,7 @@
   (glgui-widget-set! gui:menu navigation-bar 'value MODE_MESSAGING)
   (log-remote "Screen: Messaging")
   (set! mode MODE_MESSAGING)
-  (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
+  (orientation-set-portrait!)
 )
 
 (define (hide-popup)
@@ -2588,8 +2588,8 @@
 )
 
 (define (show-popup)
-  (glgui-set! gui:popup 'yofs (if landscape? -125 0))
-  (glgui-set! gui:popup 'xofs (if landscape? 75 0))
+  (glgui-set! gui:popup 'yofs (if (orientation-landscape?) -125 0))
+  (glgui-set! gui:popup 'xofs (if (orientation-landscape?) 75 0))
   (glgui-widget-set! gui:popup popup-box 'hidden #f)
   (glgui-widget-set! gui:popup popup-label 'hidden #f)
   (glgui-widget-set! gui:popup popup-text 'hidden #f)
@@ -2863,6 +2863,14 @@
 ;;  OTHER FUNCTIONS
 ;; -----------------------------------------------------------------------------
 
+;; Force orientation to portrait
+(define (orientation-set-portrait!)
+  (if (not (orientation-portrait?)) (begin
+    (set! orientation:state GUI_PORTRAIT)
+    (glgui-orientation-set! GUI_PORTRAIT)
+  ))
+)
+
 ;; Check for empty lists - this one is better than using pair? for it!
 (define (list-notempty? lst)
   (and (list? lst) (not (null? lst)))
@@ -3015,18 +3023,9 @@
 ;; events (and their handling) - Here updates are done after guis are already defined
 ;;
   (lambda (t x y) 
-    ;; Check if a screen is in landscape orientation
-    (let ((w (glgui-width-get))
-          (h (glgui-height-get)))
-      (if (and w h)
-        (set! landscape? (> w h))
-      )
-    )
     ;; Rotation change events
-    (if (fx= t EVENT_ORIENTATION)
-      (if (or (fx= mode MODE_WAVES) (fx= mode MODE_CHAT))
-        (glgui-orientation-set! x)
-      )
+    (if (or (fx= mode MODE_WAVES) (fx= mode MODE_CHAT))
+      (orientation-event t x y)
     )
     ;; Keyboard events
     (if (fx= t EVENT_KEYRELEASE) 
@@ -3037,9 +3036,7 @@
         )
         ;; Change orientation with TAB
         (if (fx= x EVENT_KEYTAB)
-          (if (or (fx= mode MODE_WAVES) (fx= mode MODE_CHAT))
-            (glgui-orientation-set! (if (fx= glgui:rotate 0) 2 1))
-          )
+          (event-push EVENT_ORIENTATION (if (orientation-landscape?) GUI_PORTRAIT GUI_LANDSCAPE) 0)
         )
 	;; Keyboard events:
 	(if (fx= mode MODE_CHAT)
@@ -3055,7 +3052,7 @@
 	    )
 	    ;; Return
 	    (if (fx= x 1)
-	      (send-message-callback (if landscape? gui:chat-landscape gui:messaging-keyboard) message-string #f 0 0)
+	      (send-message-callback (if (orientation-landscape?) gui:chat-landscape gui:messaging-keyboard) message-string #f 0 0)
 	    )
             ;; Update the message string in the landscape version too
             (glgui-widget-set! gui:chat-landscape message-string-landscape 'label 
@@ -3233,13 +3230,13 @@
       (list gui:login gui:popup)
       (list 
         (cond ((fx= mode MODE_OVERVIEW) gui:overview)
-              ((fx= mode MODE_WAVES) (if landscape? gui:waves-landscape gui:waves))
+              ((fx= mode MODE_WAVES) (if (orientation-landscape?) gui:waves-landscape gui:waves))
               ((fx= mode MODE_MESSAGING) gui:messaging)
               ((fx= mode MODE_REMINDER) gui:reminder)
               ((fx= mode MODE_REMINDER_SETUP) gui:reminder-setup)
               ((fx= mode MODE_ROOMS) gui:rooms)
               ((fx= mode MODE_USERS) gui:users)
-              ((fx= mode MODE_CHAT) (if landscape? gui:chat-landscape gui:chat))
+              ((fx= mode MODE_CHAT) (if (orientation-landscape?) gui:chat-landscape gui:chat))
               ((fx= mode MODE_ALERT) gui:alert)
               ((fx= mode MODE_TRENDS) gui:trends)
               ((fx= mode MODE_VOIP) gui:voip)
@@ -3247,8 +3244,8 @@
               ((fx= mode MODE_SETUP) gui:setup)
               (else gui:login)
         )
-        (if (and (fx= mode MODE_CHAT) gui:messaging-detail-shown (not landscape?)) gui:messaging-detail-shown gui:empty)
-        (if (or (fx= mode MODE_SETUP) (and (fx= mode MODE_WAVES) landscape?)) gui:empty gui:menu)
+        (if (and (fx= mode MODE_CHAT) gui:messaging-detail-shown (not (orientation-landscape?))) gui:messaging-detail-shown gui:empty)
+        (if (or (fx= mode MODE_SETUP) (and (fx= mode MODE_WAVES) (orientation-landscape?))) gui:empty gui:menu)
         gui:popup
       )
     ) t x y)
@@ -3272,7 +3269,7 @@
   (lambda () 
     (if (fx= mode MODE_WAVES) (begin
       (set! mode MODE_OVERVIEW)
-      (if landscape? (glgui-orientation-set! GUI_PORTRAIT))
+      (orientation-set-portrait!)
     ))
     (if (fx= mode MODE_TRENDS) (set! mode MODE_OVERVIEW))
     (glgui-suspend)
