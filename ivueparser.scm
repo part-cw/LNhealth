@@ -7,3 +7,6 @@
 (include "storage.scm")
 (include "parser.scm")
 
+;; Add the code needed for serial-based ivue communication
+(include "ivue.scm")
+
