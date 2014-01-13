@@ -1,4 +1,7 @@
 ;; datex s5 parser
+;; Add the code needed for serial-based s5 communication
+(include "s5.scm")
+
 ;; this is a separate module in order to reuse the code in monitor+tap plugins
 (define s5parser:debuglevel 0)
 (define (s5parser:log level . x) (if (fx>= s5parser:debuglevel level) (apply log-system x)))
@@ -818,6 +821,5 @@
          (loop (fx+ n 1) (u8data-skip p 3) (append srlist
             (if (not (fx= sr_type #xff))  (list (list
             offset sr_type)) '())) (fx= sr_type #xff)))))))
-
 
 ;; eof
