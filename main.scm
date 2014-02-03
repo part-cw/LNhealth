@@ -2,10 +2,6 @@
 ;; Matthias Görges 2011-2013
 (define voip:enabled #f) ;; Disable until stable
 
-;; Until replaced I need these two to run as they are not in ln_core
-(define float->ccstring float->choppedstring)
-(define float->autostring float->string)
-
 ;; -----------------------------------------------------------------------------
 ;;  LOADING OF TEXTURES AND FONTS and definition of texture lists
 ;; -----------------------------------------------------------------------------
@@ -190,7 +186,7 @@
               (glgui-widget-set! gui:menu navigation-bar 'value MODE_OVERVIEW)
               (glgui-widget-set! gui:popup popup-box 'callback hide-popup-click)
               ;; Allow relogin on crash for Android and iOS only [and Linux for testing]
-              (if (or (string=? (system-platform) "iphone")
+              (if (or (string=? (system-platform) "ios")
                       (string=? (system-platform) "android")
                       (string=? (system-platform) "linux"))
                 (with-output-to-file login-file (lambda () (display login)))
@@ -2779,6 +2775,9 @@
 ;; Next iteration using RUPI for connectivity
 (define (init-server-communication store)
   (let ((rc (rupi-client 0 rupi:key rupi:addr rupi:port)))
+    (if (string=? (system-platform) "ios")
+      (rupi-cmd rc "REGISTERTOKEN" (pushnotification-gettoken)) ;; Register for potential push notifications
+    )
     (store-set! store "RupiClient" rc) ;;stores the handle to a RUPI client
     (let ((data (rupi-cmd rc "GETMYROOMS" (store-ref store "Key")))) 
        (store-set! store "myRooms" data)) ;; Load our subscribed rooms from the last logout
@@ -3015,6 +3014,7 @@
       (begin 
         (store-set! "main" "Key" (with-input-from-file login-file (lambda () (read-line))))
         (delete-file login-file)
+        (log-remote (string-append "Automatic login after crash [" (store-ref "main" "Key" "") "]"))
         (login-callback gui:login #f 0 0 0)
       )
     )
@@ -3182,23 +3182,23 @@
     )
     ;; VitalNode disconnect logging
     (let ((age 10.)
-	  (lstchk (store-ref "main" "ConnChkTime" 0.)))
+	        (lstchk (store-ref "main" "ConnChkTime" 0.)))
       (if (and (not (fx= mode MODE_LOGIN)) (fl> (fl- ##now lstchk) age))
-	(let ((lstmsg (store-ref "main" "LastUpdateTimeLocal" 0.))) ;; This needs to use local time to avoid clock drift problems.
-	  (if (and (fl> lstmsg 0.) (fl> (fl- ##now lstmsg) age))
-	    (let* ((delta-time (fix (fl- ##now lstmsg)))
+	      (let ((lstmsg (store-ref "main" "LastUpdateTimeLocal" 0.))) ;; Use local time to avoid clock drift problems.
+	        (if (and (fl> lstmsg 0.) (fl> (fl- ##now lstmsg) age))
+	          (let* ((delta-time (fix (fl- ##now lstmsg)))
                    (logstr (string-append "No communication with VitalNode for " 
 		                         (number->string delta-time) "sec")))
-	      (log-status logstr)
-	      (glgui-widget-set! gui:menu clock 'label "OFFLINE")
+	            (log-status logstr)
+	            (glgui-widget-set! gui:menu clock 'label "OFFLINE")
               (store-set! "main" "popup-text" (list "Connection Lost" (string-append logstr ". Trying to reconnect!")))
-              (if (and (fx> delta-time 15) (fx<= (modulo delta-time 60) 10))
+              (if (and (fx> delta-time 15) (fx<= (modulo delta-time 60) 9))
                 (audiofile-forceplay audio:disconnect)
               )
-	    )
-	  )
-	  (store-set! "main" "ConnChkTime" ##now)
-	)
+	          )
+	        )
+	        (store-set! "main" "ConnChkTime" ##now)
+	      )
       )
     )
     ;; Room Transfer Icon Timeout
