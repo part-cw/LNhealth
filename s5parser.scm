@@ -1,6 +1,7 @@
 ;; datex s5 parser
 ;; Add the code needed for serial-based s5 communication
 (include "s5.scm")
+(include "s5parser-tests.scm")
 
 ;; this is a separate module in order to reuse the code in monitor+tap plugins
 (define s5parser:debuglevel 0)
