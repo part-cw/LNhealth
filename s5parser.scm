@@ -46,6 +46,17 @@
 	((or (= v 7) (= v 8)) (string-append "BP" (number->string (- v 2))))
 	(else "UNKNOWN")))
 
+(define (s5parser:ecg_getlabel l)
+  (cond ((= l 1) "I")
+        ((= l 2) "II")
+        ((= l 3) "III")
+        ((= l 4) "AVR")
+        ((= l 5) "AVL")
+        ((= l 6) "AVF")
+        ((= l 7) "V")
+        (else "NOT SELECTED")
+   ))
+
 (define (s5parser:ecg_group s buf)
   (let* ((step1 (s5parser:group_hdr buf))
          (hr (u8data-le-s16 (subu8data step1 0 2)))
@@ -56,7 +67,11 @@
     (s5parser:settrend! s "hr" hr 	1.)
     (s5parser:settrend! s "HR" hr 	1.)
     ;; HR Source is bits 3-6
-    (store-set! s "hr_source" (s5parser:hr_getsource (bitwise-and (arithmetic-shift s5parser:status_bits -3) 7)) "s5") 
+    (store-set! s "hr_source" (s5parser:hr_getsource (bitwise-and (arithmetic-shift s5parser:status_bits -3) 15)) "s5") 
+    ;; ECG Labels are bits 0-11
+    (store-set! s "ecg3_label" (s5parser:ecg_getlabel (bitwise-and (arithmetic-shift s5parser:group_label 0) 15)) "s5")
+    (store-set! s "ecg2_label" (s5parser:ecg_getlabel (bitwise-and (arithmetic-shift s5parser:group_label -4) 15)) "s5")
+    (store-set! s "ecg1_label" (s5parser:ecg_getlabel (bitwise-and (arithmetic-shift s5parser:group_label -8) 15)) "s5")
     (s5parser:settrend! s "st1"     st1 	100.)
     (s5parser:settrend! s "st2"     st2 	100.)
     (s5parser:settrend! s "st3"     st3 	100.)
