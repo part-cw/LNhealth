@@ -6,6 +6,7 @@
 (define delta-update 10) ;;sec
 (define delta-time-update 1) ;;sec
 (define trend-time 1800) ;;sec
+(define quit-armed #f)
 
 ;; -----------------------------------------------------------------------------
 ;;  MAIN GUI
@@ -233,7 +234,7 @@
       )
 
       ;; Update times everywhere
-      (store-set! "main" "time_str" (seconds->string ##now "%H%M%S"))
+      (store-set! "main" "time_str" (seconds->string ##now "%T"))
       (glgui-widget-set! gui:main clock 'label (seconds->string ##now "%T"))
       ;; Update the other clocks too
       (glgui-widget-set! gui:main time63 'label (seconds->string (- ##now trend-time) "%H:%M"))
@@ -274,22 +275,11 @@
     (make-instance store "WAVEECG" "waveoutput" '("Source" "ECG1"))
     (make-instance store "WAVEPLETH" "waveoutput" '("Source" "PLETH"))
     (make-instance store "WAVECO2" "waveoutput" '("Source" "CO2"))
-    (make-instance store "TRENDbasic" "trendoutput" `("Trends"
+    (make-instance store "TREND" "trendoutput" `("Trends"
       ,(append (list "time_str") s5parser:physdatavalues_basic
-               (list "marker" "alarm1_text" "alarm2_text")))
-      '("NameSuffix" "_basic"))
-    (make-instance store "TRENDext1" "trendoutput" `("Trends"
-      ,(append (list "time_str") s5parser:physdatavalues_ext1 (list "marker")))
-      '("NameSuffix" "_ext1"))
-    (make-instance store "TRENDext2" "trendoutput" `("Trends"
-      ,(append (list "time_str") s5parser:physdatavalues_ext2 (list "marker")))
-      '("NameSuffix" "_ext2"))
-    (make-instance store "TRENDext3" "trendoutput" `("Trends"
-      ,(append (list "time_str") s5parser:physdatavalues_ext3 (list "marker")))
-      '("NameSuffix" "_ext3"))
-    (make-instance store "TRENDcardioq" "trendoutput" `("Trends"
-      ,(append (list "time_str") cardioq:parameters (list "marker")))
-      '("NameSuffix" "_cardioq"))
+               s5parser:physdatavalues_ext1 s5parser:physdatavalues_ext2
+               s5parser:physdatavalues_ext3 cardioq:parameters
+               (list "marker" "alarm1_text" "alarm2_text"))))
 
     ;;Make sure that scheduler actually runs !!!
     (scheduler-init)
@@ -301,20 +291,32 @@
     (update-values store)
     (if (= t EVENT_KEYPRESS) (begin
       (cond
-        ((= x EVENT_KEYESCAPE) (terminate))
+        ((= x EVENT_KEYESCAPE) 
+          (if quit-armed 
+            (terminate)
+            (begin
+              (set! quit-armed #t)
+              (store-event-add store 1 "Press ESC again to quit!")
+              (glgui-widget-set! gui:main log-list 'list (build-log-list))
+            )
+          )
+        )
         ((and (>= x 32) (< x 127))
+          (set! quit-armed #f)
           (set! buf (string-append buf (string (integer->char x))))
           (glgui-widget-set! gui:main text 'align
             (if (> (glgui:stringwidth buf ascii_24.fnt) (glgui-widget-get gui:main text 'w))
               GUI_ALIGNRIGHT GUI_ALIGNLEFT))
             )
         ((= x 3) ;; This is backspace
+          (set! quit-armed #f)
           (if (> (string-length buf) 0) (set! buf (substring buf 0 (- (string-length buf) 1))))
           (glgui-widget-set! gui:main text 'align
             (if (> (glgui:stringwidth buf ascii_24.fnt) (glgui-widget-get gui:main text 'w))
               GUI_ALIGNRIGHT GUI_ALIGNLEFT))
             )
         ((= x 1) (begin ;; This is return
+          (set! quit-armed #f)
           (if (> (string-length buf) 0) (begin
             ;; It there is data in the string log it.
             (store-event-add store 1 buf)
