@@ -114,7 +114,7 @@
   (set! HR_min 40)(set! HR_max 200)
   (set! MAP_min 30)(set! MAP_max 200)
   (set! MAC_min 0)(set! MAC_max 2)
-  (set! TEMP_min 35)(set! TEMP_max 40)
+  (set! TEMP_min 35)(set! TEMP_max 38)
 
   ;;Define traces to plot waveforms
   (let ((trace-mode GLTRACE_SHIFT)
@@ -172,6 +172,8 @@
   (if (> (- ##now last-trend-update) delta-update)
     (begin
       (set! last-trend-update ##now)
+      ;; Update the log list just in case
+      (glgui-widget-set! gui:main log-list 'list (build-log-list))
       ;; Update the Trend Numerics and Waveform
       (gltrace-add hr-trace (store-timedref store "hr"))
       (gltrace-add art_map-trace (store-timedref store "p1_mean"))
