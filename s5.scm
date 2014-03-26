@@ -113,8 +113,8 @@
          (s5:recv store dev)
          (s5:log 2 "runlevel 3 error=" s5:error)
          (if (not (store-timedrefsec store "timestamp" 300)) (begin
-           (store-event-add store (if (store-ref store "CaseID" #f) 3 0) "Not connected - check cable?" instance)
-           (store-set! store "MonitorAlarm" (list (if (store-ref store "CaseID" #f) 3 0) "Not connected - check cable?" "Monitor"))
+           (store-event-add store 0 "Not connected - check cable?" instance)
+           (store-set! store "MonitorAlarm" (list 0 "Not connected - check cable?" "Monitor"))
            (store-set! store "timestamp" 0. "s5")
          ))
          (if (and (not s5:error) s5:data) (begin 
