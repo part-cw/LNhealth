@@ -187,10 +187,10 @@
               (store-set! store "BPdia" new_bpdia))
            (store-clearexpired! store 600 "BPsys"
              (lambda (store id) (if (store-ref store "CaseID" #f) (begin
-               (store-event-add store 3 (string-append id "NotUpdating") instance)
+               (store-event-add store 3 (string-append id "Not updating") instance)
                (store-set! store "MonitorAlarm" (list
                  (if (store-ref store "CaseID" #f) 3 0)
-                   (string-append id "NotUpdating") "Monitor"))
+                   (string-append id "Not updating") "Monitor"))
              ))))
            (store-clearexpired! store 600 "BPdia"))
 
