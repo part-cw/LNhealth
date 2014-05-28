@@ -47,7 +47,6 @@
 ; RUPI settings 
 (define hostname-file (string-append (system-directory) (system-pathseparator) "server"))
 (define rupi:port 8080)
-;; DNSdynamic.org account info User:mgorges@cw.bc.ca Pwd: Vitalnod3
 (define rupi:hostname "bcch.ece.ubc.ca") ;; This is the default hostname
 (define rupi:addr #f)
 (define rupi:key (u8vector 77 71 148 114 103 101 115 31))
