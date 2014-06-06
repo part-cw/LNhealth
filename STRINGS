@@ -2,4 +2,4 @@ cmssdc.ttf 16 "HR//bpm" label_hr
 cmssdc.ttf 16 "MAP//mmHg" label_map
 cmssdc.ttf 16 "MAC//-" label_mac
 cmssdc.ttf 16 "Temp//\$^{/circ}\$C" label_temp
-cmssdc.ttf 12 "S5DataLogger \copyright 2011-2014 UBC \&  BC Children's Hospital" copyright
+cmssdc.ttf 12 "S5DataLogger (c) 2011-2014 UBC \& BC Children's Hospital" copyright

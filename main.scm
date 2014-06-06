@@ -67,28 +67,6 @@
   )
 )
 
-;; Build the vital sign selection list
-(define (build-vitals-list)
-  (let ((names (append (map car (store-listcat store "s5")) 
-                       (map car (store-listcat store "cardioq")))))
-    (if (and names (not (null? names)))
-      (let loop ((i 0) (result (list)))
-        (if (= i (length names))
-          result
-          (loop (+ i 1)(append result (list (vitals-list-element (list-ref names i)))))
-        )
-      )
-      (list)
-    )
-  )
-)
-
-(define (vitals-list-element name)
-  (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 16) 2)) 70 16 name ascii_16.fnt White)
-  )
-)
-
 ;; -----------------------------------------------------------------------------
 ;;  TREND GUI
 ;; -----------------------------------------------------------------------------
@@ -96,25 +74,20 @@
 (define (init-gui-trends)
   (set! gui:trends (make-glgui))
   ;; Positions of the trend numbers
-  (set! hr_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) 115 (* 90 0))
+  (set! hr_value (glgui-valuelabel gui:trends (+ 5 400 70) (- (glgui-height-get) 115 (* 90 0))
     label_hr.img ascii_40.fnt Green))  
-  (set! map_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) 115 (* 90 1))
+  (set! map_value (glgui-valuelabel gui:trends (+ 5 400 70) (- (glgui-height-get) 115 (* 90 1))
     label_map.img ascii_40.fnt Red))
-  (set! mac_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) 115 (* 90 2))
+  (set! mac_value (glgui-valuelabel gui:trends (+ 5 400 75) (- (glgui-height-get) 115 (* 90 2))
     label_mac.img ascii_40.fnt Blue))
-  (set! temp_value (glgui-valuelabel gui:trends (+ 5 400 60) (- (glgui-height-get) 115 (* 90 3))
+  (set! temp_value (glgui-valuelabel gui:trends (+ 5 400 75) (- (glgui-height-get) 115 (* 90 3))
     label_temp.img ascii_40.fnt (color-shade Red 0.5)))
 
-  (set! vital_name (glgui-dropdownbox gui:trends (+ 5 400 60) (- (glgui-height-get) 115 (* 90 3.5)) 60 40
-    (build-vitals-list)
-    White (color-shade White 0.1) White
-  ))
-
   ;; Define scales for Waveforms
-  (set! HR_min 40)(set! HR_max 200)
+  (set! HR_min 30)(set! HR_max 150)
   (set! MAP_min 30)(set! MAP_max 200)
   (set! MAC_min 0)(set! MAC_max 2)
-  (set! TEMP_min 35)(set! TEMP_max 38)
+  (set! TEMP_min 34)(set! TEMP_max 38)
 
   ;;Define traces to plot waveforms
   (let ((trace-mode GLTRACE_SHIFT)
@@ -172,8 +145,6 @@
   (if (> (- ##now last-trend-update) delta-update)
     (begin
       (set! last-trend-update ##now)
-      ;; Update the log list just in case
-      (glgui-widget-set! gui:main log-list 'list (build-log-list))
       ;; Update the Trend Numerics and Waveform
       (gltrace-add hr-trace (store-timedref store "hr"))
       (gltrace-add art_map-trace (store-timedref store "p1_mean"))
@@ -191,9 +162,6 @@
       (gltrace-update nibp_sys-trace)
       (gltrace-update mac-trace)
       (gltrace-update temp-trace)
-
-      ;; Update the names of vital signs to pick from
-      (glgui-widget-set! gui:trends vital_name 'list (build-vitals-list))
     )
   )
 )
@@ -206,6 +174,8 @@
   (if (> (- ##now last-value-update) delta-time-update)
     (begin
       (set! last-value-update ##now)
+      ;; Update the log list just in case
+      (glgui-widget-set! gui:main log-list 'list (build-log-list))
       ;; Update the Trend Numerics and Waveform
       (let ((hr-val (store-timedref store "hr"))
             (hr-src (store-ref store "hr_source")))
@@ -229,10 +199,10 @@
           ))
       )
       (let ((mac-val (store-timedref store "mac_age_sum")))
-        (glgui-widget-set! gui:trends mac_value 'label (if mac-val (number->string (fix mac-val)) ""))
+        (glgui-widget-set! gui:trends mac_value 'label (if mac-val (float->string mac-val 2) ""))
       )
       (let ((temp-val (store-timedref store "temp1")))
-        (glgui-widget-set! gui:trends temp_value 'label (if temp-val (number->string (fix temp-val)) ""))
+        (glgui-widget-set! gui:trends temp_value 'label (if temp-val (float->string temp-val 1) ""))
       )
 
       ;; Update times everywhere
@@ -247,6 +217,18 @@
   )
 )
 
+(define (detect-mac-usb-serial)
+  (let loop ((files (directory-files "/dev")))
+    (if (fx= (length files) 0)
+      ""
+      (let ((file (car files)))
+        (if (and (fx> (string-length file) 14)
+                 (string=? (substring file 0 14) "tty.usbserial-"))
+          (string-append "/dev/" file)
+          (loop (cdr files))
+        ))
+    )
+  ))
 
 ;; -----------------------------------------------------------------------------
 ;;  MAIN PROGRAM
@@ -266,6 +248,7 @@
     ;; Initialize the datex monitor plugin
     (make-instance store "S5monitor" "monitor" `("Port" ,(cond 
       ((string=? (system-platform) "linux") "/dev/ttyUSB0")
+      ((string=? (system-platform) "macosx") (detect-mac-usb-serial))
       ((string=? (system-platform) "win32") "COM1")
       (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
     ;; Initialize the CardioQ monitor plugin
