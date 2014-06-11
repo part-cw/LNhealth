@@ -2775,7 +2775,7 @@
 (define (init-server-communication store)
   (let ((rc (rupi-client 0 rupi:key rupi:addr rupi:port)))
     (if (string=? (system-platform) "ios")
-      (rupi-cmd rc "REGISTERTOKEN" (pushnotification-gettoken)) ;; Register for potential push notifications
+      (rupi-cmd rc "REGISTERTOKEN" (store-ref store "Key") (pushnotification-gettoken)) ;; Register for potential push notifications
     )
     (store-set! store "RupiClient" rc) ;;stores the handle to a RUPI client
     (let ((data (rupi-cmd rc "GETMYROOMS" (store-ref store "Key")))) 
