@@ -110,10 +110,10 @@
 ;;
 
 (define (ivue:mresult buf)
-  (let ((invoke_id  (ivueparser:decodeu16 (subu8data buf 8 10)))
-        (obj_class  (ivueparser:decodeu16 (subu8data buf 14 16)))
-        (context_id (ivueparser:decodeu16 (subu8data buf 16 18)))
-        (handle     (ivueparser:decodeu16 (subu8data buf 18 20))))
+  (let ((invoke_id  (u8data-u16 (subu8data buf 8 10)))
+        (obj_class  (u8data-u16 (subu8data buf 14 16)))
+        (context_id (u8data-u16 (subu8data buf 16 18)))
+        (handle     (u8data-u16 (subu8data buf 18 20))))
    (ivue:encodemessage (u8vector-append
       (u8vector #xE1 #x00 #x00 #x02 #x00 #x02 #x00 #x14)
       (ivue:encodeu16 invoke_id)
