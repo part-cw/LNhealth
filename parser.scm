@@ -396,6 +396,12 @@
        (ivueparser:parseAttrIdLabel payload))
     ((fx= id NOM_ATTR_POLL_RTSA_PRIO_LIST)  ;; PrioList
        (ivueparser:parsePrioList payload))
+    ((fx= id NOM_ATTR_ID_BED_LABEL) ;; BedLabel
+       (ivueparser:parseBedLabel payload))
+    ((fx= id NOM_ATTR_TIME_STAMP_ABS) ;; Absolute Timestamp (from boot)
+       (ivueparser:parseAbsoluteTimeStamp payload))
+    ((fx= id NOM_ATTR_TIME_STAMP_REL) ;; Relative Timestamp
+       (ivueparser:parseRelativeTimeStamp payload))
     (else (log-debug "ivueparser: unknown attribute " id " [" len "]" 1) )
     )
    (ivueparser:skip payload len)))
@@ -422,6 +428,29 @@
     (set! ivueparser:priolist (append ivueparser:priolist (list text_id)))
     payload
 ))
+
+(define (ivueparser:parseRelativeTimeStamp buf)
+  (let ((ts (fl/ (flo (u8data-u32 (subu8data buf 0 8))) 8000.))
+        (abs_time (store-ref ivueparser:store "abs_time_stamp"))
+        (rel_time (store-ref ivueparser:store "rel_time_stamp")))
+    (store-set! ivueparser:store "rel_time_stamp" ts "ivue")
+    (if (and abs_time rel_time (> ts rel_time))
+      (store-set! ivueparser:store "timestamp" (+ abs_time ts) "ivue")
+    )
+  ))
+
+(define (ivueparser:parseAbsoluteTimeStamp buf)
+  (let ((century (ivueparser:decodebcd (u8data-u8 (subu8data buf 0 1))))
+        (year (ivueparser:decodebcd (u8data-u8 (subu8data buf 1 2))))
+        (month (ivueparser:decodebcd (u8data-u8 (subu8data buf 2 3))))
+        (day (ivueparser:decodebcd (u8data-u8 (subu8data buf 3 4))))
+        (hour (ivueparser:decodebcd (u8data-u8 (subu8data buf 4 5))))
+        (minute (ivueparser:decodebcd (u8data-u8 (subu8data buf 5 6))))
+        (second (ivueparser:decodebcd (u8data-u8 (subu8data buf 7 8)))))
+    (if century (store-set! ivueparser:store "abs_time_stamp"
+      (string->seconds (string-append century year month day "-" hour minute second) "%Y%m%d-%H%M%S") "ivue"
+    ))
+  ))
 
 (define (ivueparser:parseNuObsValueCmp buf)
   (let ((payload (ivueparser:skip buf 4))
@@ -491,6 +520,13 @@
         (label (u8data-u32 (subu8data buf 0 4))))
     (table-set! ivueparser:labellut ivueparser:handleid label)
     payload))
+
+;; this is the bed label, set on admission/discharge
+(define (ivueparser:parseBedLabel buf)
+  (let ((location (u8data->u8vector (ivueparser:skip buf 2)))
+        (len (u8data-u16 (subu8data buf 0 2))))
+    (ivueparser:setphys! ivueparser:store "location" (u8vector->string location) "ivue")
+  ))
 
 ;; NOT USED
 ;;(define (ivueparser:parseAttrMetricInfoLabel buf)
