@@ -397,7 +397,7 @@
     ((fx= id NOM_ATTR_POLL_RTSA_PRIO_LIST)  ;; PrioList
        (ivueparser:parsePrioList payload))
     ((fx= id NOM_ATTR_ID_BED_LABEL) ;; BedLabel
-       (ivueparser:parseBedLabel payload))
+       (ivueparser:parseBedLabel payload len))
     ((fx= id NOM_ATTR_TIME_STAMP_ABS) ;; Absolute Timestamp (from boot)
        (ivueparser:parseAbsoluteTimeStamp payload))
     ((fx= id NOM_ATTR_TIME_STAMP_REL) ;; Relative Timestamp
@@ -430,7 +430,7 @@
 ))
 
 (define (ivueparser:parseRelativeTimeStamp buf)
-  (let ((ts (fl/ (flo (u8data-u32 (subu8data buf 0 8))) 8000.))
+  (let ((ts (fl/ (flo (u8data-u32 (subu8data buf 0 4))) 8000.))
         (abs_time (store-ref ivueparser:store "abs_time_stamp"))
         (rel_time (store-ref ivueparser:store "rel_time_stamp")))
     (store-set! ivueparser:store "rel_time_stamp" ts "ivue")
@@ -522,10 +522,9 @@
     payload))
 
 ;; this is the bed label, set on admission/discharge
-(define (ivueparser:parseBedLabel buf)
-  (let ((location (u8data->u8vector (ivueparser:skip buf 2)))
-        (len (u8data-u16 (subu8data buf 0 2))))
-    (ivueparser:setphys! ivueparser:store "location" (u8vector->string location) "ivue")
+(define (ivueparser:parseBedLabel buf len)
+  (let ((location (u8data->u8vector (subu8data buf 0 len))))
+    (store-set! ivueparser:store "location" (ivueparser:u8vector->string location) "ivue")
   ))
 
 ;; NOT USED
