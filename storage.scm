@@ -47,10 +47,10 @@
         (store-waveform-append store localname data)
         (let ((scale (table-ref ivueparser:scaletable label #f)))
           (store-waveform-scale store localname (if scale scale (begin 
-              (log-warning "ivueparser: no scaling data for " label "," pid)
+              (ivueparser:log 2 "ivueparser: no scaling data for " label "," pid)
             '(-32767 32767 -1. 1.))))
         ))
-        (log-warning "ivueparser: couldn't find waveform name for " label "," pid)
+        (ivueparser:log 2 "ivueparser: couldn't find waveform name for " label "," pid)
   )))
 
 ;; eof
