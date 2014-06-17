@@ -37,7 +37,10 @@
 
 ;; register store scaling information
 (define (ivueparser:storage-scale store label i_min i_max o_min o_max)
-  (table-set! ivueparser:scaletable label (list i_min i_max o_min o_max)))
+  (table-set! ivueparser:scaletable label (if (fx= o_min #x7FFFFF)
+    (list i_min i_max 0. 1.)
+    (list i_min i_max o_min o_max)
+  )))
 
 ;; add data to the waveform storage
 (define (ivueparser:storage-data store label pid data)
@@ -47,7 +50,7 @@
         (store-waveform-append store localname data)
         (let ((scale (table-ref ivueparser:scaletable label #f)))
           (store-waveform-scale store localname (if scale scale (begin 
-              (ivueparser:log 2 "ivueparser: no scaling data for " label "," pid)
+            (ivueparser:log 2 "ivueparser: no scaling data for " label "," pid)
             '(-32767 32767 -1. 1.))))
         ))
         (ivueparser:log 2 "ivueparser: couldn't find waveform name for " label "," pid)

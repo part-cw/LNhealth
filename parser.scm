@@ -199,7 +199,7 @@
             (if (= n count) l (loop (+ n 1) 
               (ivueparser:skip p 2) (append l (list
                  (u8data-u16 (subu8data p 0 2)))))))))
-    (ivueparser:log 2 (string-append "parseServerWaveform: wave [" 
+    (ivueparser:log 2 (string-append "parseServerWaveform: wave ["
         (number->string physio_id) "] n=" (number->string count)) 1)
     (ivueparser:storage-data ivueparser:store handle_id physio_id data)
     (ivueparser:skip payload len)))
@@ -440,7 +440,7 @@
         (rel_time (store-ref ivueparser:store "rel_time_stamp")))
     (store-set! ivueparser:store "rel_time_stamp" ts "ivue")
     (if (and abs_time rel_time (> ts rel_time))
-      (store-set! ivueparser:store "timestamp" (+ abs_time ts) "ivue")
+      (store-set! ivueparser:store "ivue_timestamp" (+ abs_time ts) "ivue")
     )
   ))
 
