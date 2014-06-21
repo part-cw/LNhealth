@@ -453,7 +453,8 @@
       (store-set! ivueparser:store al_ct_name msg "ivue")
       (store-set! ivueparser:store al_lst_name (append al_lst (list al_ct_name)))
       ;; New alarms
-      (if (fx= al_state 8) (store-event-add ivueparser:store 0 msg))
+      (if (and (fx= al_state 8) (fx> (string-length msg) 0))
+        (store-event-add ivueparser:store 0 (store-ref ivueparser:store "location" ivueparser:store) msg))
       ;; Parse alarm internals
       (if (= alert_info_id STR_ALMON_INFO)
         (ivueparser:parseStrAlMonInfo (subu8data buf 18 (fx+ len 18)) al_ct_name))
@@ -609,6 +610,7 @@
 (define (ivueparser:parseBedLabel buf len)
   (let ((location (u8data->u8vector (subu8data buf 0 len))))
     (store-set! ivueparser:store "location" (ivueparser:u8vector->string location) "ivue")
+    (ivueparser:log 1 "ivueparser: " (ivueparser:u8vector->string location))
   ))
 
 ;; NOT USED
