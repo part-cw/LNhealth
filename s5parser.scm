@@ -632,7 +632,7 @@
              (wavescale (if wave (caddr wave) #f))
              (wavelen (u8data-le-s16 (subu8data buf ofs (+ ofs 2))))
              (wavevalid (if (> wavelen 0) (fx> (u8data-le-s16 (subu8data buf (fx+ ofs 6) (fx+ ofs 8))) -32000) #f)))
-     ;; To save CPU time we only take valid waveform packages if running online
+     ;; To save CPU time we only take valid waveform packages if running online - invalid are padded
      (if (and wavename (if s5parser:fromfile (> wavelen 0) wavevalid))
        (let ((wavedata (##still-copy (make-f32vector wavelen)))
              (wavescaleinv (/ 1. wavescale)))
@@ -649,10 +649,12 @@
          (store-set! s "gotwaveforms?" #t "s5")
          (store-waveform-append s wavename wavedata)
          (store-waveform-scale s wavename '(0 0 0 0)) ;; This is actually not doing anything 
-       ) (begin
-           (if (and wavename (> wavelen 0) (not wavevalid)) (s5parser:log 1 "s5parser: invalid waveform data: [" buf "]" )) 
-           #f
-         ))
+       )
+       (begin
+         (if (and wavename (> wavelen 0) (not wavevalid)) (s5parser:log 1 "s5parser: invalid waveform data: [" buf "]" ))
+         (store-waveform-append s wavename (make-f32vector wavelen))
+         (store-waveform-scale s wavename '(0 0 0 0))
+       ))
      (loop (cdr srs))))))
 
 ;; ----------------
