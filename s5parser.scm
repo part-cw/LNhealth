@@ -652,8 +652,10 @@
        )
        (begin
          (if (and wavename (> wavelen 0) (not wavevalid)) (s5parser:log 1 "s5parser: invalid waveform data: [" buf "]" ))
-         (store-waveform-append s wavename (make-f32vector wavelen))
-         (store-waveform-scale s wavename '(0 0 0 0))
+         (if (and wavename (> wavelen 0)) (begin
+           (store-waveform-append s wavename (make-f32vector wavelen))
+           (store-waveform-scale s wavename '(0 0 0 0))
+         ))
        ))
      (loop (cdr srs))))))
 
