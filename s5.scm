@@ -157,22 +157,28 @@
                (wlast (instance-refvar store instance "LastWaveformRequest" 0.))) 
            (if (and wneeded (not wpresent) (fl> (fl- ##now wlast) 10.)) (begin
              (s5:log 2 "sending waveform request")
-             (s5:send dev (u8vector
-                #x48 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-                0 0 0 0 0 0 #xff 0 0 0 0 0 0 0 0 0 0 0 0
-                0 0 0 0 0 0 0 0 0 0
-               ;; -----
-               ;; up to eight waveforms here: ECG=1, PLETH=8, CO2=9, AirPressure=13, AirFlow=14, ECGRR=15, AirVolume=23
-               ;; terminate less than eight requests with #xff
-               ;; 1 #xff 0 0 0 0 0 0
-               ;; 1 8 9 13 14 #xff 0 0
-               ;; 1 8 9 15 #xff 0 0 0
-               ;; 1 8 9 works, more seems to cause data loss.
-               ;; #xff is not necessary, despite the manual saying so
-                1 8 9 0 0 0 0 0
-               ;; -----
-                0 0 0 0 0 0 0 0 0 0
-                0 0 0 0 0 0 0 0 0 0))
+             (let ((req (u8vector
+                    #x48 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+                    0 0 0 0 0 0 #xff 0 0 0 0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0 0
+                    ;; Up to 8 waveform types here. terminate less than eight requests with #xff
+                    ;; (#xff is not necessary, despite the manual saying so)
+                    0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0 0))
+                  (waves (if (list? wneeded) wneeded (list "ECG1" "PLETH" "CO2"))))
+               ;; See s5parser.scm for list of waveform types. 1 8 9 works well, more seems to cause data loss.
+               (let loop ((i 0))
+                 (if (or (fx= i (length waves)) (fx= i 8))
+                   #t
+                   (begin
+                     (u8vector-set! req (fx+ i 44) (s5parser:getwaveformtype (list-ref waves i)))
+                     (loop (fx+ i 1))
+                   )
+                 )
+               )
+               (s5:send dev req)
+             )
              (instance-setvar! store instance "LastWaveformRequest" ##now)
            )))
 

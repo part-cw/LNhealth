@@ -621,6 +621,12 @@
   (35 "BIS" 1.)
  ))
 
+(define (s5parser:getwaveformtype str)
+  (let ((ret 0))
+    (for-each (lambda (w) (if (string=? (cadr w) str) (set! ret (car w)))) s5parser:waveforms)
+    ret
+  ))
+
 (define (s5parser:parsewaveforms s buf srlist)
  ;; (display "parsing waveforms\n")
   (let loop ((srs srlist))
@@ -652,6 +658,7 @@
        )
        (begin
          (if (and wavename (> wavelen 0) (not wavevalid)) (s5parser:log 1 "s5parser: invalid waveform data: [" buf "]" ))
+;;         (if (and wavename (or (string=? wavename "ECG1") (string=? wavename "PLETH") (string=? wavename "CO2")) (> wavelen 0)) (begin
          (if (and wavename (> wavelen 0)) (begin
            (store-waveform-append s wavename (make-f32vector wavelen))
            (store-waveform-scale s wavename '(0 0 0 0))
