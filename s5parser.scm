@@ -658,8 +658,8 @@
        )
        (begin
          (if (and wavename (> wavelen 0) (not wavevalid)) (s5parser:log 1 "s5parser: invalid waveform data: [" buf "]" ))
-;;         (if (and wavename (or (string=? wavename "ECG1") (string=? wavename "PLETH") (string=? wavename "CO2")) (> wavelen 0)) (begin
-         (if (and wavename (> wavelen 0)) (begin
+         (if (and wavename (or (fx= type 1) (fx= type 8) (fx= type 9)) (fx> wavelen 0)) (begin
+;;         (if (and wavename (> wavelen 0)) (begin
            (store-waveform-append s wavename (make-f32vector wavelen))
            (store-waveform-scale s wavename '(0 0 0 0))
          ))
@@ -823,10 +823,10 @@
         (r_len (u8data-le-u16 (subu8data buf 0 2)))
 ;;      (r_dri_level (u8data-u8  (subu8data buf 3 4)))
         (plug_id (u8data-le-u16 (subu8data buf 4 6)))
-;;      (r_time (u8data-le-u32 (subu8data buf 6 10)))
+        (r_time (u8data-le-u32 (subu8data buf 6 10)))
         (r_maintype (u8data-le-u16 (subu8data buf 14 16))))
     (store-set! store "plug_id" plug_id "s5") ;;Added for iFish-AA (we know these from Dave Kobayashi)
-;;    (for-each display (list "s5parser: parsing frame len=" r_len "\n"))
+    (store-set! store "r_time" r_time "s5")
     (let loop ((n 0)(p subrecords)(srlist '())(done #f))
       (if (or done (fx= n 8)) (begin
 ;;        (for-each display (list "s5parser: type=" r_maintype " : " 
