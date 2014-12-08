@@ -7,6 +7,7 @@
 (define delta-time-update 1) ;;sec
 (define trend-time 1800) ;;sec
 (define quit-armed #f)
+(define cardioq? #f) (define neurosense? #t)
 
 ;; -----------------------------------------------------------------------------
 ;;  MAIN GUI
@@ -252,10 +253,14 @@
       ((string=? (system-platform) "win32") "COM1")
       (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
     ;; Initialize the CardioQ monitor plugin
-    (make-instance store "cardioq" "monitor" `("Port" ,(cond
+    (if cardioq? (make-instance store "cardioq" "monitor" `("Port" ,(cond
       ((string=? (system-platform) "linux") "/dev/ttyUSB1")
       ((string=? (system-platform) "win32") "COM2")
-      (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
+      (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f)))
+    ;; Initialize a Neurosense monitor plugin
+    (if neurosense? (make-instance store "Neurosense" "neurosense"
+       '("IP" "195.14.195.100") '("Port" 5001)))
+
     ;; Initialize all of our output plugins
     (make-instance store "WAVEECG" "waveoutput" '("Source" "ECG1"))
     (make-instance store "WAVEPLETH" "waveoutput" '("Source" "PLETH"))
@@ -263,7 +268,8 @@
     (make-instance store "TREND" "trendoutput" `("Trends"
       ,(append (list "time_str") s5parser:physdatavalues_basic
                s5parser:physdatavalues_ext1 s5parser:physdatavalues_ext2
-               s5parser:physdatavalues_ext3 cardioq:parameters
+               s5parser:physdatavalues_ext3
+               (if cardioq? cardioq:parameters '()) (if neurosense? neurosense:parameters '())
                (list "marker" "alarm1_text" "alarm2_text"))))
 
     ;;Make sure that scheduler actually runs !!!
