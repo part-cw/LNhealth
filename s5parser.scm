@@ -45,6 +45,8 @@
 	((and (>= v 2) (<= v 5)) (string-append "BP" (number->string (- v 1))))
 	((= v 6) "PLETH")
 	((or (= v 7) (= v 8)) (string-append "BP" (number->string (- v 2))))
+	((or (= v 10) (= v 11)) (string-append "BP" (number->string (- v 3))))
+  ((= v 12) "PLETH")
 	(else "UNKNOWN")))
 
 (define (s5parser:ecg_getlabel l)
@@ -457,8 +459,15 @@
 ;;        (montage_label_ch_3_p (u8data-u8 (subu8data step1 6 7)))
 ;;        (montage_label_ch_4_m (u8data-u8 (subu8data step1 7 8)))
 ;;        (montage_label_ch_4_p (u8data-u8 (subu8data step1 8 9)))
+;;        one reserved byte here
          )
-     (u8data-skip step1 17))) ;; 9+8
+     (u8data-skip step1 18)))
+
+(define (s5parser:spi_group s buf)
+   (let* ((step1 (s5parser:group_hdr buf))
+          (spi (u8data-le-s16 (subu8data step1 0 2))))
+    (s5parser:settrend! s "spi" spi 100.)
+    (u8data-skip step1 10)))
 
 (define (s5parser:ext2_phdb s buf)
  ;; (display "s5parser:ext2_phdb\n")
@@ -466,8 +475,9 @@
          (step2 (s5parser:eeg_group s step1))
          (step3 (s5parser:eeg_bis_group s step2))
          (step4 (s5parser:entropy_group s step3))
-         (step5 (u8data-skip step4 58)))
-    (s5parser:eeg2_group s step5)
+         (step5 (u8data-skip step4 58))
+         (step6 (s5parser:eeg2_group s step5)))
+    (s5parser:spi_group s step6)
     (u8data-skip buf 270)))
 
 ;; Added so we can reference it in trendoutput or other apps
@@ -479,7 +489,8 @@
   "eeg3_ampl" "eeg3_sef" "eeg3_mf" "eeg3_deltap" "eeg3_thetap" "eeg3_alphap" "eeg3_betap" "eeg3_bsr"
   "eeg4_ampl" "eeg4_sef" "eeg4_mf" "eeg4_deltap" "eeg4_thetap" "eeg4_alphap" "eeg4_betap" "eeg4_bsr"
   "bis" "bis_sqi" "bis_emg" "bis_sr"
-  "ent_eeg" "ent_emg" "ent_bsr"))
+  "ent_eeg" "ent_emg" "ent_bsr"
+  "spi"))
 
 ;; ext3 ------------------
 (define (s5parser:gasex_group s buf)
@@ -558,13 +569,30 @@
     (s5parser:settrend! s "mac_age_sum" mac_age_sum 100.)
     (u8data-skip step1 18)))
 
+(define (s5parser:delp_group s buf)
+  (let* ((step1 (s5parser:group_hdr buf))
+         (spv (u8data-le-s16 (subu8data step1 0 2)))
+         (ppv (u8data-le-s16 (subu8data step1 2 4))))
+    (s5parser:settrend! s "spv" spv 100.)
+    (s5parser:settrend! s "ppv" ppv 100.)
+    (u8data-skip step1 4)))
+
+(define (s5parser:cpp_group s buf)
+  (let* ((step1 (s5parser:group_hdr buf))
+         (cpp (u8data-le-s16 (subu8data step1 0 2))))
+    (s5parser:settrend! s "cpp" cpp 100.)
+    (u8data-skip step1 2)))
+
 (define (s5parser:ext3_phdb s buf)
  ;; (display "s5parser:ext3_phdb\n")
   (let* ((step1 (s5parser:gasex_group s buf))
          (step2 (s5parser:flow_vol_group2 s step1))
          (step3 (s5parser:bal_gas_group s step2))
-         (step4 (s5parser:tono_group s step3)))
-    (s5parser:aa2_group s step4)
+         (step4 (s5parser:tono_group s step3))
+         (step5 (s5parser:aa2_group s step4))
+         (step6 (s5parser:delp_group s step5))
+         (step7 (s5parser:cpp_group s step6)))
+    ;;(s5parser:cpp_group2 s step7)
     (u8data-skip buf 270)))
 
 ;; Added so we can reference it in trendoutput or other apps
@@ -573,7 +601,7 @@
   "ipeep" "pmean" "raw" "mv_insp" "epeep" "mv_spont" "ie_ratio" "insp_time" "exp_time" "static_compliance" "static_pplat" "static_peepe" "static_peepi" 
   "bal_gas_et" "bal_gas_fi"
   "prco2" "pr_et" "pr_pa" "pa_delay" "phi" "phi_delay" "amb_press" "cpma"
-  "mac_age_sum"))
+  "mac_age_sum" "spv" "ppv" "cpp"))
 
 ;;--------------------------
 ;; the xx_phdb groups are unioned in the dri_phdb structure
@@ -821,10 +849,11 @@
   (let ((subrecords (u8data-skip buf 16))
         (payload (u8data-skip buf 40))
         (r_len (u8data-le-u16 (subu8data buf 0 2)))
-;;      (r_dri_level (u8data-u8  (subu8data buf 3 4)))
+        (dri_level (u8data-u8  (subu8data buf 3 4)))
         (plug_id (u8data-le-u16 (subu8data buf 4 6)))
         (r_time (u8data-le-u32 (subu8data buf 6 10)))
         (r_maintype (u8data-le-u16 (subu8data buf 14 16))))
+    (store-set! store "dri_level" dri_level "s5")
     (store-set! store "plug_id" plug_id "s5") ;;Added for iFish-AA (we know these from Dave Kobayashi)
     (store-set! store "r_time" r_time "s5")
     (let loop ((n 0)(p subrecords)(srlist '())(done #f))
