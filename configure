@@ -1,0 +1,5 @@
+# Automatically generated. Do not edit
+here=`pwd`
+cd ../lambdanative
+SYS_PATH=$here ./configure $@
+cd $here
