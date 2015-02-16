@@ -71,17 +71,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-label-wrapped rrate:settings:cont 20 (- h 155) 215 140 
     (local-get-text "Choose the number of consistent taps required for calculating the respiratory rate.") text_20.fnt Black)
   (set! rrate:settings:tapslist (glgui-list rrate:settings:cont 218 (- h 145) 90 140 35 
-                    (map (lambda (n)
-                           (lambda (g wgt bx by bw bh selected?)
-                             (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-                             (glgui:draw-text-left (+ bx 42) (+ by 2) 40 23 n text_20.fnt Black)))
-                         rrate:settings:tapchoices)
-                    (lambda (g wgt type mx my)
-                       ;; Save the new settings 
-                      (let* ((tindex (glgui-widget-get rrate:settings:cont rrate:settings:tapslist 'current))
-                             (tstr (list-ref rrate:settings:tapchoices (max tindex 0)))
-                             (tvalue (string->number tstr)))
-                        (settings-set! "Taps" tvalue)))))
+    (map (lambda (n) (lambda (g wgt bx by bw bh selected?)
+      (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+      (glgui:draw-text-left (+ bx 42) (+ by 2) 40 23 (local-get-text n) text_20.fnt Black)
+    )) rrate:settings:tapchoices)
+    (lambda (g wgt type mx my)
+      ;; Save the new settings
+      (let* ((tindex (glgui-widget-get rrate:settings:cont rrate:settings:tapslist 'current))
+             (tstr (list-ref rrate:settings:tapchoices (max tindex 0)))
+             (tvalue (string->number tstr)))
+        (settings-set! "Taps" tvalue)
+      )
+    )
+  ))
   (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'autohidebar #t)
   (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'bgcol1 (color-fade White 0))
   (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'bgcol2 (color-fade White 0))
@@ -94,17 +96,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (local-get-text "Choose the consistency threshold.") text_20.fnt Black)
   (glgui-pixmap rrate:settings:consistency 16 4 diagram.img)
   (set! rrate:settings:percentlist (glgui-list rrate:settings:consistency 209 10 100 175 35 
-                    (map (lambda (p)
-                           (lambda (g wgt bx by bw bh selected?)
-                             (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-                             (glgui:draw-text-left (+ bx 42) (+ by 2) 50 23 (string-append p "%") text_20.fnt Black)))
-                         rrate:settings:percentchoices)
-                    ;; Save the setting
-                    (lambda (g wgt type mx my)
-                      (let* ((pindex (glgui-widget-get rrate:settings:consistency rrate:settings:percentlist 'current))
-                             (pstr (list-ref rrate:settings:percentchoices (max pindex 0)))
-                             (pvalue (string->number pstr)))
-                         (settings-set! "Consistency" pvalue)))))
+    (map (lambda (p) (lambda (g wgt bx by bw bh selected?)
+      (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+      (glgui:draw-text-left (+ bx 42) (+ by 2) 50 23 (string-append (local-get-text p) "%") text_20.fnt Black)
+    )) rrate:settings:percentchoices)
+    ;; Save the setting
+    (lambda (g wgt type mx my)
+      (let* ((pindex (glgui-widget-get rrate:settings:consistency rrate:settings:percentlist 'current))
+             (pstr (list-ref rrate:settings:percentchoices (max pindex 0)))
+             (pvalue (string->number pstr)))
+        (settings-set! "Consistency" pvalue)
+      )
+    )
+  ))
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'autohidebar #t)
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'bgcol1 (color-fade White 0))
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'bgcol2 (color-fade White 0))
@@ -148,7 +152,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:confirm #f)
 (define rrate:yesbutton #f)
 (define rrate:exitbutton #f)
-(define rrate:trend #f)
+(define rrate:value #f)
 (define rrate:toplayer #f)
 (define rrate:toplayer_rrate #f)
 (define rrate:toplayer_unit #f)
@@ -351,8 +355,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (rrate:show-quality)
              
               ;; Set rate to be this median rate
-              (glgui-widget-set! rrate:cont rrate:trend 'label valstr)
-              (glgui-widget-set! rrate:cont rrate:trend 'x (if (fx= (string-length valstr) 3) 0 9))
+              (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
+              (glgui-widget-set! rrate:cont rrate:value 'x (if (fx= (string-length valstr) 3) 0 9))
               (set! rrate:rate medrate)
 
               ;; Set animate offset
@@ -362,7 +366,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (if (>= medrate 140)
                 (begin
                   (rrate:fail-feedback)
-                  (glgui-widget-set! rrate:cont rrate:trend 'color Grey)
+                  (glgui-widget-set! rrate:cont rrate:value 'color Grey)
                   (rrate:show-popup rrate:popup:toofast (< medrate 200)))
                 (begin
                   (rrate:success-feedback)
@@ -386,11 +390,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                      (set! rrate:calc:yscale (/ 9.5 (* rrate:calc:medinterval consistency)))
                      (set! rrate:rate (/ 60. rrate:calc:medinterval))
                      (let ((valstr (number->string (fix (round rrate:rate)))))
-                       (glgui-widget-set! rrate:cont rrate:trend 'label valstr)
-                       (glgui-widget-set! rrate:cont rrate:trend 'x (if (fx= (string-length valstr) 3) 0 9)))
+                       (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
+                       (glgui-widget-set! rrate:cont rrate:value 'x (if (fx= (string-length valstr) 3) 0 9)))
                      
                      ;; Show message about error with taps and change number to red
-                     (glgui-widget-set! rrate:cont rrate:trend 'color Grey)
+                     (glgui-widget-set! rrate:cont rrate:value 'color Grey)
                      (rrate:show-popup (if (>= rrate:rate 140) rrate:popup:toofast rrate:popup:inconsistent) (< rrate:rate 200)))))
 
                ;; Don't play a breathing sound from this tap, and delay the breathing sounds during animation
@@ -454,7 +458,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! rrate:cont rrate:qualitybg_high 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:qualitybg_consistent 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:qualitybg_low 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:trend 'hidden (not stage2))
+    (glgui-widget-set! rrate:cont rrate:value 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:toplayer 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:toplayer_rrate 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:toplayer_unit 'hidden (not stage2))
@@ -584,7 +588,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (rrate-reset)
   
   ;; Reset trend text colour
-  (glgui-widget-set! rrate:cont rrate:trend 'color rrate:textcolor)
+  (glgui-widget-set! rrate:cont rrate:value 'color rrate:textcolor)
 
   ;; Clear interval and scale values
   (set! rrate:calc:medinterval #f)
@@ -677,7 +681,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:nobutton (glgui-button-string rrate:cont 6 6 55 32 (local-get-text "NO") text_20.fnt
      (lambda (g . x)
        ;; Reset trend text colour
-       (glgui-widget-set! rrate:cont rrate:trend 'color rrate:textcolor)
+       (glgui-widget-set! rrate:cont rrate:value 'color rrate:textcolor)
        ;; Clear interval and scale values
        (set! rrate:calc:medinterval #f)
        (set! rrate:calc:yscale #f)
@@ -710,7 +714,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:yesbutton (glgui-button-string rrate:cont (- (glgui-width-get) 55 6) 6 55 32 (local-get-text "YES") text_20.fnt
      (lambda (g . x)
        ;; Save the RR to the store
-       (if rrate:store (store-set! rrate:store "RR" (glgui-widget-get rrate:cont rrate:trend 'label)))
+       (if rrate:store (store-set! rrate:store "RR" (glgui-widget-get rrate:cont rrate:value 'label)))
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
@@ -771,8 +775,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:mouth (glgui-sprite rrate:cont 'x 149 'y 254 'image mouth.img 'rendercallback rrate:animate-mouth))
    (glgui-widget-set! rrate:cont rrate:mouth 'hidden #t)
 
-   (set! rrate:trend (glgui-label rrate:cont 9 310 150 55 "" numbers_56.fnt rrate:textcolor))
-   (glgui-widget-set! rrate:cont rrate:trend 'hidden #t)
+   (set! rrate:value (glgui-label rrate:cont 9 310 150 55 "" numbers_56.fnt rrate:textcolor))
+   (glgui-widget-set! rrate:cont rrate:value 'hidden #t)
 
    ;; Message about synchronizing the animation
    (set! rrate:tapmessage (glgui-label-wrapped rrate:cont 5 105 75 40
@@ -846,7 +850,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (lambda (g wgt . x) 
        (rrate:hide-popup)
        ;; Reset trend text colour
-       (glgui-widget-set! rrate:cont rrate:trend 'color rrate:textcolor)
+       (glgui-widget-set! rrate:cont rrate:value 'color rrate:textcolor)
        ;; Clear interval and scale values
        (set! rrate:calc:medinterval #f)
        (set! rrate:calc:yscale #f)
@@ -896,16 +900,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                  (set! rrate:calc:yscale 32.)
                )
              )
-               
              ;; Set rate to be the calculated median rate
              (let* ((medrate (/ 60. rrate:calc:medinterval))
                     (valstr (number->string (fix (round medrate)))))
-               (glgui-widget-set! rrate:cont rrate:trend 'label valstr)
-               (glgui-widget-set! rrate:cont rrate:trend 'x (if (fx= (string-length valstr) 3) 2 9))
+               (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
+               (glgui-widget-set! rrate:cont rrate:value 'x (if (fx= (string-length valstr) 3) 2 9))
                (set! rrate:rate medrate)
-               
                ;; Show popup, and change RR colour to red for if we go to the animation page
-               (glgui-widget-set! rrate:cont rrate:trend 'color Grey)
+               (glgui-widget-set! rrate:cont rrate:value 'color Grey)
                (rrate:show-popup (if (fx< (length rrate:times) 4) rrate:popup:notenough 
                  (if (>= medrate 140) rrate:popup:toofast rrate:popup:inconsistent)) (< medrate 200)
                )
@@ -913,10 +915,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            ))
          ;; Show the quality feedback as a artificial horizon
          (rrate:show-quality)
-         
+
          ;; Play the beep if the volume is turned on, otherwise if vibrating it will now have stopped
          (rrate:fail-feedback)
-         
+
          ;; Delay the breathing sounds during animation
          (set! rrate:skipbreath ##now)
 
@@ -924,7 +926,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (rrate:set-animate-offset)
          (set! rrate:starttime #f)
          (glgui-modal-set! #t))))
-  
+
   ;; Display either the main RRate page or the settings page
   (if (fx= t EVENT_REDRAW)
     (begin
