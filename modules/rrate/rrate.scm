@@ -602,7 +602,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (rrate:go-to-stage 1)
 ) 
 
-;M @deffn {procedure} rrate-init store cancelproc doneproc 
+;M @deffn {procedure} rrate-init x y w h store cancelproc doneproc
 ;M Initializes the Respiratory Rate module graphics.
 ;M Display the rrate:cont to see the module graphics.
 ;M Store is the store where the RR will be saved.
@@ -610,7 +610,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;M when they haven't done any tapping yet. Done procedure is a procedure
 ;M that is called once the user confirms the rate. These procedures are
 ;M all optional and are called with no arguments. Currently only the height 
-;M is adapted to, setting unusual x, y, or w will not look good.
+;M is adapted to (best at 433, keep >= 402), keep x, y, or w as 0, 0, and 320.
 ;M @end deffn
 (define (rrate-init x y w h store cancelproc doneproc)
    (set! rrate:store store)
