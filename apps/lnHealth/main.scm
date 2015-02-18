@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define gui #f)
 (define background #f)
-(define uisexp #f)
+(define uiform #f)
 (define store #f)
 
 (define hook:onresume #f)
@@ -63,7 +63,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (sxrun name . args)
   (app:log 2 "sxrun " name " " args)
-  (let ((sxtable (glgui-widget-get gui uisexp 'uisexp)))
+  (let ((sxtable (glgui-widget-get gui uiform 'uiform)))
     (if (table? sxtable)
       (apply (car (table-ref sxtable name '(#f))) args) 
       #f)))
@@ -126,10 +126,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define default:background background.img)
 
 (define (background-update)
-  (let* ((uisexptable (glgui-widget-get gui uisexp 'uisexp))
-         (sandbox (glgui-widget-get gui uisexp 'sandbox))
-         (bgcol (car (table-ref uisexptable 'background-color `(,DimGray))))
-         (bgimgentry (car (table-ref uisexptable 'background-image '(#f))))
+  (let* ((uiformtable (glgui-widget-get gui uiform 'uiform))
+         (sandbox (glgui-widget-get gui uiform 'sandbox))
+         (bgcol (car (table-ref uiformtable 'background-color `(,DimGray))))
+         (bgimgentry (car (table-ref uiformtable 'background-image '(#f))))
          (imgfile (if bgimgentry (string-append sandbox (system-pathseparator) bgimgentry) #f))
          (imgload (if (and imgfile (file-exists? imgfile)) (png->img imgfile) #f))
          (img (if imgload imgload default:background)))
@@ -138,7 +138,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ))
 
 ;; -------------
-;; automatic reload of uisexp
+;; automatic reload of uiform
 
 (define lastmodtime #f)
 
@@ -152,7 +152,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; -------------
 
-(define uisexp:error (list->table `(
+(define uiform:error (list->table `(
   (background-color ,Red)
   (main 
     "ERROR"
@@ -166,7 +166,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   )
  )))
 
-(define uisexp:fallback (list->table `(
+(define uiform:fallback (list->table `(
   (background-color ,Red)
   (main 
     "ERROR"
@@ -178,7 +178,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   )
  )))
 
-(define uisexp:menu (list->table `(
+(define uiform:menu (list->table `(
    (background-color ,Orange)
    (main
      "Package Menu"
@@ -229,7 +229,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (sandbox-load deftable)
   (app:log 2 "sandbox-load " deftable)
-  (let* ((oldsxtable (glgui-widget-get gui uisexp 'uisexp))
+  (let* ((oldsxtable (glgui-widget-get gui uiform 'uiform))
          (key (if (not deftable) (string->key24 (with-input-from-file 
            (string-append (system-directory) (system-pathseparator) "CURRENT")
            (lambda () (read-line)))) #f))
@@ -239,24 +239,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            (if (file-exists? sxfile) 
              (let ((t (list->table (eval (with-input-from-file sxfile (lambda () (read)))))))
                 (table->cdb t sxbfile key) (cdb->table sxbfile key))
-             (if (file-exists? sxbfile) (cdb->table sxbfile key) uisexp:fallback)))))
+             (if (file-exists? sxbfile) (cdb->table sxbfile key) uiform:fallback)))))
 
-    (glgui-widget-set! gui uisexp 'fnt uisexpfont_24.fnt)
-    (glgui-widget-set! gui uisexp 'smlfnt uisexpfont_16.fnt)
-    (glgui-widget-set! gui uisexp 'bigfnt uisexpfont_48.fnt)
+    (glgui-widget-set! gui uiform 'fnt uiformfont_24.fnt)
+    (glgui-widget-set! gui uiform 'smlfnt uiformfont_16.fnt)
+    (glgui-widget-set! gui uiform 'bigfnt uiformfont_48.fnt)
    
-    (let ((db (glgui-widget-get gui uisexp 'database)))
-      (if (not (table? db)) (glgui-widget-set! gui uisexp 'database (make-table))))
+    (let ((db (glgui-widget-get gui uiform 'database)))
+      (if (not (table? db)) (glgui-widget-set! gui uiform 'database (make-table))))
 
-    (glgui-widget-set! gui uisexp 'uisexp sxtable)
-    (glgui-widget-set! gui uisexp 'uuid (system-uuid))
-    (glgui-widget-set! gui uisexp 'sandbox sandbox)
+    (glgui-widget-set! gui uiform 'uiform sxtable)
+    (glgui-widget-set! gui uiform 'uuid (system-uuid))
+    (glgui-widget-set! gui uiform 'sandbox sandbox)
 
     (background-update)
     
     (if (not store) (begin
       (set! store (make-store "main"))
-      (glgui-widget-set! gui uisexp 'store store)
+      (glgui-widget-set! gui uiform 'store store)
     ))
 
     (if (and oldsxtable hook:ondestroy) (hook:ondestroy))
@@ -289,11 +289,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            (h (glgui-height-get)))
 
       (set! background (glgui-pixmap gui 0 0 default:background w h))
-      (set! uisexp (glgui-uisexp gui 0 0 w h))
+      (set! uiform (glgui-uiform gui 0 0 w h))
 
       (let* ((t0 (sandbox-modtime))
              (t1 (apply max (map cadr (sxz-list)))))
-        (sandbox-load (if (or (= t0 0) (> t1 t0)) uisexp:menu #f))
+        (sandbox-load (if (or (= t0 0) (> t1 t0)) uiform:menu #f))
       )
 
       (scheduler-init)
