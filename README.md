@@ -1,4 +1,4 @@
-# lnHealth
+# LNhealth
 This project houses open-source (BSD licensed) health-related applications, created using the [LambdaNative](http://www.lambdanative.org) cross-platform development environment.
 
 ## Applications
