@@ -1,3 +1,0 @@
-pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lnHealth");
-wl.acquire();
