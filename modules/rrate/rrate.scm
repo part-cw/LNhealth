@@ -39,6 +39,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Module for measuring and confirming respiratory rate
 ;; Christian Leth Petersen 2012, Dustin Dunsmuir 2014, Matthias Görges 2015
 
+;; Load the localization support
+(local-load "rrate-local.csv")
+(local-index-set! 1);; 1 English, 2 Khmer
+
 ;; Settings page for configuring number of taps and consistency percent for threshold
 (define rrate:settings:cont #f)
 (define rrate:settings:tapslist #f)
@@ -69,7 +73,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Setting for how many taps are needed
   (glgui-widget-set! rrate:settings:cont (glgui-box rrate:settings:cont 10 (- h 150) 300 145 (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label-wrapped rrate:settings:cont 20 (- h 155) 215 140 
-    (local-get-text "Choose the number of consistent taps required for calculating the respiratory rate.") text_20.fnt Black)
+    (local-get-text "CONSISTENCY_NUM_TAPS") text_20.fnt Black)
   (set! rrate:settings:tapslist (glgui-list rrate:settings:cont 218 (- h 145) 90 140 35 
     (map (lambda (n) (lambda (g wgt bx by bw bh selected?)
       (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
@@ -93,7 +97,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (set! rrate:settings:consistency (glgui-container rrate:settings:cont 9 (if rrate:settings:show_vibrate 85 50) 302 187))
   (glgui-widget-set! rrate:settings:consistency (glgui-box rrate:settings:consistency 1 1 300 185 (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label-wrapped rrate:settings:consistency 11 80 215 100 
-    (local-get-text "Choose the consistency threshold.") text_20.fnt Black)
+    (local-get-text "CONSISTENCY_THRESH") text_20.fnt Black)
   (glgui-pixmap rrate:settings:consistency 16 4 diagram.img)
   (set! rrate:settings:percentlist (glgui-list rrate:settings:consistency 209 10 100 175 35 
     (map (lambda (p) (lambda (g wgt bx by bw bh selected?)
@@ -118,7 +122,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     ;; Show checkbox for turning on and off vibration with sound (only Android)
     (begin
       (glgui-widget-set! rrate:settings:cont (glgui-box rrate:settings:cont 10 48 300 30 (color:shuffle #xd7eaefff)) 'rounded #t)
-      (glgui-label rrate:settings:cont 42 50 205 25 (local-get-text "Vibrate with sound.") text_20.fnt Black)
+      (glgui-label rrate:settings:cont 42 50 205 25 (local-get-text "VIBRATE_SOUND") text_20.fnt Black)
       (set! rrate:settings:vibrate_box (glgui-pixmap rrate:settings:cont 258 48 checkedbox.img))
       (set! rrate:settings:vibrate_trigger (glgui-box rrate:settings:cont 42 48 268 30 (color-fade White 0)))
       (glgui-widget-set! rrate:settings:cont rrate:settings:vibrate_trigger 'callback
@@ -707,7 +711,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      
    ;; Confirmation question about animation
    (set! rrate:confirm (glgui-label-wrapped rrate:cont 65 2 (- (glgui-width-get) 65 65) 36
-     (local-get-text "Does the breathing rate match the patient?") text_14.fnt White))
+     (local-get-text "RR_MATCH") text_14.fnt White))
    (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
      
    ;; Remove the confirm question and show the other buttons instead, run done procedure
@@ -761,8 +765,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    ;; Circle, head and bubble
    (set! rrate:toplayer (glgui-pixmap rrate:cont x (+ y 43) top_layer.img))
-   (set! rrate:toplayer_rrate (glgui-label-wrapped rrate:cont (+ x 5) (+ y 360) 100 40 (local-get-text "Respiratory Rate:") text_14.fnt DarkBlue)) 
-   (set! rrate:toplayer_unit (glgui-label rrate:cont (+ x 5) (+ y 295) 100 20 (local-get-text "Breaths/min") text_14.fnt DarkBlue)) 
+   (set! rrate:toplayer_rrate (glgui-label-wrapped rrate:cont (+ x 5) (+ y 360) 100 40 (local-get-text "RRATE") text_14.fnt DarkBlue)) 
+   (set! rrate:toplayer_unit (glgui-label rrate:cont (+ x 5) (+ y 295) 100 20 (local-get-text "RRATE_UNIT") text_14.fnt DarkBlue)) 
    (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #t))
      (list rrate:toplayer rrate:toplayer_rrate rrate:toplayer_unit))
   
@@ -780,7 +784,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    ;; Message about synchronizing the animation
    (set! rrate:tapmessage (glgui-label-wrapped rrate:cont 5 105 75 40
-     (local-get-text "Tap on inhalation to synchronize") text_11.fnt White))
+     (local-get-text "TAP_TO_SYNC") text_11.fnt White))
    (glgui-widget-set! rrate:cont rrate:tapmessage 'color Black)
    (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden #t)
 
@@ -788,9 +792,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:qualitybg (glgui-pixmap rrate:cont 0 53 quality_lines.img))
    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden #t)
    (let ((x (- (glgui-width-get) 78)) (w 75) (h 20))
-     (set! rrate:qualitybg_high (glgui-label rrate:cont x 86 w h (local-get-text "Fast") text_14.fnt Black))
-     (set! rrate:qualitybg_consistent (glgui-label rrate:cont x 68 w h (local-get-text "Consistent") text_14.fnt Black))
-     (set! rrate:qualitybg_low (glgui-label rrate:cont x 49 w h (local-get-text "Slow") text_14.fnt Black))
+     (set! rrate:qualitybg_high (glgui-label rrate:cont x 86 w h (local-get-text "FAST") text_14.fnt Black))
+     (set! rrate:qualitybg_consistent (glgui-label rrate:cont x 68 w h (local-get-text "CONSISTENT") text_14.fnt Black))
+     (set! rrate:qualitybg_low (glgui-label rrate:cont x 49 w h (local-get-text "SLOW") text_14.fnt Black))
    )
    (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'align GUI_ALIGNRIGHT)
      (glgui-widget-set! rrate:cont w 'hidden #t)) 
@@ -813,7 +817,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:trigger 'hidden #t)
      
    ;; Tap button
-   (set! rrate:tapbutton (glgui-button-string rrate:cont 3 165 (- w 6) (- h 165) (local-get-text "TAP ON INHALATION") text_40.fnt
+   (set! rrate:tapbutton (glgui-button-string rrate:cont 3 165 (- w 6) (- h 165) (local-get-text "TAP_INHALATION") text_40.fnt
      (lambda (g wgt . x)
        (rrate:tapcb g wgt)
      )
@@ -831,15 +835,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    ;; Error messages about respiratory rate
    (set! rrate:popup:inconsistent (glgui-label-wrapped rrate:popup:cont 40 166 240 50
-     (local-get-text "Taps are inconsistent. Please try again.") text_20.fnt White))
+     (local-get-text "TAPS_INCONSISTENT") text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'modal #t)
    (set! rrate:popup:notenough (glgui-label-wrapped rrate:popup:cont 40 166 240 50
-      (local-get-text "Not enough taps. Please try again.") text_20.fnt White))
+      (local-get-text "NOT_ENOUGH_TAPS") text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'modal #t)
    (set! rrate:popup:toofast (glgui-label-wrapped rrate:popup:cont 40 166 240 50
-     (local-get-text "Taps are too fast. Please try again.") text_20.fnt White))
+     (local-get-text "TAPS_TOO_FAST") text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
 
