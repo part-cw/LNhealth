@@ -241,9 +241,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 (table->cdb t sxbfile key) (cdb->table sxbfile key))
              (if (file-exists? sxbfile) (cdb->table sxbfile key) uiform:fallback)))))
 
-    (glgui-widget-set! gui uiform 'fnt uiformfont_24.fnt)
-    (glgui-widget-set! gui uiform 'smlfnt uiformfont_16.fnt)
-    (glgui-widget-set! gui uiform 'bigfnt uiformfont_48.fnt)
+    (glgui-widget-set! gui uiform 'fnt uiformfont_18.fnt)
+    (glgui-widget-set! gui uiform 'smlfnt uiformfont_14.fnt)
+    (glgui-widget-set! gui uiform 'bigfnt uiformfont_40.fnt)
    
     (let ((db (glgui-widget-get gui uiform 'database)))
       (if (not (table? db)) (glgui-widget-set! gui uiform 'database (make-table))))
