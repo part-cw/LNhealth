@@ -1,5 +1,5 @@
 Key,English,Kher
-CONSISTENCY_NUM_TAPS,Choose the nuber of consistent taps required for calculating the respiratory rate.,ជ្រើសរើសចំនួនចុចសមស្របក្នុងការគណនាអត្រាដង្ហើម
+CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,ជ្រើសរើសចំនួនចុចសមស្របក្នុងការគណនាអត្រាដង្ហើម
 CONSISTENCY_THRESH,Choose the consistency threshold.,ជ្រើសរើសកម្រិតភាពសមស្រប
 VIBRATE_SOUND,Vibrate with sound.,
 DONE,Done,
@@ -8,7 +8,7 @@ SETTINGS,Settings,កំណត់ការប្រើប្រាស់
 NO,No,មិនត្រឹមត្រូវ
 YES,Yes,ត្រឹមត្រូវ
 RESTART,Restart,ចាប់ផ្តើមជាថ្មី
-RR_MATCH,Does the breathing rate atch the patient?,តើអត្រាដកដង្ហើមមានភាពត្រឹមត្រូវនឹងស្ថានភាពអ្នកជម្ងឺឬទេ?
+RR_MATCH,Does the breathing rate match the patient?,តើអត្រាដកដង្ហើមមានភាពត្រឹមត្រូវនឹងស្ថានភាពអ្នកជម្ងឺឬទេ?
 EXIT,Exit,ចាកចេញ
 RRATE,Respiratory Rate:,អត្រាដង្ហើម
 RRATE_UNIT,Breaths/in,ដង្ហើមក្នុងមួយនាទី
@@ -19,11 +19,11 @@ SLOW,Slow,យឺត
 TAP_INHALATION,Tap on inhalation,ចុចពេលដកដង្ហើមចូល
 TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,ចុចមិនត្រឹមត្រូវ
 NOT_ENOUGH_TAPS,Not enough taps. Please try again.,ចុចមិនគ្រប់ចំនួន
-TAPS_TOO_FAS,Taps are too fast. Please try again.,ចុចលឿនពេក
+TAPS_TOO_FAST,Taps are too fast. Please try again.,ចុចលឿនពេក
 RETRY,Retry,បាទ
 IGNORE,Ignore,ទេ
 INCONSISTENT,Inconsistent,មិនសមស្រប
-M_MEDIAN,M = Median Tie Interval,ពេលវេលាចន្លោះមេដ្យាន
+M_MEDIAN,M = Median Time Interval,ពេលវេលាចន្លោះមេដ្យាន
 C_CONSISTENCY,C = Consistency Threshold,កម្រិតភាពសមស្រប
 3,,៣
 4,,៤
