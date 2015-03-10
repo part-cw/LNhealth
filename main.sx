@@ -1,0 +1,689 @@
+
+`( 
+
+  ;; Change empty string to false
+  (getnotemptystring ,(lambda (field)
+                        (let ((val (dbget field "")))
+                          (if (fx> (string-length val) 0) val #f))))
+  
+  ;; Float to string which replaces -. with -0.
+  (float->stringz ,(lambda (str i)
+                     (string-replace-substring (float->string str i) "-." "-0.")))
+  
+  ;; Calculate a z-score
+  (z-score ,(lambda (age weight boy?)
+              (let* ((data (uiget (if boy? 'zboys 'zgirls)))
+                     (months (fix (round (* age 12))))
+                     (row (list-ref data months))
+                     (l (car row))
+                     (m (cadr row))
+                     (s (caddr row)))
+                (/ (- (expt (/ weight m) l) 1) (* l s)))))
+  
+  ;; Choose scale to display
+  (choose-scale ,(lambda (val)
+                   (cond
+                     ((fx= val 0) "scale0.png")
+                     ((fx= val 1) "scale1.png")
+                     ((fx= val 2) "scale2.png")
+                     ((fx= val 3) "scale3.png")
+                     ((fx= val 4) "scale4.png")
+                     ((fx= val 5) "scale5.png")
+                     ((fx= val 6) "scale6.png"))))
+  
+  ;; Calculate risk scores
+  (calc-hospital-score ,(lambda ()
+                          (let ((waz (dbget 'zscore #f))
+                                (bcs (dbget 'comascore #f))
+                                (hiv (dbget 'hiv #f))
+                                (score 0.0))
+                            (if waz
+                              (if (and hiv (not (string=? hiv "Unknown")))
+                                ;; Use first formula: logit[Pr(In-patient mortality)]=-4.280-0.254*WAZ+2.509*(BCS<5)+1.320*(HIV+).
+                                (begin
+                                  ;; Calculate formula
+                                  (set! score (- (- 4.28) (* waz 0.254)))
+                                  (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.509)))
+                                  (if (string=? hiv "Positive") (set! score (+ score 1.32))))
+                                ;; Use third formula: logit[Pr(In-patient mortality)]=-4.197 -0.303*WAZ+2.429*(BCS<5)
+                                (begin
+                                  ;; Calculate formula
+                                  (set! score (- (- 4.197) (* waz 0.303)))
+                                  (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.429)))))
+                              ;; No WAZ, use MUAC instead
+                              (let* ((muac (sxrun 'getnotemptystring 'muac))
+                                     (mnum (string->number muac)))
+                                (if (and hiv (not (string=? hiv "Unknown")))
+                                  ;; Use second formula: logit[Pr(In-patient mortality)]=-0.5233 -0.0245*muac+2.5403*(BCS<5)+ 1.3333*(HIV+)
+                                  (begin
+                                    ;; Calculate formula
+                                    (set! score (- (- 0.5233) (* mnum 0.0245)))
+                                    (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.5403)))
+                                    (if (string=? hiv "Positive") (set! score (+ score 1.3333))))
+                                  ;; Use fourth formula: logit[Pr(In-patient mortality)]=0.3032 -0.0294*muac+2.4668*(BCS<5)
+                                  (begin
+                                    ;; Calculate formula
+                                    (set! score (- 0.3032 (* mnum 0.0294)))
+                                    (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.4668)))))))
+                                  
+                            ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
+                            (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
+
+                            ;; Floor to two decimal places
+                            (ffloor score 0.01))))
+  
+  (calc-discharge-score ,(lambda ()
+                          (let* ((muac (sxrun 'getnotemptystring 'muac))
+                                 (sp (sxrun 'getnotemptystring 'spo2med))
+                                 (hospopts (uiget 'hosp_options '()))
+                                 (hosp (dbget 'lasthosp #f))
+                                 (hospnum (+ (list-pos hospopts hosp) 1))
+                                 (bcs (dbget 'comascore #f))
+                                 (hiv (dbget 'hiv #f))
+                                 (score 0.0))
+                            (if sp
+                              (let ((spnum (string->number sp)))
+                                (if muac
+                                  (let ((mnum (string->number muac)))
+                                    (if (and hiv (not (string=? hiv "Unknown")))
+                                      ;; Use first formula: logit[Pr(In-patient mortality)]= 7.8497 +(-0.0471*muac) -0.0407(SpO2) - 0.281(Time since last hospitalization) + 0.9827(HIV+) + 0.8774(BCS<5)
+                                      (begin
+                                        (set! score (- 7.8497 (* mnum 0.0471)))
+                                        (set! score (- score (* spnum 0.0407)))
+                                        (set! score (- score (* hospnum 0.281)))
+                                        (if (string=? hiv "Positive") (set! score (+ score 0.9827)))
+                                        (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 0.8774))))
+                                  
+                                      ;; Use fourth formula: logit[Pr(In-patient mortality)]= 8.3221 - 0.0495(muac) - 0.0412(SpO2) + 0.8224(BCS<5) - 0.2841*(Time since last hospitalization)
+                                      (begin
+                                        (set! score (- 8.3221 (* mnum 0.0495)))
+                                        (set! score (- score (* spnum 0.0412)))
+                                        (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 0.8224)))
+                                        (set! score (- score (* hospnum 0.2841))))))
+                                  ;; Use third formula: logit[Pr(In-patient mortality)]= 2.2858 - 0.0454(SpO2) - 0.3179(Time) +1.1533(HIV+) + 0.9247(BCS<5) - 0.3016(WAZ) - 0.0336(Age in months)
+                                  (let ((waz (dbget 'zscore #f))
+                                        (age (dbget 'age #f)))
+                                    (set! score (- 2.2858 (* spnum 0.0454)))
+                                    (set! score (- score (* hospnum 0.3179)))
+                                    (if (string=? hiv "Positive") (set! score (+ score 1.1533)))
+                                    (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 0.9247)))
+                                    (set! score (- score (* waz 0.3016)))
+                                    (set! score (- score (* age 12 0.0336))))))
+                              ;; Use second formula: logit[Pr(In-patient mortality)]= 4.529 + (-0.0506*muac) + 1.0549*(BCS<5) - 0.2593*(Time since last hospitalization) + 1.1143*(HIV+)
+                              (let ((mnum (string->number muac)))
+                                (set! score (- 4.529 (* mnum 0.0506)))
+                                (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 1.0549)))
+                                (set! score (- score (* hospnum 0.2593)))
+                                (if (string=? hiv "Positive") (set! score (+ score 1.1143)))))
+                            
+                            ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
+                            (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
+
+                            ;; Floor to two decimal places
+                            (ffloor score 0.01))))
+                       
+  ;; background
+  (background-color ,PaleGreen)
+  (background-image "background.png")
+
+  ;; initialization 
+  (oncreate ,(lambda () 
+    (if (string=? (system-platform) "android")
+       (make-instance store "Oximeter" "oximeter" '("Port" "/dev/ttyUSB0")))
+    (if (string=? (system-platform) "ios")
+       (make-instance store "Oximeter" "oximeter" '("Port" "/dev/tty.iap")))
+   (make-instance store "OximeterSQI" "oximetersqi"
+     '("Waveform" "PLETHUNSCALED") '("Trends" ("HR" "SP"))
+     '("MaxHRVar" 10.) '("MaxSpO2Var" 10.) '("TimeRange" 30.))
+
+    (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
+    (uiset 'cryptokey '#u8(134 102 230 27 13 87 122 120 138 103 53 192 70 93 200 53 121 202 33 85 28 187 73 219))
+    (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+               
+    ;; Make a list of the last 6 years
+    (let loop ((d (string->number (seconds->string ##now "%Y"))) (i 0) (years '()))
+      (if (fx< i 7)
+        (loop (- d 1) (+ i 1) (append years (list (number->string d))))
+        (uiset 'recent_years years)))
+    ;; List of months
+    (uiset 'months (list "January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"))
+               
+    ;; Options for time since last hospitalization
+    (uiset 'hosp_options (list "< 7 days" "7 - 30 days" "30 days - 1 year" "> 1 year" "Never"))
+               
+    ;; Lists of options for Blantyre coma scale
+    (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow "))
+    (uiset 'motor_options (list "Localizes painful stimulus" "Withdraws limb from\npainful stimulus" "No response or\ninappropriate response"))
+    (uiset 'verbal_options (list "Cries appropriately with pain\n(or speaks if verbal)" "Moan or abnormal cry with pain" "No vocal response to pain"))
+               
+    ;; Load the z-score data
+    (uiset 'zboys (map (lambda (entry) (map string->number (cdr entry))) (cdr (csv-read (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "zscore_boys.csv")))))
+    (uiset 'zgirls (map (lambda (entry) (map string->number (cdr entry))) (cdr (csv-read (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "zscore_girls.csv")))))
+  ))
+  
+  (onscheduler ,(lambda () 
+    (let* ((hr (stget  "HR" #f))
+           (sp (stget  "SP" #f))
+           (sqi (stget  "SQI" #f))
+           (curpleth (stget  "PLETH" '()))
+           (oldpleth (uiget  'pleth '()))
+           (totallen (fx+ (length curpleth) (length oldpleth)))
+           (newpleth (if (fx< totallen 300) (append oldpleth curpleth)
+           (sublist (append oldpleth curpleth) (- totallen 300) totallen))))
+       (uiset  'hr (if (number? hr) (fix hr) 0))
+       (uiset  'sp (if (number? sp) (fix sp) 0))
+       (uiset  'sqi (if (number? sqi) (fix sqi) 0))
+       (uiset  'pleth newpleth)
+    )))
+
+  (onsuspend ,(lambda () #t))
+  (onresume ,(lambda () #t))
+  (ondestroy ,(lambda () #t))
+
+;; LOGIN
+
+ (main
+  "PARA - PAediatric Risk Assessment"
+  #f
+  #f
+  (spacer)
+  (label text "In-hospital mortality and post-discharge")
+  (label text "mortality prediction application")
+  (spacer)
+  (label text "For children 6 months to 5 years old")
+  (label text "admitted with a proven or suspected")
+  (label text "infectious illness")
+  (spacer)
+  (textentry text "Username:" id login_uname)
+  (spacer height 10)
+  (textentry text "Password:" id login_pw password #t)
+  (spacer height 50)
+  (button text "Login" action 
+    ,(lambda () 
+      (let* ((admin-uname  (dbget  'admin_uname))
+             (admin-pwhash (dbget  'admin_pwhash))
+             (login-pw     (dbget  'login_pw))
+             (login-uname  (dbget  'login_uname))
+             (admin-ok (and admin-uname login-uname login-pw 
+                 (string=? admin-uname login-uname)
+                 (fx= admin-pwhash (string=?-hash login-pw))))
+             (result (begin
+               (dbclear 'childid)
+               (dbclear  'login_uname)
+               (dbclear  'login_pw)
+               (if admin-ok 'menu
+                 `(,"Invalid login" ("OK" #f))))))
+        (uiset  'new #t)
+        (uiset  'spo2_manual #f)
+        (uiset  'admin (if admin-ok #t #f))
+        result)))
+  (spacer height 100)
+  (label text "Pediatric Anesthesia Research Team")
+  (label text "The University of British Columbia")
+  (spacer)
+ )
+
+ ;; Main menu
+ (menu
+   "Start"
+   ("Logout" ,(lambda () 'main))
+   #f
+   (spacer height 150)
+   (textentry indent 0.4 text "Child ID:" id childid keypad numint)
+   (spacer height 20)
+   (button text "New Child" action ,(lambda ()
+                                      (let ((id (sxrun 'getnotemptystring 'childid)))
+                                        (if id
+                                          (let ((db (uiget  'database))
+                                                (register (dbget 'register '())))
+                                            (if (member id register)
+                                              (list "ID already used." (list "OK" #f))
+                                              (begin
+                                                (dbset  'childid #f)
+                                                (uiset  'admin-database db)
+                                                (uiset  'database (make-table))
+                                                (dbset  'childid id)
+                                                ;; Set the current date
+                                                (dbset 'date (seconds->string ##now "%Y-%m-%d"))
+                                                (uiset 'new #t)
+                                                'demog)))
+                                          (list "Enter an ID for the Child." (list "OK" #f))))))
+   (spacer height 150)
+   (button text "Load Child File" action ,(lambda () 'load))
+   (spacer)
+ )
+  
+ ;; Load screen
+ (load
+   "Load"
+   ("Back" menu)
+   ("Next" ,(lambda ()
+              (let ((sel (dbget 'editname #f)))
+                (if sel
+                  (let ((filename (string-append sel ".db")))
+                    (if (file-exists? (string-append (system-directory) (system-pathseparator) filename))
+                      (let ((db (uiget  'database)))
+                        (uiset 'new #f)
+                        (uiset  'admin-database db)
+                        (uiset  'database (dbload filename (uiget 'cryptokey)))
+                        'demog)
+                      (list (string-append "File " filename " missing.") (list "OK" #f))))
+                  (list "Select a child by ID" (list "OK" #f))))))
+   (spacer)
+   ,(lambda ()
+       (let* ((register (dbget 'register '())))
+          (if (= (length register) 0)
+            '(label text "None")
+            `(list id editname entries ,register))
+       ))
+   (spacer)
+ )
+  
+ ;; Demographics screen
+ (demog
+   "Demographics"
+   ("Back" ,(lambda ()
+              (let* ((childid (dbget 'childid "dummy"))
+                     (filename (string-append childid ".db"))
+                     (db (uiget  'database))
+                     (admindb (uiget  'admin-database))
+                     (oldregister (table-ref admindb 'register '())))
+                 (if (not (member childid oldregister))
+                   (table-set! admindb 'register (append oldregister (list childid))))
+                 (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
+                 (dbsave filename (uiget 'cryptokey) db)
+                 (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+                 (dbclear 'childid)
+                 (if (uiget 'new #f) 'menu 'load))))
+   ("Next" ,(lambda ()
+              (if (and (sane  'infection (lambda (str) #t) "Enter whether there is a suspected or proven infection" "")
+                       (sane  'lasthosp (lambda (str) #t) "Enter the time since last hospitalization" ""))
+                ;; First question answered
+                (let* ((sex (dbget 'sex #f))
+                       (date (sxrun 'getnotemptystring 'date))
+                       (age (dbget 'age #f)))
+                   (if (and date (not (sanestring-dob date)))
+                     ;; Invalid current date
+                     (list "Invalid current date, enter as YYYY-MM-DD" (list "OK" #f))
+                     (if (and sex date age)
+                       ;; Everything filled in, go to next page
+                       'anthro
+                       (let ((message (cond
+                                         ;; Missing sex and age
+                                         ((and (not sex) (not age))
+                                            (string-append "Missing sex and calculation of child's age. "
+                                                           "MUAC will be used instead. The in-hospital mortality "
+                                                           "risk will be less precise."))
+                                         ((not sex)
+                                            (string-append "Missing sex. "
+                                                           "MUAC must be used instead. The in-hospital mortality "
+                                                           "risk will be less precise."))
+                                         ((not date)
+                                            (string-append "Missing current date, cannot calculate child's age. "
+                                                           "MUAC will be used instead. The in-hospital mortality "
+                                                           "risk will be less precise."))
+                                         ((not age)
+                                            (string-append "Missing child's birth date. "
+                                                           "MUAC will be used instead. The in-hospital mortality "
+                                                           "risk will be less precise.")))))
+                         (list message (list "Continue" 'anthro) (list "Fix" #f))))))
+                (list (uiget  'errmsg) (list "OK" #f)))))
+   (spacer)
+   (label align left text "Proven or suspected infection")
+   (spacer height 10)
+   (radiobox id infection left ("Yes" "1" #f) right ("No" "0" ("This app is only valid for children with a proven or suspected infection: probabilities will not be calculated" ("OK" #f))))
+   (spacer)
+   (label align left text "Sex")
+   (spacer height 10)
+   (radiobox id sex left ("Male" "1" #f) right ("Female" "0" #f))
+   (spacer height 40)
+   (textentry indent 0.4 text "Current Date:" id date keypad numdash default "YYYY-MM-DD")
+   (spacer height 10)
+   (dropdown text "Year of Birth" id yob entries ,(lambda () (uiget 'recent_years)))
+   (spacer height 10)
+   (dropdown text "Month of Birth" id mob entries ,(lambda () (uiget 'months)))
+   (spacer height 10)
+   (label align center text ,(lambda ()
+                             (string-append "Calculated Age: "
+                             ;; Calculate years between dob and current date
+                             (let ((year (dbget 'yob #f))
+                                   (month (dbget 'mob #f)))
+                               (if (and year month)
+                                 (let* ((months (uiget 'months))
+                                        (monthnum (+ (list-pos months month) 1))
+                                        (monthstr (string-append (if (fx< monthnum 10) "0" "") (number->string monthnum))) 
+                                        (dob (string->seconds (string-append year monthstr "15") "%Y%m%d"))
+                                        (current (with-exception-catcher (lambda (e) #f) (lambda () (string->seconds (dbget 'date) "%Y-%m-%d")))))
+                                   (if current
+                                     (let ((age (/ (- current dob) 31557600)))
+                                       (dbset 'age age) 
+                                       (string-append (float->string age 1) " years"))
+                                     (begin
+                                       (dbset 'age #f)
+                                       "Fix Current Date")))
+                                 (begin
+                                   (dbset 'age #f)
+                                   ""))))))
+   (spacer height 40)
+   (label text "Time since last hospitalization")
+   (spacer height 10)
+   (dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
+   (spacer)
+ )
+  
+ ;; Anthropometric screen
+ (anthro
+   "Anthropometric Data"
+   ("Back" ,(lambda ()
+              'demog))
+   ("Next" ,(lambda ()
+              (let* ((z (dbget 'zscore #f))
+                     (weight (sxrun 'getnotemptystring 'weight))
+                     (muac (sxrun 'getnotemptystring 'muac)))
+                (if (and weight (not (sanestring-weight-kg weight)))
+                  ;; Invalid weight
+                  (list "Invalid weight. Please correct it" (list "OK" #f))
+                  (if (and (not z) (not muac))
+                    ;: No MUAC or WAZ, cannot continue
+                    (list (if (not weight)
+                            "Please enter either weight or MUAC. Without these the risk scores cannot be calculated."
+                            "Weight for age score cannot be calculated without age. Please enter MUAC.")
+                          (list "OK" #f))
+                    (if (and z muac)
+                      ;; All complete
+                      'spo2
+                      ;; Missing one or the other
+                      (list
+                         (cond
+                           ((not weight) "Missing weight. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
+                           ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
+                           (else "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise."))
+                         (list "Continue" 'spo2) (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
+   (spacer height 50)
+   (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg")
+   (spacer)
+   (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm")
+   (spacer height 200)
+   (label text "Calculated weight for age z-score:")
+   (spacer height 10)
+   (label size big text ,(lambda () (let ((weight (dbget 'weight #f))
+                                          (age (dbget 'age #f))
+                                          (gender (dbget 'sex #f)))
+                                      (if (and (string? weight) (fx> (string-length weight) 0) age gender)
+                                        (let* ((w (string->number weight))
+                                               (boy? (string=? gender "1"))
+                                               (z (sxrun 'z-score age w boy?)))
+                                          (dbset 'zscore z)
+                                          (sxrun 'float->stringz z 1))
+                                        (begin
+                                          (dbset 'zscore #f)
+                                          "")))))
+   (spacer)
+ )
+  
+ ;; Oxygen saturation screen
+ (spo2
+   "Oxygen Saturation"
+   ("Back" ,(lambda ()
+              'anthro))
+   ("Next" ,(lambda ()
+              (let* ((sp (sxrun 'getnotemptystring 'spo2med))
+                     (muac (sxrun 'getnotemptystring 'muac)))
+                (if sp
+                  'clinical
+                  (if muac
+                    (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical) (list "Fix" #f))
+                    (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))))))
+   (spacer height ,(lambda () (if (uiget 'spo2_manual #f) 30 57)))
+   ,(lambda ()
+      (if (uiget 'spo2_manual #f)
+        '(textentry indent 0.5 text "Manual SpO2: " id spo2med keypad numint default "%")
+        (let ((spo2med (dbget 'spo2med #f)))
+          (if (or (uiget 'starttime #f) (not spo2med))
+           `(label text ,(string-append "SpO2: " (number->string (uiget  'sp)) " %   "
+                                        "HR: " (number->string (uiget  'hr)) " bpm   "
+                                        "SQI: " (number->string (uiget  'sqi)) " %"))
+           `(label text ,(string-append "Median SpO2: " spo2med "%"))))))
+   (spacer)
+   (progress value ,(lambda () 
+      (let ((st (uiget 'starttime #f)))
+        (if st
+          (let ((fill (/ (- (current-time-seconds) st) 60.0)))
+            (if (>= fill 1.0)
+              (let ((spo2_median (stget "SPMedian" #f)))
+                (uiset 'starttime #f)
+                (scheduler-endcase store)
+                (dbset 'spo2med spo2_median)))
+            (min fill 1.0))
+          0.))))
+   (graph height 200 id pleth location ui color ,Yellow linewidth 4)
+   (spacer)
+   (button text ,(lambda () (if (uiget 'starttime #f) "Stop" "Start"))
+           action ,(lambda ()
+                      (if (uiget 'starttime #f)
+                        (begin
+                          (uiset 'starttime #f)
+                          (scheduler-endcase store)
+                          'spo2)
+                        (let ((timestamp (time->string (current-time) "%Y%m%d-%H%M%S")))
+                          (uiset 'starttime (current-time-seconds))
+                          (scheduler-startcase store timestamp)
+                          'spo2))))
+   (spacer height 180)
+   (button text ,(lambda () (if (uiget 'spo2_manual #f) "Switch to Pulse Oximeter" "Switch to Manual")) 
+           action ,(lambda () (uiset 'spo2_manual (not (uiget 'spo2_manual #f))) 'spo2))
+ )
+ 
+ ;; Clinical data screen
+ (clinical
+   "Clinical Data"
+   ("Back" ,(lambda ()
+              'spo2))
+   ("Next" ,(lambda ()
+              (let ((bcs (dbget 'comascore #f))
+                    (hiv (dbget 'hiv #f)))
+                (if bcs
+                  (if hiv
+                    'summary
+                    (let* ((sp (sxrun 'getnotemptystring 'spo2med))
+                           (muac (sxrun 'getnotemptystring 'muac)))
+                      (cond
+                        ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
+                        ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
+                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" 'summary) (list "Fix" #f))))))
+                  (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
+   (spacer 20)
+   (label text "Blantyre coma scale")
+   (spacer 20)
+   (label align left text "Eye Movement")
+   (dropdown id eye entries ,(lambda () (uiget 'eye_options)))
+   (spacer 20)
+   (label align left text "Best motor response")
+   (dropdown id motor entries ,(lambda () (uiget 'motor_options)))
+   (spacer 20)
+   (label align left text "Best verbal response")
+   (dropdown id verbal entries ,(lambda () (uiget 'verbal_options)))
+   (spacer 20)
+   (label text "Calculated Blantyre coma scale:")
+   (spacer 10)
+   (label size big text ,(lambda () (let ((e (dbget 'eye #f))
+                                          (eo (uiget 'eye_options #f))
+                                          (m (dbget 'motor #f))
+                                          (mo (uiget 'motor_options #f))
+                                          (v (dbget 'verbal #f))
+                                          (vo (uiget 'verbal_options #f)))
+                                        (if (and e eo m mo v vo)
+                                          ;; Add up questions to get scale value
+                                          (let ((num (fx+ (- (length (member e eo)) 1)
+                                                          (- (length (member m mo)) 1)
+                                                          (- (length (member v vo)) 1))))
+                                            (dbset 'comascore num)
+                                            (number->string num))
+                                          (begin
+                                            (dbset 'comascore #f)
+                                            "")))))
+   (spacer height 40)
+   (label align left text "HIV status")
+   (dropdown id hiv entries ("Positive" "Negative" "Unknown"))
+   (spacer)
+ )
+  
+  ;; Summary screen
+ (summary
+   "Summary"
+   ("Back" ,(lambda ()
+              'clinical))
+   ("Calculate" ,(lambda ()
+              (if (string=? (dbget 'infection "0") "1")
+                (let ((hscore (sxrun 'calc-hospital-score))
+                      (dscore (sxrun 'calc-discharge-score)))
+                  (dbset 'hospitalscore hscore)
+                  (dbset 'dischargescore dscore)
+                  'risk)
+                ;; No infection, blinded, no probabilities
+                'blinded)))
+   (spacer height 10)
+   (label align left text ,(lambda ()
+     (let* ((infect (dbget 'infection ""))
+            (str (cond 
+                   ((string=? infect "1") "Yes")
+                   ((string=? infect "0") "No")
+                   (else ""))))
+     (string-append "Proven or suspected infection: " str))))
+   (label align left text ,(lambda ()
+     (let* ((sex (dbget 'sex ""))
+            (str (cond 
+                   ((string=? sex "1") "Male")
+                   ((string=? sex "0") "Female")
+                   (else ""))))
+     (string-append "Sex: " str))))
+   (label align left text ,(lambda () (string-append "Current Date: " (dbget 'date ""))))
+   (label align left text ,(lambda () (string-append "Birth Month: " (dbget 'mob "") ", " (dbget 'yob ""))))
+   (label align left text ,(lambda () (string-append "Calculated Age: " (let ((a (dbget 'age #f)))
+                                                                          (if a (string-append (float->string a 1) " years") "")))))
+   (label align left text ,(lambda () (string-append "Weight: " (let ((w (dbget 'weight #f)))
+                                                                  (if w (string-append w " kg") "")))))
+   (spacer)
+   (label align center text "Risk Factors:")
+   (spacer height 10)
+   (label align left text ,(lambda () (string-append "Time since last hospitalization: " (dbget 'lasthosp ""))))
+   (spacer height 10)
+   (label align left text ,(lambda () (string-append "Mid-upper arm circumference: " (let ((m (dbget 'muac #f)))
+                                                                                       (if m (string-append m " mm") "")))))
+   ,(lambda ()
+      (let ((m (sxrun 'getnotemptystring 'muac)))
+        (if m
+          (let* ((mnum (string->number m))
+                 (mscale (cond
+                            ((fx< mnum 115) 0)
+                            ((fx<= mnum 125) 3)
+                            (else 6))))
+            `(image align right file ,(sxrun 'choose-scale mscale)))
+          `(spacer height 0))))
+   (spacer height 10)
+   (label align left text ,(lambda () (string-append "Weight for age z-score: " (let ((z (dbget 'zscore #f)))
+                                                                                  (if z (sxrun 'float->stringz z 1) "")))))
+   (spacer height 10)
+   (label align left text ,(lambda () (string-append "SpO2: " (let ((sp (sxrun 'getnotemptystring 'spo2med)))
+                                                                (if sp (string-append sp " %") "")))))
+   ,(lambda ()
+      (let ((sp (sxrun 'getnotemptystring 'spo2med)))
+        (if sp
+          (let* ((spnum (string->number sp))
+                 (spscale (cond
+                            ((fx< spnum 90) 0)
+                            ((fx< spnum 93) 1)
+                            ((fx= spnum 93) 2)
+                            ((fx< spnum 95) 3)
+                            ((fx< spnum 98) 5)
+                            (else 6))))
+            `(image align right file ,(sxrun 'choose-scale spscale)))
+          `(spacer height 0))))
+   (spacer height 10)
+   (label align left text ,(lambda () (string-append "Blantyre coma score: " (let ((b (dbget 'comascore #f)))
+                                                                               (if b (number->string b) "")))))
+   (spacer height 10)
+   (label align left text ,(lambda () (string-append "HIV status: " (dbget 'hiv ""))))
+ )
+  
+  ;; Risk screen
+ (risk
+   "Risk"
+   ("Back" ,(lambda ()
+              'summary))
+   ("Start Again" ,(lambda ()
+                     (let* ((childid (dbget 'childid "dummy"))
+                            (filename (string-append childid ".db"))
+                            (db (uiget  'database))
+                            (admindb (uiget  'admin-database))
+                            (oldregister (table-ref admindb 'register '())))
+                        (if (not (member childid oldregister))
+                          (table-set! admindb 'register (append oldregister (list childid))))
+                        (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
+                        (dbsave filename (uiget 'cryptokey) db)
+                        (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+                        (dbclear 'childid)
+                        'menu)))
+   (spacer)
+   (label text "In Hospital Risk:")
+   (spacer 10)
+   (label size big text ,(lambda () (string-append (float->string (dbget 'hospitalscore 3.5) 1) " %")))
+   (spacer 10)
+   (image file ,(lambda () (sxrun 'choose-scale (let ((sc (dbget 'hospitalscore 3.5)))
+                                                  (cond
+                                                     ((< sc 1) 6)
+                                                     ((< sc 2) 5)
+                                                     ((< sc 3) 4)
+                                                     ((< sc 4) 3)
+                                                     ((< sc 12) 2)
+                                                     ((< sc 20) 1)
+                                                     (else 0))))))
+   (spacer height 200)
+   (label text "Post-Discharge Risk:")
+   (spacer 10)
+   (label size big text ,(lambda () (string-append (float->string (dbget 'dischargescore 3.5) 1) " %")))
+   (spacer 10)
+   (image file ,(lambda () (sxrun 'choose-scale (let ((sc (dbget 'dischargescore 3.5)))
+                                                  (cond
+                                                     ((< sc 1) 6)
+                                                     ((< sc 2) 5)
+                                                     ((< sc 3) 4)
+                                                     ((< sc 4) 3)
+                                                     ((< sc 12) 2)
+                                                     ((< sc 20) 1)
+                                                     (else 0))))))
+ )
+  
+ ;; Blinded risk screen
+ (blinded
+   "Risk"
+   ("Back" ,(lambda ()
+              'summary))
+   ("Start Again" ,(lambda ()
+                     (let* ((childid (dbget 'childid "dummy"))
+                            (filename (string-append childid ".db"))
+                            (db (uiget  'database))
+                            (admindb (uiget  'admin-database))
+                            (oldregister (table-ref admindb 'register '())))
+                        (if (not (member childid oldregister))
+                          (table-set! admindb 'register (append oldregister (list childid))))
+                        (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
+                        (dbsave filename (uiget 'cryptokey) db)
+                        (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+                        (dbclear 'childid)
+                        'menu)))
+   (spacer)
+   (label text "In Hospital Risk:")
+   (spacer 10)
+   (label text "No proven or suspected infection")
+   (label text "so no probabilities calculated.")
+   (spacer 200)
+   (label text "Post-Discharge Risk:")
+   (spacer 10)
+   (label text "No proven or suspected infection")
+   (label text "so no probabilities calculated.")
+   (spacer 10)
+ )
+)
+  
+;; eof
