@@ -31,6 +31,19 @@
                      ((fx= val 5) "scale5.png")
                      ((fx= val 6) "scale6.png"))))
   
+  ;; Save the child data
+  (save-child ,(lambda ()
+                 (let* ((childid (dbget 'childid "dummy"))
+                        (filename (string-append childid ".db"))
+                        (db (uiget  'database))
+                        (admindb (uiget  'admin-database))
+                        (oldregister (table-ref admindb 'register '())))
+                   (if (not (member childid oldregister))
+                     (begin
+                       (table-set! admindb 'register (append oldregister (list childid)))
+                       (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)))
+                   (dbsave filename (uiget 'cryptokey) db))))
+  
   ;; Calculate risk scores
   (calc-hospital-score ,(lambda ()
                           (let ((waz (dbget 'zscore #f))
@@ -159,7 +172,7 @@
     (uiset 'months (list "January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"))
                
     ;; Options for time since last hospitalization
-    (uiset 'hosp_options (list "< 7 days" "7 - 30 days" "30 days - 1 year" "> 1 year" "Never"))
+    (uiset 'hosp_options (list "< 7 days" "7 - 30 days" "30 days - 1 year" "> 1 year" "Never hospitalized"))
                
     ;; Lists of options for Blantyre coma scale
     (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow "))
@@ -242,27 +255,38 @@
    ("Logout" ,(lambda () 'main))
    #f
    (spacer height 150)
-   (textentry indent 0.4 text "Child ID:" id childid keypad numint)
-   (spacer height 20)
    (button text "New Child" action ,(lambda ()
-                                      (let ((id (sxrun 'getnotemptystring 'childid)))
-                                        (if id
-                                          (let ((db (uiget  'database))
-                                                (register (dbget 'register '())))
-                                            (if (member id register)
-                                              (list "ID already used." (list "OK" #f))
-                                              (begin
-                                                (dbset  'childid #f)
-                                                (uiset  'admin-database db)
-                                                (uiset  'database (make-table))
-                                                (dbset  'childid id)
-                                                ;; Set the current date
-                                                (dbset 'date (seconds->string ##now "%Y-%m-%d"))
-                                                (uiset 'new #t)
-                                                'demog)))
-                                          (list "Enter an ID for the Child." (list "OK" #f))))))
+                                      'newchild))
    (spacer height 150)
    (button text "Load Child File" action ,(lambda () 'load))
+   (spacer)
+ )
+
+ ;; New screen
+ (newchild
+   "New Child"
+   ("Back" menu)
+   ("Next" ,(lambda ()
+              (let ((id (sxrun 'getnotemptystring 'childid)))
+                (if id
+                  (let ((db (uiget  'database))
+                        (register (dbget 'register '())))
+                    (if (member id register)
+                      (list "ID already used." (list "OK" #f))
+                      (begin
+                          (dbclear 'childid)
+                          (uiset  'admin-database db)
+                          (uiset  'database (make-table))
+                          (dbset  'childid id)
+                          ;; Set the current date
+                          (dbset 'date (seconds->string ##now "%Y-%m-%d"))
+                          (uiset 'new #t)
+                          'demog)))
+                  (list "Enter an ID for the Child." (list "OK" #f))))))
+   (spacer height 100)
+   (label text "Please enter an ID for this child")
+   (spacer height 10)
+   (textentry id childid keypad numint)
    (spacer)
  )
   
@@ -296,19 +320,12 @@
  (demog
    "Demographics"
    ("Back" ,(lambda ()
-              (let* ((childid (dbget 'childid "dummy"))
-                     (filename (string-append childid ".db"))
-                     (db (uiget  'database))
-                     (admindb (uiget  'admin-database))
-                     (oldregister (table-ref admindb 'register '())))
-                 (if (not (member childid oldregister))
-                   (table-set! admindb 'register (append oldregister (list childid))))
-                 (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
-                 (dbsave filename (uiget 'cryptokey) db)
-                 (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
-                 (dbclear 'childid)
-                 (if (uiget 'new #f) 'menu 'load))))
+              (sxrun 'save-child)
+              (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+              (dbclear 'childid)
+              (if (uiget 'new #f) 'menu 'load)))
    ("Next" ,(lambda ()
+              (sxrun 'save-child)
               (if (and (sane  'infection (lambda (str) #t) "Enter whether there is a suspected or proven infection" "")
                        (sane  'lasthosp (lambda (str) #t) "Enter the time since last hospitalization" ""))
                 ;; First question answered
@@ -336,21 +353,27 @@
                                                            "MUAC will be used instead. The in-hospital mortality "
                                                            "risk will be less precise."))
                                          ((not age)
-                                            (string-append "Missing child's birth date. "
-                                                           "MUAC will be used instead. The in-hospital mortality "
-                                                           "risk will be less precise.")))))
+                                            (if (and (dbget 'mob #f) (dbget 'yob #f))
+                                              (string-append "Invalid child's birth date. "
+                                                             "MUAC will be used instead. The in-hospital mortality "
+                                                             "risk will be less precise.")
+                                              (string-append "Missing child's birth date. "
+                                                             "MUAC will be used instead. The in-hospital mortality "
+                                                             "risk will be less precise."))))))
                          (list message (list "Continue" 'anthro) (list "Fix" #f))))))
                 (list (uiget  'errmsg) (list "OK" #f)))))
    (spacer)
-   (label align left text "Proven or suspected infection")
-   (spacer height 10)
+   (label text "Proven or suspected infection")
+   (spacer height 5)
    (radiobox id infection left ("Yes" "1" #f) right ("No" "0" ("This app is only valid for children with a proven or suspected infection: probabilities will not be calculated" ("OK" #f))))
    (spacer)
-   (label align left text "Sex")
-   (spacer height 10)
+   (label text "Sex")
+   (spacer height 5)
    (radiobox id sex left ("Male" "1" #f) right ("Female" "0" #f))
-   (spacer height 40)
-   (textentry indent 0.4 text "Current Date:" id date keypad numdash default "YYYY-MM-DD")
+   (spacer)
+   (label text "Current Date")
+   (spacer height 10)
+   (textentry align center id date keypad numdash default "YYYY-MM-DD")
    (spacer height 10)
    (dropdown text "Year of Birth" id yob entries ,(lambda () (uiget 'recent_years)))
    (spacer height 10)
@@ -369,15 +392,20 @@
                                         (current (with-exception-catcher (lambda (e) #f) (lambda () (string->seconds (dbget 'date) "%Y-%m-%d")))))
                                    (if current
                                      (let ((age (/ (- current dob) 31557600)))
-                                       (dbset 'age age) 
-                                       (string-append (float->string age 1) " years"))
+                                       (if (< age 0.3)
+                                         (begin
+                                           (dbset 'age #f)
+                                           "Invalid - Too Young")
+                                         (begin
+                                           (dbset 'age age)
+                                           (string-append (float->string age 1) " years"))))
                                      (begin
                                        (dbset 'age #f)
-                                       "Fix Current Date")))
+                                       "Invalid - Fix Current Date")))
                                  (begin
                                    (dbset 'age #f)
                                    ""))))))
-   (spacer height 40)
+   (spacer)
    (label text "Time since last hospitalization")
    (spacer height 10)
    (dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
@@ -388,8 +416,10 @@
  (anthro
    "Anthropometric Data"
    ("Back" ,(lambda ()
+              (sxrun 'save-child)
               'demog))
    ("Next" ,(lambda ()
+              (sxrun 'save-child)
               (let* ((z (dbget 'zscore #f))
                      (weight (sxrun 'getnotemptystring 'weight))
                      (muac (sxrun 'getnotemptystring 'muac)))
@@ -424,7 +454,7 @@
    (spacer)
    (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm")
    (spacer height 200)
-   (label text "Calculated weight for age z-score:")
+   (label text "Calculated weight for age z-score")
    (spacer height 10)
    (label size big text ,(lambda () (let ((weight (dbget 'weight #f))
                                           (age (dbget 'age #f))
@@ -446,8 +476,10 @@
    "Oxygen Saturation"
    ("Back" ,(lambda ()
               (set! gui (uiget 'origgui gui))
+              (sxrun 'save-child)
               'anthro))
    ("Next" ,(lambda ()
+              (sxrun 'save-child)
               (let* ((sp0 (stget "SPMedian" #f))
                      (sp (if (number? sp0) (number->string sp0) #f))
                      (muac (sxrun 'getnotemptystring 'muac)))
@@ -475,10 +507,12 @@
  (clinical
    "Clinical Data"
    ("Back" ,(lambda ()
+              (sxrun 'save-child)
               (uiset 'origgui gui)
               (set! gui (list gui spo2spot:gui))
               'spo2))
    ("Next" ,(lambda ()
+              (sxrun 'save-child)
               (let ((bcs (dbget 'comascore #f))
                     (hiv (dbget 'hiv #f)))
                 (if bcs
@@ -503,7 +537,7 @@
    (label align left text "Best verbal response")
    (dropdown id verbal entries ,(lambda () (uiget 'verbal_options)))
    (spacer 20)
-   (label text "Calculated Blantyre coma scale:")
+   (label text "Calculated Blantyre coma score")
    (spacer 10)
    (label size big text ,(lambda () (let ((e (dbget 'eye #f))
                                           (eo (uiget 'eye_options #f))
@@ -531,8 +565,10 @@
  (summary
    "Summary"
    ("Back" ,(lambda ()
+              (sxrun 'save-child)
               'clinical))
    ("Calculate" ,(lambda ()
+              (sxrun 'save-child)
               (if (string=? (dbget 'infection "0") "1")
                 (let ((hscore (sxrun 'calc-hospital-score))
                       (dscore (sxrun 'calc-discharge-score)))
@@ -609,20 +645,13 @@
  (risk
    "Risk"
    ("Back" ,(lambda ()
+              (sxrun 'save-child)
               'summary))
    ("Start Again" ,(lambda ()
-                     (let* ((childid (dbget 'childid "dummy"))
-                            (filename (string-append childid ".db"))
-                            (db (uiget  'database))
-                            (admindb (uiget  'admin-database))
-                            (oldregister (table-ref admindb 'register '())))
-                        (if (not (member childid oldregister))
-                          (table-set! admindb 'register (append oldregister (list childid))))
-                        (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
-                        (dbsave filename (uiget 'cryptokey) db)
-                        (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
-                        (dbclear 'childid)
-                        'menu)))
+                     (sxrun 'save-child)
+                     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+                     (dbclear 'childid)
+                     'menu))
    (spacer)
    (label text "In Hospital Risk:")
    (spacer 10)
@@ -657,20 +686,13 @@
  (blinded
    "Risk"
    ("Back" ,(lambda ()
+              (sxrun 'save-child)
               'summary))
    ("Start Again" ,(lambda ()
-                     (let* ((childid (dbget 'childid "dummy"))
-                            (filename (string-append childid ".db"))
-                            (db (uiget  'database))
-                            (admindb (uiget  'admin-database))
-                            (oldregister (table-ref admindb 'register '())))
-                        (if (not (member childid oldregister))
-                          (table-set! admindb 'register (append oldregister (list childid))))
-                        (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
-                        (dbsave filename (uiget 'cryptokey) db)
-                        (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
-                        (dbclear 'childid)
-                        'menu)))
+                     (sxrun 'save-child)
+                     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+                     (dbclear 'childid)
+                     'menu))
    (spacer)
    (label text "In Hospital Risk:")
    (spacer 10)
