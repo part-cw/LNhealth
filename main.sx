@@ -127,7 +127,15 @@
   (background-image "background.png")
 
   ;; initialization 
-  (oncreate ,(lambda () 
+  (oncreate ,(lambda ()
+               
+    ;; Load the localization csv table to translate between languages
+    (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
+    
+    ;; Setup rtaudio for pulse oximetry and setup SpO2 page
+    (rtaudio-start 96000 1.0)
+    (spo2spot-init 0 0 (glgui-width-get) (glgui-height-get) store)
+               
     (if (string=? (system-platform) "android")
        (make-instance store "Oximeter" "oximeter" '("Port" "/dev/ttyUSB0")))
     (if (string=? (system-platform) "ios")
@@ -136,6 +144,8 @@
      '("Waveform" "PLETHUNSCALED") '("Trends" ("HR" "SP"))
      '("MaxHRVar" 10.) '("MaxSpO2Var" 10.) '("TimeRange" 30.))
 
+    (uiset 'origgui gui)
+               
     (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
     (uiset 'cryptokey '#u8(134 102 230 27 13 87 122 120 138 103 53 192 70 93 200 53 121 202 33 85 28 187 73 219))
     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
@@ -161,6 +171,8 @@
     (uiset 'zgirls (map (lambda (entry) (map string->number (cdr entry))) (cdr (csv-read (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "zscore_girls.csv")))))
   ))
   
+  (onevent ,(lambda () (spo2spot-event)))
+  
   (onscheduler ,(lambda () 
     (let* ((hr (stget  "HR" #f))
            (sp (stget  "SP" #f))
@@ -174,6 +186,7 @@
        (uiset  'sp (if (number? sp) (fix sp) 0))
        (uiset  'sqi (if (number? sqi) (fix sqi) 0))
        (uiset  'pleth newpleth)
+      (spo2spot-scheduled)
     )))
 
   (onsuspend ,(lambda () #t))
@@ -391,14 +404,21 @@
                           (list "OK" #f))
                     (if (and z muac)
                       ;; All complete
-                      'spo2
+                      (begin
+                        (uiset 'origgui gui)
+                        (set! gui (list gui spo2spot:gui))
+                        'spo2)
                       ;; Missing one or the other
                       (list
                          (cond
                            ((not weight) "Missing weight. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
                            ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
                            (else "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise."))
-                         (list "Continue" 'spo2) (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
+                         (list "Continue" (lambda ()
+                                            (uiset 'origgui gui)
+                                            (set! gui (list gui spo2spot:gui))
+                                            'spo2))
+                         (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
    (spacer height 50)
    (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg")
    (spacer)
@@ -425,59 +445,38 @@
  (spo2
    "Oxygen Saturation"
    ("Back" ,(lambda ()
+              (set! gui (uiget 'origgui gui))
               'anthro))
    ("Next" ,(lambda ()
-              (let* ((sp (sxrun 'getnotemptystring 'spo2med))
+              (let* ((sp0 (stget "SPMedian" #f))
+                     (sp (if (number? sp0) (number->string sp0) #f))
                      (muac (sxrun 'getnotemptystring 'muac)))
                 (if sp
-                  'clinical
-                  (if muac
-                    (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical) (list "Fix" #f))
-                    (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))))))
-   (spacer height ,(lambda () (if (uiget 'spo2_manual #f) 30 57)))
-   ,(lambda ()
-      (if (uiget 'spo2_manual #f)
-        '(textentry indent 0.5 text "Manual SpO2: " id spo2med keypad numint default "%")
-        (let ((spo2med (dbget 'spo2med #f)))
-          (if (or (uiget 'starttime #f) (not spo2med))
-           `(label text ,(string-append "SpO2: " (number->string (uiget  'sp)) " %   "
-                                        "HR: " (number->string (uiget  'hr)) " bpm   "
-                                        "SQI: " (number->string (uiget  'sqi)) " %"))
-           `(label text ,(string-append "Median SpO2: " spo2med "%"))))))
+                  (begin
+                    (dbset 'spo2med sp)
+                    (set! gui (uiget 'origgui gui))
+                    'clinical)
+                  (begin
+                    (set! gui (uiget 'origgui gui))
+                    (if muac
+                      (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
+                                                                                               (list "Fix" (lambda ()
+                                                                                                              (uiset 'origgui gui)
+                                                                                                              (set! gui (list gui spo2spot:gui))
+                                                                                                              #f)))
+                      (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
+                                                                                                                                          (uiset 'origgui gui)
+                                                                                                                                          (set! gui (list gui spo2spot:gui))
+                                                                                                                                          #f)))))))))
    (spacer)
-   (progress value ,(lambda () 
-      (let ((st (uiget 'starttime #f)))
-        (if st
-          (let ((fill (/ (- (current-time-seconds) st) 60.0)))
-            (if (>= fill 1.0)
-              (let ((spo2_median (stget "SPMedian" #f)))
-                (uiset 'starttime #f)
-                (scheduler-endcase store)
-                (dbset 'spo2med spo2_median)))
-            (min fill 1.0))
-          0.))))
-   (graph height 200 id pleth location ui color ,Yellow linewidth 4)
-   (spacer)
-   (button text ,(lambda () (if (uiget 'starttime #f) "Stop" "Start"))
-           action ,(lambda ()
-                      (if (uiget 'starttime #f)
-                        (begin
-                          (uiset 'starttime #f)
-                          (scheduler-endcase store)
-                          'spo2)
-                        (let ((timestamp (time->string (current-time) "%Y%m%d-%H%M%S")))
-                          (uiset 'starttime (current-time-seconds))
-                          (scheduler-startcase store timestamp)
-                          'spo2))))
-   (spacer height 180)
-   (button text ,(lambda () (if (uiget 'spo2_manual #f) "Switch to Pulse Oximeter" "Switch to Manual")) 
-           action ,(lambda () (uiset 'spo2_manual (not (uiget 'spo2_manual #f))) 'spo2))
  )
  
  ;; Clinical data screen
  (clinical
    "Clinical Data"
    ("Back" ,(lambda ()
+              (uiset 'origgui gui)
+              (set! gui (list gui spo2spot:gui))
               'spo2))
    ("Next" ,(lambda ()
               (let ((bcs (dbget 'comascore #f))
