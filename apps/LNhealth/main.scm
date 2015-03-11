@@ -301,7 +301,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; events
   (lambda (t x y) 
      (orientation-event t x y GUI_PORTRAIT GUI_UPSIDEDOWN)
-    ;;(if hook:onevent (hook:onevent))
+    (if hook:onevent (hook:onevent))
     (scheduler-iterate (lambda ()
       (if devplatform? (autoload))
       (if hook:onscheduler (hook:onscheduler))))
