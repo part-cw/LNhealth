@@ -126,11 +126,21 @@
                             (ffloor score 0.01))))
                        
   ;; background
-  (background-color ,PaleGreen)
+  (background-color ,(color-rgb 34 84 44))
   (background-image "background.png")
 
   ;; initialization 
   (oncreate ,(lambda ()
+      
+    ;; Background box color
+    (uiset 'boxcolor (list (color-rgb 23 61 31) (color-rgb 23 61 31) (color-rgb 26 71 36) (color-rgb 30 80 39)))
+               
+    ;; Load fonts
+    (uiset 'fnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 18))
+    (uiset 'smlfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 20))
+    (uiset 'bigfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 40))
+    (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 25))
+    (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 20))
                
     ;; Load the localization csv table to translate between languages
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
@@ -173,6 +183,17 @@
     (uiset 'zboys (map (lambda (entry) (map string->number (cdr entry))) (cdr (csv-read (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "zscore_boys.csv")))))
     (uiset 'zgirls (map (lambda (entry) (map string->number (cdr entry))) (cdr (csv-read (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "zscore_girls.csv")))))
 
+    ;; Register background box widget
+    (uiform-register 'box
+      (lambda (x y w . args)
+        (let ((bx (+ x (* w 0.05)))
+              (bw (* w 0.9))
+              (by (+ y (glgui:uiform-arg args 'yofs 0)))
+              (bh (glgui:uiform-arg args 'h 0)))
+          (glgui:draw-box bx by bw bh (uiget 'boxcolor))
+          0))
+      #f)
+               
     ;; Scale thresholds - values mapped to left end, first quarter, middle, third quarter, and right end
     (uiset 'hosp_thresholds (list 1 2 3 4 5))
     (uiset 'muac_thresholds (list 115 120 125 135 145))
@@ -196,17 +217,12 @@
                            #f)))
                
     ;; Register scale widget
-    (uiform-register-legacy 'scale
-      (lambda (g wgt)
+    (uiform-register 'scale
+      (lambda (x y w . args)
         (let* ((img (uiget 'scaleimage))
                (m (uiget 'markimage))
-               (thproc (glgui-widget-get g wgt 'thresholds))
-               (thresholds (if (procedure? thproc) (thproc) #f))
-               (vproc (glgui-widget-get g wgt 'value))
-               (v (if (procedure? vproc) (vproc) #f))
-               (x (glgui-widget-get g wgt 'x))
-               (y (glgui-widget-get g wgt 'y))
-               (w (glgui-widget-get g wgt 'w)))
+               (thresholds (glgui:uiform-arg args 'thresholds #f))
+               (v (glgui:uiform-arg args 'value #f)))
           (if (and img m x y w thresholds v)
             (let* ((h (cadr img))
                    (sw (car img))
@@ -231,9 +247,10 @@
                                   (p2 (list-ref thresholds 4)))
                                (+ sx (* sw4 3) (* sw4 (/ (- v p1) (- p2 p1))))))
                          (else (+ sx (- sw 10))))))
-                  (uiset 'h (+ h 5))
                   (glgui:draw-pixmap-center x y w h img White)
-                  (glgui:draw-pixmap-center vx y 10 h m White)))))
+                  (glgui:draw-pixmap-center vx y 10 h m White)
+                  h)
+              0)))
       #f)
   ))
   
@@ -266,8 +283,8 @@
   #f
   #f
   (spacer)
-  (label text "In-hospital mortality and post-discharge")
-  (label text "mortality prediction application")
+  (label size small text "In-hospital mortality and post-discharge")
+  (label size small text "mortality prediction application")
   (spacer)
   (label text "For children 6 months to 5 years old")
   (label text "admitted with a proven or suspected")
@@ -288,6 +305,8 @@
                  (fx= admin-pwhash (string=?-hash login-pw))))
              (result (begin
                (dbclear 'childid)
+               (dbclear 'first)
+               (dbclear 'last)
                (dbclear  'login_uname)
                (dbclear  'login_pw)
                (if admin-ok 'menu
@@ -320,7 +339,9 @@
    "New Child"
    ("Back" menu)
    ("Next" ,(lambda ()
-              (let ((id (sxrun 'getnotemptystring 'childid)))
+              (let ((id (sxrun 'getnotemptystring 'childid))
+                    (first (sxrun 'getnotemptystring 'first))
+                    (last (sxrun 'getnotemptystring 'last)))
                 (if id
                   (let ((db (uiget  'database))
                         (register (dbget 'register '())))
@@ -328,18 +349,26 @@
                       (list "ID already used." (list "OK" #f))
                       (begin
                           (dbclear 'childid)
+                          (dbclear 'first)
+                          (dbclear 'last)
                           (uiset  'admin-database db)
                           (uiset  'database (make-table))
                           (dbset  'childid id)
+                          (dbset  'first first)
+                          (dbset  'last last)
+                          (uiset 'new #t)
                           ;; Set the current date
                           (dbset 'date (seconds->string ##now "%Y-%m-%d"))
-                          (uiset 'new #t)
                           'demog)))
                   (list "Enter an ID for the Child." (list "OK" #f))))))
-   (spacer height 100)
+   (spacer)
    (label text "Please enter an ID for this child")
    (spacer height 10)
    (textentry id childid keypad numint)
+   (spacer)
+   (textentry id first text "First Name:")
+   (spacer)
+   (textentry id last text "Last Name:")
    (spacer)
  )
   
@@ -356,7 +385,7 @@
                         (uiset 'new #f)
                         (uiset  'admin-database db)
                         (uiset  'database (dbload filename (uiget 'cryptokey)))
-                        'demog)
+                        'editchild)
                       (list (string-append "File " filename " missing.") (list "OK" #f))))
                   (list "Select a child by ID" (list "OK" #f))))))
    (spacer)
@@ -369,14 +398,34 @@
    (spacer)
  )
   
+ ;; Edit child name
+ (editchild
+   "Edit Child"
+   ("Back" ,(lambda ()
+              (sxrun 'save-child)
+              (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+              (dbclear 'childid)
+              (dbclear 'first)
+              (dbclear 'last)
+              (if (uiget 'new #f) 'menu 'load)))
+   ("Next" ,(lambda ()
+              (sxrun 'save-child)
+              'demog))
+   (spacer)
+   (label size small text ,(lambda () (string-append "Child ID: " (dbget 'childid ""))))
+   (spacer)
+   (textentry id first text "First Name:")
+   (spacer)
+   (textentry id last text "Last Name:")
+   (spacer)
+ )
+  
  ;; Demographics screen
  (demog
    "Demographics"
    ("Back" ,(lambda ()
               (sxrun 'save-child)
-              (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
-              (dbclear 'childid)
-              (if (uiget 'new #f) 'menu 'load)))
+              'editchild))
    ("Next" ,(lambda ()
               (sxrun 'save-child)
               (if (and (sane  'infection (lambda (str) #t) "Enter whether there is a suspected or proven infection" "")
@@ -415,15 +464,17 @@
                                                              "risk will be less precise."))))))
                          (list message (list "Continue" 'anthro) (list "Fix" #f))))))
                 (list (uiget  'errmsg) (list "OK" #f)))))
-   (spacer)
+   (spacer height 45)
    (label text "Proven or suspected infection")
    (spacer height 5)
    (radiobox id infection left ("Yes" "1" #f) right ("No" "0" ("This app is only valid for children with a proven or suspected infection: probabilities will not be calculated" ("OK" #f))))
-   (spacer)
+   (spacer height 40)
+   (box yofs 20 h 110)
    (label text "Sex")
    (spacer height 5)
    (radiobox id sex left ("Male" "1" #f) right ("Female" "0" #f))
-   (spacer)
+   (spacer height 40)
+   (box yofs 20 h 110)
    (label text "Current Date")
    (spacer height 10)
    (textentry align center id date keypad numdash default "YYYY-MM-DD")
@@ -432,7 +483,7 @@
    (spacer height 10)
    (dropdown text "Month of Birth" id mob entries ,(lambda () (uiget 'months)))
    (spacer height 10)
-   (label align center text ,(lambda ()
+   (label size small align center text ,(lambda ()
                              (string-append "Calculated Age: "
                              ;; Calculate years between dob and current date
                              (let ((year (dbget 'yob #f))
@@ -458,11 +509,16 @@
                                  (begin
                                    (dbset 'age #f)
                                    ""))))))
-   (spacer)
+   (spacer height 40)
+   (box yofs 20 h ,(lambda ()
+                     (let ((dh1 (if (uiget "yob:expanded") 336 0))
+                           (dh2 (if (uiget "mob:expanded") 576 0)))
+                       (+ 261 dh1 dh2))))
    (label text "Time since last hospitalization")
    (spacer height 10)
    (dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
-   (spacer)
+   (spacer height 40)
+   (box yofs 20 h ,(lambda () (if (uiget "lasthosp:expanded") 350 115)))
  )
   
  ;; Anthropometric screen
@@ -501,7 +557,7 @@
    (spacer)
    (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm")
    (spacer height 200)
-   (label text "Calculated weight for age z-score")
+   (label size small text "Calculated weight for age z-score")
    (spacer height 10)
    (label size big text ,(lambda () (let ((weight (dbget 'weight #f))
                                           (age (dbget 'age #f))
@@ -551,7 +607,7 @@
    (label text ,(lambda () (let ((sp (sxrun 'getnotemptystring 'spo2med)))
                              (if sp (string-append "Recorded " sp " %") ""))))
    (spacer height 120)
-   (textentry indent 0.7 text "Enter SpO2 from another device:" id spo2manual keypad numint default "%")
+   (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%")
  )
    
   
@@ -614,7 +670,7 @@
                         (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" 'summary) (list "Fix" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
    (spacer 20)
-   (label text "Blantyre coma scale")
+   (label size small text "Blantyre coma scale")
    (spacer 20)
    (label align left text "Eye Movement")
    (dropdown id eye entries ,(lambda () (uiget 'eye_options)))
@@ -625,7 +681,7 @@
    (label align left text "Best verbal response")
    (dropdown id verbal entries ,(lambda () (uiget 'verbal_options)))
    (spacer 20)
-   (label text "Calculated Blantyre coma score")
+   (label size small text "Calculated Blantyre coma score")
    (spacer 10)
    (label size big text ,(lambda () (let ((e (dbget 'eye #f))
                                           (eo (uiget 'eye_options #f))
@@ -678,8 +734,8 @@
                     (if a (string-append (if sexstr ", " "") (float->string a 1) " years") "")
                     (if w (string-append (if (or a sexstr) ", " "") w " kg") "")))))
    (spacer)
-   (label align center text "Risk Factors:")
-   (spacer height 10)
+   (label size small align center text "Risk Factors:")
+   (spacer)
    (label text ,(lambda ()
                    (let ((hosp (dbget 'lasthosp #f)))
                       (if hosp
@@ -726,9 +782,11 @@
                      (sxrun 'save-child)
                      (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                      (dbclear 'childid)
+                     (dbclear 'first)
+                     (dbclear 'last)
                      'menu))
    (spacer)
-   (label text "In Hospital Risk")
+   (label size small text "In Hospital Risk")
    (spacer 10)
    (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
                                        (if score
@@ -751,7 +809,7 @@
                                                      ((< sc 20) 1)
                                                      (else 0))))))
    (spacer height 200)
-   (label text "Post-Discharge Risk")
+   (label size small text "Post-Discharge Risk")
    (spacer 10)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                        (if score
@@ -776,14 +834,16 @@
                      (sxrun 'save-child)
                      (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                      (dbclear 'childid)
+                     (dbclear 'first)
+                     (dbclear 'last)
                      'menu))
    (spacer)
-   (label text "In Hospital Risk:")
+   (label size small text "In Hospital Risk:")
    (spacer 10)
    (label text "No proven or suspected infection")
    (label text "so no probabilities calculated.")
    (spacer 200)
-   (label text "Post-Discharge Risk:")
+   (label size small text "Post-Discharge Risk:")
    (spacer 10)
    (label text "No proven or suspected infection")
    (label text "so no probabilities calculated.")
