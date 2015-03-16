@@ -45,7 +45,7 @@
           )))
          (store (make-store "test")))
       (s5parser store data)
-      (store-waveform-dispatch store)
+      (store:waveform-dispatch store)
       (and (fx= (store-ref store "plug_id" 0) 35537)
            (fl= (car (store-ref store "ECG1" (list 0.))) -.1770000010728836)
            (fl= (car (store-ref store "PLETH" (list 0.))) -3.5999999046325684)
