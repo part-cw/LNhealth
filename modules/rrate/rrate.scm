@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Load the localization support
 (local-load "rrate-local.csv")
-(local-index-set! 1);; 1 English, 2 Khmer
+(local-index-set! 1);; 1 English, 2 Lunganda, 3 Khmer
 
 ;; Settings page for configuring number of taps and consistency percent for threshold
 (define rrate:settings:cont #f)

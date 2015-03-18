@@ -13,14 +13,14 @@ EXIT,Exit,Ggalawo,ចាកចេញ
 RRATE,Respiratory Rate:,Enzisa,អត្រាដង្ហើម
 RRATE_UNIT,Breaths/in,Emirundi gy’okussa/ddakiika,ដង្ហើមក្នុងមួយនាទី
 TAP_TO_SYNC,Tap on inhalation to synchronize,Koona ku "kusika omuka" bikwatagane,ចុចមួយពេលក្មេងដកដង្ហើមចូលមួយ
-FAST,FastKumuukum,,លឿន
+FAST,Fast,Kumuukum,លឿន
 CONSISTENT,Consistent,Bikwatagana,ធម្មតា
 SLOW,Slow,Mpola,យឺត
 TAP_INHALATION,Tap on inhalation,Koona ku kigambo “okusika omukka”,ចុចពេលដកដង្ហើមចូល
 TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,ចុចមិនត្រឹមត្រូវ
 NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,ចុចមិនគ្រប់ចំនួន
 TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,ចុចលឿនពេក
-RETRY,RetryEra Ddamu ogezeeko,,បាទ
+RETRY,Retry,Era Ddamu ogezeeko,បាទ
 IGNORE,Ignore,Tokifaako,ទេ
 INCONSISTENT,Inconsistent,Tebikwatagana,មិនសមស្រប
 M_MEDIAN,M = Median Time Interval,M etegeeza amakati ng'obala essaawa mu kussa,ពេលវេលាចន្លោះមេដ្យាន
