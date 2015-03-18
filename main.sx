@@ -77,7 +77,7 @@
   (calc-discharge-score ,(lambda ()
                           (let* ((muac (sxrun 'getnotemptystring 'muac))
                                  (sp0 (sxrun 'getnotemptystring 'spo2med))
-                                 (sp (if sp0 spo0 (sxrun 'getnotemptystring 'spo2manual)))
+                                 (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
                                  (hospopts (uiget 'hosp_options '()))
                                  (hosp (dbget 'lasthosp #f))
                                  (hospnum (+ (list-pos hospopts hosp) 1))
@@ -201,8 +201,8 @@
     (uiset 'spo2_thresholds (list 90 93 95 97 100))
     (uiset 'bcs_thresholds (list 3 4 4 4 5))
     (uiset 'hiv_thresholds (list 0 0 0 0 1))
-    (uiset 'inhospital_thresholds (list -25 -15 -3 -1 0))
-    (uiset 'post_thresholds (list -25 -10 -3.5 -1.5 0))
+    (uiset 'inhospital_thresholds (list -25 -10 -3 -1 0))
+    (uiset 'post_thresholds (list -25 -10 -3.5 -1 0))
 
     ;; Load scale image and scale marker image
     (uiset 'scaleimage (let* ((sandbox (uiget 'sandbox #f))
@@ -226,7 +226,7 @@
           (if (and img m x y w thresholds v)
             (let* ((h (cadr img))
                    (sw (car img))
-                   (sw4 (/ (- sw 10) 4))
+                   (sw4 (/ (- sw 12) 4))
                    (sx (+ x (/ (- w sw) 2)))
                    (vx (cond
                          ((<= v (car thresholds)) sx)
@@ -248,7 +248,7 @@
                                (+ sx (* sw4 3) (* sw4 (/ (- v p1) (- p2 p1))))))
                          (else (+ sx (- sw 10))))))
                   (glgui:draw-pixmap-center x y w h img White)
-                  (glgui:draw-pixmap-center vx y 10 h m White)
+                  (glgui:draw-pixmap-center vx y 12 h m White)
                   h)
               0)))
       #f)
@@ -279,7 +279,7 @@
 ;; LOGIN
 
  (main
-  "PARA - PAediatric Risk Assessment"
+  "PARA\nPAediatric Risk Assessment"
   #f
   #f
   (spacer)
@@ -327,10 +327,10 @@
    ("Logout" ,(lambda () 'main))
    #f
    (spacer height 150)
-   (button text "New Child" action ,(lambda ()
+   (button size header text "New Child" action ,(lambda ()
                                       'newchild))
    (spacer height 150)
-   (button text "Load Child File" action ,(lambda () 'load))
+   (button size header text "Load Child File" action ,(lambda () 'load))
    (spacer)
  )
 
@@ -475,9 +475,7 @@
    (radiobox id sex left ("Male" "1" #f) right ("Female" "0" #f))
    (spacer height 40)
    (box yofs 20 h 110)
-   (label text "Current Date")
-   (spacer height 10)
-   (textentry align center id date keypad numdash default "YYYY-MM-DD")
+   (label text "Birth Date")
    (spacer height 10)
    (dropdown text "Year of Birth" id yob entries ,(lambda () (uiget 'recent_years)))
    (spacer height 10)
@@ -513,7 +511,7 @@
    (box yofs 20 h ,(lambda ()
                      (let ((dh1 (if (uiget "yob:expanded") 336 0))
                            (dh2 (if (uiget "mob:expanded") 576 0)))
-                       (+ 261 dh1 dh2))))
+                       (+ 231 dh1 dh2))))
    (label text "Time since last hospitalization")
    (spacer height 10)
    (dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
@@ -531,27 +529,51 @@
               (sxrun 'save-child)
               (let* ((z (dbget 'zscore #f))
                      (weight (sxrun 'getnotemptystring 'weight))
-                     (muac (sxrun 'getnotemptystring 'muac)))
-                (if (and weight (not (sanestring-weight-kg weight)))
-                  ;; Invalid weight
-                  (list "Invalid weight. Please correct it" (list "OK" #f))
-                  (if (and (not z) (not muac))
-                    ;: No MUAC or WAZ, cannot continue
-                    (list (if (not weight)
-                            "Please enter either weight or MUAC. Without these the risk scores cannot be calculated."
-                            "Weight for age score cannot be calculated without age. Please enter MUAC.")
-                          (list "OK" #f))
-                    (if (and z muac)
-                      ;; All complete
-                      'spo2
-                      ;; Missing one or the other
-                      (list
-                         (cond
-                           ((not weight) "Missing weight. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
-                           ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
-                           (else "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise."))
-                         (list "Continue" 'spo2)
-                         (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
+                     (muac (sxrun 'getnotemptystring 'muac))
+                     (returnvalue #f)
+                     (completeproc (lambda ()
+                                      (if (and weight (not (sanestring-weight-kg weight)))
+                                        ;; Invalid weight
+                                        (list "Invalid weight. Please correct it" (list "OK" #f))
+                                        (if (and (not z) (not muac))
+                                          ;: No MUAC or WAZ, cannot continue
+                                          (list (if (not weight)
+                                                  "Please enter either weight or MUAC. Without these the risk scores cannot be calculated."
+                                                  "Weight for age score cannot be calculated without age. Please enter MUAC.")
+                                                (list "OK" #f))
+                                          (if (and z muac)
+                                            ;; All complete
+                                            'spo2
+                                            ;; Missing one or the other
+                                            (list
+                                               (cond
+                                                 ((not weight) "Missing weight. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
+                                                 ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
+                                                 (else "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise."))
+                                               (list "Continue" 'spo2)
+                                               (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
+                  ;; Check for out of range values
+                  (if muac
+                    (let ((muacn (string->number muac))
+                          (proc2 completeproc))
+                      (if (< muacn 50)
+                        (set! returnvalue (list (string-append "MUAC is " muac " mm. A value below 55 mm is not valid.") (list "OK" #f)))
+                        (if (or (< muacn 100) (> muacn 160))
+                          (set! completeproc
+                            (lambda ()
+                              (list (string-append "MUAC outside acceptable range of\n100 - 160 mm. Are you sure MUAC is " muac " mm.") (list "Yes" proc2) (list "No" #f))))))))
+                
+                  (if (not returnvalue)
+                    (if (and z (or (< z -4.0) (> z 3.0)))
+                      (let ((gender (if (string=? (dbget 'sex) "1") "Male" "Female"))
+                            (age (float->string (dbget 'age) 1)))
+                        (set! returnvalue (list (string-append "The weight for age score is outside the acceptable range of -4 to +3. "
+                                                               "Please confirm child is a " age " year old " gender " with weight " weight " kg.")
+                                                (list "Yes" completeproc) (list "No" #f))))))
+                 
+                 ;; Return return value or run complete procedure
+                 (if returnvalue returnvalue (completeproc)))))
+                
    (spacer height 50)
    (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg")
    (spacer)
@@ -576,7 +598,7 @@
  
   ;; Oxygen saturation screen
   (spo2
-   "Oxygen Saturation"
+   " Oxygen Saturation"
    ("Back" ,(lambda ()
               (sxrun 'save-child)
               'anthro))
@@ -587,16 +609,16 @@
                      (sp (if (number? sp0) (number->string sp0) (sxrun 'getnotemptystring 'spo2manual)))
                      (muac (sxrun 'getnotemptystring 'muac)))
                 (if sp
-                  'clinical
-                  (begin
+                  (if (> (string->number sp) 100)
+                    (list (string-append "SpO2 is " sp ". SpO2 must be less than of equal to 100.") (list "OK" #f))
+                    'clinical)
+                  (if muac
                     (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
                                                                                              (list "Fix" (lambda ()
                                                                                                             (uiset 'origgui gui)
-                                                                                                            (set! gui (list gui spo2spot:gui))
                                                                                                             #f)))
                     (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
                                                                                                                                         (uiset 'origgui gui)
-                                                                                                                                        (set! gui (list gui spo2spot:gui))
                                                                                                                                         #f))))))))
    (spacer)
    (button text "Tablet based SpO2" action ,(lambda ()
@@ -613,11 +635,24 @@
   
   ;; Pulse oximeter spot check page
   (pulseox
-   "Oxygen Saturation"
+   " Oxygen Saturation"
    ("Back" ,(lambda ()
-              (set! gui (uiget 'origgui gui))
-              (sxrun 'save-child)
-              'spo2))
+              (if (stget "CaseID" #f)
+                (begin
+                  (set! gui (uiget 'origgui gui))
+                  (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
+                                                                     (scheduler-endcase store)
+                                                                     (spo2spot:progress-clear)
+                                                                     (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                                                                     (sxrun 'save-child)
+                                                                     'spo2))
+                                                       (list "No" (lambda ()
+                                                                    (set! gui (list gui spo2spot:gui))
+                                                                    #f))))
+                (begin
+                  (set! gui (uiget 'origgui gui))
+                  (sxrun 'save-child)
+                  'spo2))))
    ("Next" ,(lambda ()
               (sxrun 'save-child)
               (uiset 'frompulseox #t)
@@ -669,20 +704,23 @@
                         ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
                         (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" 'summary) (list "Fix" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
-   (spacer 20)
+   (spacer)
    (label size small text "Blantyre coma scale")
-   (spacer 20)
+   (spacer)
    (label align left text "Eye Movement")
+   (spacer height 10)
    (dropdown id eye entries ,(lambda () (uiget 'eye_options)))
-   (spacer 20)
+   (spacer)
    (label align left text "Best motor response")
+   (spacer height 10)
    (dropdown id motor entries ,(lambda () (uiget 'motor_options)))
-   (spacer 20)
+   (spacer)
    (label align left text "Best verbal response")
+   (spacer height 10)
    (dropdown id verbal entries ,(lambda () (uiget 'verbal_options)))
-   (spacer 20)
+   (spacer)
    (label size small text "Calculated Blantyre coma score")
-   (spacer 10)
+   (spacer height 10)
    (label size big text ,(lambda () (let ((e (dbget 'eye #f))
                                           (eo (uiget 'eye_options #f))
                                           (m (dbget 'motor #f))
@@ -701,6 +739,7 @@
                                             "")))))
    (spacer height 40)
    (label align left text "HIV status")
+   (spacer height 10)
    (dropdown id hiv entries ("Positive" "Negative" "Unknown"))
    (spacer)
  )
@@ -735,7 +774,7 @@
                     (if w (string-append (if (or a sexstr) ", " "") w " kg") "")))))
    (spacer)
    (label size small align center text "Risk Factors:")
-   (spacer)
+   (spacer height 15)
    (label text ,(lambda ()
                    (let ((hosp (dbget 'lasthosp #f)))
                       (if hosp
@@ -743,31 +782,37 @@
                           hosp
                           (string-append "Hospitalized " hosp " ago"))
                         "Last hospitalization not answered"))))
+   (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'hosp_thresholds)) value ,(lambda () (let* ((hosp (dbget 'lasthosp #f))
                                                                                     (hospnum (if hosp (list-pos (uiget 'hosp_options '()) hosp) #f)))
                                                                                (if hospnum (+ hospnum 1) #f))))
    (spacer)
    (label text ,(lambda () (string-append "Mid-upper arm circumference: " (let ((m (sxrun 'getnotemptystring 'muac)))
                                                                                        (if m (string-append m " mm") "")))))
+   (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'muac_thresholds)) value ,(lambda () (let ((m (sxrun 'getnotemptystring 'muac)))
                                                                                (if m (string->number m) #f))))
    (spacer)
    (label text ,(lambda () (string-append "Weight for age z-score: " (let ((z (dbget 'zscore #f)))
                                                                                   (if z (sxrun 'float->stringz z 1) "")))))
+   (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'waz_thresholds)) value ,(lambda () (dbget 'zscore #f)))
    (spacer)
    (label text ,(lambda () (string-append "SpO2: " (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
-                                                          (sp (if sp0 spo0 (sxrun 'getnotemptystring 'spo2manual))))
+                                                          (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual))))
                                                       (if sp (string-append sp " %") "")))))
+   (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'spo2_thresholds)) value ,(lambda () (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
-                                                                                    (sp (if sp0 spo0 (sxrun 'getnotemptystring 'spo2manual))))
+                                                                                    (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual))))
                                                                                 (if sp (string->number sp) #f))))
    (spacer)
    (label text ,(lambda () (string-append "Blantyre coma score: " (let ((b (dbget 'comascore #f)))
                                                                                (if b (number->string b) "")))))
+   (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'bcs_thresholds)) value ,(lambda () (dbget 'comascore #f)))
    (spacer)
    (label text ,(lambda () (string-append "HIV status: " (dbget 'hiv ""))))
+   (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'hiv_thresholds)) value ,(lambda () (let* ((hiv (dbget 'hiv #f)))
                                                                                 (if (string=? hiv "Positive") 0 (if (string=? hiv "Negative") 1 #f)))))
  )
@@ -786,15 +831,11 @@
                      (dbclear 'last)
                      'menu))
    (spacer)
-   (label size small text "In Hospital Risk")
+   (label size small text "In Hospital Risk of Mortality")
    (spacer 10)
    (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
                                        (if score
-                                         (cond
-                                            ((<= score 1.0) "Very Low")
-                                            ((< score 3.0) "Low")
-                                            ((< score 15) "High")
-                                            (else "Very High"))
+                                         (if (< score 3.0) "Low" "High")
                                          "Not Calculated"))))
    (spacer 10)
    (scale thresholds ,(lambda () (uiget 'inhospital_thresholds)) value ,(lambda () (let ((score (dbget 'hospitalscore #f)))
@@ -809,15 +850,11 @@
                                                      ((< sc 20) 1)
                                                      (else 0))))))
    (spacer height 200)
-   (label size small text "Post-Discharge Risk")
+   (label size small text "Post-Discharge Risk of Mortality")
    (spacer 10)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                        (if score
-                                         (cond
-                                            ((<= score 1.5) "Very Low")
-                                            ((< score 3.5) "Low")
-                                            ((< score 10) "High")
-                                            (else "Very High"))
+                                         (if (< score 3.5) "Low" "High")
                                          "Not Calculated"))))
    (spacer 10)
    (scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
@@ -838,12 +875,12 @@
                      (dbclear 'last)
                      'menu))
    (spacer)
-   (label size small text "In Hospital Risk:")
+   (label size small text "In Hospital Risk of Mortality")
    (spacer 10)
    (label text "No proven or suspected infection")
    (label text "so no probabilities calculated.")
    (spacer 200)
-   (label size small text "Post-Discharge Risk:")
+   (label size small text "Post-Discharge Risk of Mortality")
    (spacer 10)
    (label text "No proven or suspected infection")
    (label text "so no probabilities calculated.")
