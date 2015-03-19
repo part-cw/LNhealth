@@ -38,10 +38,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Module for measuring and confirming respiratory rate
 ;; Christian Leth Petersen 2012, Dustin Dunsmuir 2014, Matthias Görges 2015
+(define rrate:no-settings? #f)
 
 ;; Load the localization support
-(local-load "rrate-local.csv")
-(local-index-set! 1);; 1 English, 2 Lunganda, 3 Khmer
+(define rrate:setup? #f)
+(define (rrate-setup)
+  (local-load "rrate-local.csv")
+  (local-index-set! 1);; 1 English, 2 Lunganda, 3 Khmer
+  (set! rrate:setup? #t)
+  ;; Initialize the settings
+  (settings-init (list (cons "Taps" 5)
+                       (cons "Consistency" 13)
+                       (cons "VibrateSound" #f)))
+)
 
 ;; Settings page for configuring number of taps and consistency percent for threshold
 (define rrate:settings:cont #f)
@@ -446,7 +455,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   (let ((stage2 (fx= stage 2)))
     (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden (or stage2 (not rrate:cancelproc)))
-    (glgui-widget-set! rrate:cont rrate:settingsbutton 'hidden stage2)
+    (glgui-widget-set! rrate:cont rrate:settingsbutton 'hidden (or stage2 rrate:no-settings?))
     (glgui-widget-set! rrate:cont rrate:nobutton 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:confirm 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden (not stage2))
@@ -617,6 +626,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;M is adapted to (best at 433, keep >= 402), keep x, y, or w as 0, 0, and 320.
 ;M @end deffn
 (define (rrate-init x y w h store cancelproc doneproc)
+   (if (not rrate:setup?) (rrate-setup))
    (set! rrate:store store)
    (set! rrate:cancelproc cancelproc)
    (set! rrate:doneproc doneproc)
@@ -624,11 +634,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:gui (make-glgui))
    (set! rrate:cont (glgui-container rrate:gui x y w h))
 
-   ;; Initialize the settings
-   (settings-init (list (cons "Taps" 5)
-                        (cons "Consistency" 13)
-                        (cons "VibrateSound" #f)))
-     
    ;; Initialize the settings page and set the settings
    (rrate:setting-init 0 0 w h)
    (let* ((taps (settings-ref "Taps" 5))
@@ -680,9 +685,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ))
    (glgui-widget-set! rrate:cont rrate:settingsbutton 'button-normal-color LightGray)
    (glgui-widget-set! rrate:cont rrate:settingsbutton 'button-selected-color Gray)
+   (if rrate:no-settings? (glgui-widget-set! rrate:cont rrate:settingsbutton 'hidden #t))
      
    ;; Remove the confirm question and show the other buttons instead
-   (set! rrate:nobutton (glgui-button-string rrate:cont 6 6 55 32 (local-get-text "NO") text_20.fnt
+   (set! rrate:nobutton (glgui-button-string rrate:cont 6 6 65 32 (local-get-text "NO") text_20.fnt
      (lambda (g . x)
        ;; Reset trend text colour
        (glgui-widget-set! rrate:cont rrate:value 'color rrate:textcolor)
@@ -710,12 +716,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #t)
      
    ;; Confirmation question about animation
-   (set! rrate:confirm (glgui-label-wrapped rrate:cont 65 2 (- (glgui-width-get) 65 65) 36
+   (set! rrate:confirm (glgui-label-wrapped rrate:cont 72 2 (- (glgui-width-get) 72 72) 36
      (local-get-text "RR_MATCH") text_14.fnt White))
    (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
      
    ;; Remove the confirm question and show the other buttons instead, run done procedure
-   (set! rrate:yesbutton (glgui-button-string rrate:cont (- (glgui-width-get) 55 6) 6 55 32 (local-get-text "YES") text_20.fnt
+   (set! rrate:yesbutton (glgui-button-string rrate:cont (- (glgui-width-get) 65 6) 6 65 32 (local-get-text "YES") text_20.fnt
      (lambda (g . x)
        ;; Save the RR to the store
        (if rrate:store (store-set! rrate:store "RR" (glgui-widget-get rrate:cont rrate:value 'label)))
@@ -791,7 +797,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Make quality lines
    (set! rrate:qualitybg (glgui-pixmap rrate:cont 0 53 quality_lines.img))
    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden #t)
-   (let ((x (- (glgui-width-get) 78)) (w 75) (h 20))
+   (let ((x (- (glgui-width-get) 98)) (w 95) (h 20))
      (set! rrate:qualitybg_high (glgui-label rrate:cont x 86 w h (local-get-text "FAST") text_14.fnt Black))
      (set! rrate:qualitybg_consistent (glgui-label rrate:cont x 68 w h (local-get-text "CONSISTENT") text_14.fnt Black))
      (set! rrate:qualitybg_low (glgui-label rrate:cont x 49 w h (local-get-text "SLOW") text_14.fnt Black))

@@ -1,4 +1,4 @@
-Key,English,Luganda,Kher
+Key,English,Luganda,ភាសាខ្មែរ
 CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,Londako emirundi gy'okoonye ku lutimbe egyetaagisibwa okubala enzisa,ជ្រើសរើសចំនួនចុចសមស្របក្នុងការគណនាអត្រាដង្ហើម
 CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,ជ្រើសរើសកម្រិតភាពសមស្រប
 VIBRATE_SOUND,Vibrate with sound.,,

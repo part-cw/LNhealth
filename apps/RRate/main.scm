@@ -38,6 +38,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; RRate - an app for measuring and confirming respiratory rate
 ;; This is a thin wrapper around the rrate module
+(define gui #f)
+(define gui:lang #f)
+(define language? #f)
 
 ;; main loop
 (main
@@ -45,6 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (make-window 320 480)
    (glgui-orientation-set! GUI_PORTRAIT)
    (set! gui (make-glgui))
+   (set! gui:lang (make-glgui))
    (let ((w (glgui-width-get))
          (h (glgui-height-get)))
      ;; Setup the menubar     
@@ -56,17 +60,44 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      
      ;; Use the rrate module with no store (no saving data),
      ;; terminate if cancelled or exited and do nothing extra if RRate confirmed 
-     (rrate-init 0 0 w 433 #f terminate #f)
+     (rrate-setup)
+     (let ((l (settings-ref "Language" #f)))
+       (if l
+         (begin
+           (set! language? l)
+           (local-index-set! l)
+           (rrate-init 0 0 w 433 #f terminate #f)
+         )
+         (begin
+           ;; Language selection
+           (set! lang (glgui-container gui:lang 0 0 w 400))
+           (glgui-label lang 20 (- h 80 32) (- w 40) 24 "Select language" sans_24.fnt White)
+           (glgui-list lang 20 10 (- w 40) 360 40
+             (map (lambda (l) (lambda (g wgt bx by bw bh selected?)
+               (glgui:draw-text-left (+ bx 10) (+ by 4) (- bw 20) 24 l sans_24.fnt White)))
+               (table-ref local:table "Key" '()))
+             (lambda (g wgt t x y)
+               (let ((l (fx+ 1 (fix (glgui-widget-get g wgt 'current)))))
+                 (settings-set! "Language" l)
+                 (set! language? #t)
+                 (local-index-set! l)
+                 (rrate-init 0 0 w 433 #f terminate #f)
+               )
+             )
+           )
+         )
+       )
+     )
    )
  )
  (lambda (t x y)
    ;; Call RRate main loop
-   (rrate-run t)
+   (if language? (rrate-run t))
    
    (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYESCAPE)) (terminate))
    (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYBACK))
      (terminate))
-   (glgui-event (list rrate:gui gui) t x y)
+   (glgui-event (list (if language? rrate:gui gui:lang) gui) t x y)
   )   
  (lambda () #t)
  (lambda () (glgui-suspend))
