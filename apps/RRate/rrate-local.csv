@@ -1,0 +1,27 @@
+Key,English,Luganda,ភាសាខ្មែរ
+CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,Londako emirundi gy'okoonye ku lutimbe egyetaagisibwa okubala enzisa,ជ្រើសរើសចំនួនចុចសមស្របក្នុងការគណនាអត្រាដង្ហើម
+CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,ជ្រើសរើសកម្រិតភាពសមស្រប
+VIBRATE_SOUND,Vibrate with sound.,,
+DONE,Done,,
+CANCEL,Cancel,Sazaamu,បញ្ឈប់ការប្រើប្រាស់
+SETTINGS,Settings,Entereeza,កំណត់ការប្រើប្រាស់
+NO,No,Nedda,មិនត្រឹមត្រូវ
+YES,Yes,Yee,ត្រឹមត្រូវ
+RESTART,Restart,Ddamu otandike,ចាប់ផ្តើមជាថ្មី
+RR_MATCH,Does the breathing rate match the patient?,Enzisa efaanana n'eyomulwadde?,តើអត្រាដកដង្ហើមមានភាពត្រឹមត្រូវនឹងស្ថានភាពអ្នកជម្ងឺឬទេ?
+EXIT,Exit,Ggalawo,ចាកចេញ
+RRATE,Respiratory Rate:,Enzisa,អត្រាដង្ហើម
+RRATE_UNIT,Breaths/in,Emirundi gy’okussa/ddakiika,ដង្ហើមក្នុងមួយនាទី
+TAP_TO_SYNC,Tap on inhalation to synchronize,Koona ku "kusika omuka" bikwatagane,ចុចមួយពេលក្មេងដកដង្ហើមចូលមួយ
+FAST,Fast,Kumuukum,លឿន
+CONSISTENT,Consistent,Bikwatagana,ធម្មតា
+SLOW,Slow,Mpola,យឺត
+TAP_INHALATION,Tap on inhalation,Koona ku kigambo “okusika omukka”,ចុចពេលដកដង្ហើមចូល
+TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,ចុចមិនត្រឹមត្រូវ
+NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,ចុចមិនគ្រប់ចំនួន
+TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,ចុចលឿនពេក
+RETRY,Retry,Era Ddamu ogezeeko,បាទ
+IGNORE,Ignore,Tokifaako,ទេ
+INCONSISTENT,Inconsistent,Tebikwatagana,មិនសមស្រប
+M_MEDIAN,M = Median Time Interval,M etegeeza amakati ng'obala essaawa mu kussa,ពេលវេលាចន្លោះមេដ្យាន
+C_CONSISTENCY,C = Consistency Threshold,C etegeeza webikoma okukwatagana,កម្រិតភាពសមស្រប
