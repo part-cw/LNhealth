@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Module for measuring and confirming respiratory rate
 ;; Christian Leth Petersen 2012, Dustin Dunsmuir 2014, Matthias Görges 2015
-(define rrate:no-settings? #f)
+(define rrate:no-settings? #t)
 
 ;; Load the localization support
 (define rrate:setup? #f)

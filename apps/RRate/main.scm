@@ -67,6 +67,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (begin
            (set! language? l)
            (local-index-set! l)
+           (if (fx= l 3) (begin
+             (set! text_11.fnt textK_11.fnt)
+             (set! text_14.fnt textK_14.fnt)
+             (set! text_20.fnt textK_20.fnt)
+             (set! text_40.fnt textK_40.fnt)
+           ))
            (rrate-init 0 0 w 433 #f terminate #f)
          )
          (begin
@@ -82,6 +88,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                  (settings-set! "Language" l)
                  (set! language? #t)
                  (local-index-set! l)
+                 (if (fx= l 3) (begin
+                   (set! text_11.fnt textK_11.fnt)
+                   (set! text_14.fnt textK_14.fnt)
+                   (set! text_20.fnt textK_20.fnt)
+                   (set! text_40.fnt textK_40.fnt)
+                 ))
                  (rrate-init 0 0 w 433 #f terminate #f)
                )
              )
