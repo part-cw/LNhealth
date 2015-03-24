@@ -124,16 +124,27 @@
 
                             ;; Floor to two decimal places
                             (ffloor score 0.01))))
+  
+  ;; Load an image file to use within a custom widget
+  (load-image ,(lambda (file)
+                 (let* ((sandbox (uiget 'sandbox #f))
+                        (imgfile (string-append sandbox (system-pathseparator) file)))
+                    (if (file-exists? imgfile)
+                      (png->img imgfile)
+                      #f))))
                        
   ;; background
-  (background-color ,(color-rgb 34 84 44))
+  (background-color ,(color-rgb 90 160 90))
   (background-image "background.png")
 
   ;; initialization 
   (oncreate ,(lambda ()
       
     ;; Background box color
-    (uiset 'boxcolor (list (color-rgb 23 61 31) (color-rgb 23 61 31) (color-rgb 26 71 36) (color-rgb 30 80 39)))
+    (uiset 'boxcolor (list (color-rgb 23 61 31) (color-rgb 23 61 31) (color-rgb 30 80 39) (color-rgb 30 80 39)))
+
+    ;; Header color
+    (uiset 'color-header (list (color-rgb 23 61 31) (color-rgb 23 61 31) (color-rgb 30 80 39) (color-rgb 30 80 39)))
                
     ;; Load fonts
     (uiset 'fnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 18))
@@ -186,11 +197,16 @@
     ;; Register background box widget
     (uiform-register 'box
       (lambda (x y w . args)
-        (let ((bx (+ x (* w 0.05)))
-              (bw (* w 0.9))
-              (by (+ y (glgui:uiform-arg args 'yofs 0)))
-              (bh (glgui:uiform-arg args 'h 0)))
-          (glgui:draw-box bx by bw bh (uiget 'boxcolor))
+        ;; Box is indented from the side of the screen on the left and right
+        ;; unless left and/or right are set to true and then it goes to
+        ;; the edge of the screen on the given side
+        (let* ((left (glgui:uiform-arg args 'left #f))
+               (right (glgui:uiform-arg args 'right #f))
+               (bx (+ x (if left (- 5) (* w 0.05))))
+               (bw (+ (* w (+ 0.9 (if left 0.05 0.0) (if right 0.05 0.0))) (if left 5.0 0.0) (if right 5.0 0.0)))
+               (by (+ y (glgui:uiform-arg args 'yofs 0)))
+               (bh (glgui:uiform-arg args 'h 0)))
+          (glgui:draw-rounded-box bx by bw bh (uiget 'boxcolor))
           0))
       #f)
                
@@ -201,25 +217,22 @@
     (uiset 'spo2_thresholds (list 90 93 95 97 100))
     (uiset 'bcs_thresholds (list 3 4 4 4 5))
     (uiset 'hiv_thresholds (list 0 0 0 0 1))
-    (uiset 'inhospital_thresholds (list -25 -10 -3 -1 0))
-    (uiset 'post_thresholds (list -25 -10 -3.5 -1 0))
+    (uiset 'inhospital_thresholds (list -35.0 -4.2 -3.0 -2.1 -0.7))
+    (uiset 'post_thresholds (list -35.0 -5.7 -3.5 -1.8 -0.4))
 
     ;; Load scale image and scale marker image
-    (uiset 'scaleimage (let* ((sandbox (uiget 'sandbox #f))
-                              (imgfile (string-append sandbox (system-pathseparator) "scale.png")))
-                         (if (file-exists? imgfile)
-                           (png->img imgfile)
-                           #f)))
-    (uiset 'markimage (let* ((sandbox (uiget 'sandbox #f))
-                              (imgfile (string-append sandbox (system-pathseparator) "scalemark.png")))
-                         (if (file-exists? imgfile)
-                           (png->img imgfile)
-                           #f)))
+    (uiset 'scaleimage (sxrun 'load-image "scale.png"))
+    (uiset 'happyimage (sxrun 'load-image "happy.png"))
+    (uiset 'sadimage (sxrun 'load-image "sad.png"))
+    (uiset 'markimage (sxrun 'load-image "scalemark.png"))
+    (uiset 'helpimage (sxrun 'load-image "help.png"))
                
     ;; Register scale widget
     (uiform-register 'scale
       (lambda (x y w . args)
         (let* ((img (uiget 'scaleimage))
+               (happy (uiget 'happyimage))
+               (sad (uiget 'sadimage))
                (m (uiget 'markimage))
                (thresholds (glgui:uiform-arg args 'thresholds #f))
                (v (glgui:uiform-arg args 'value #f)))
@@ -247,11 +260,21 @@
                                   (p2 (list-ref thresholds 4)))
                                (+ sx (* sw4 3) (* sw4 (/ (- v p1) (- p2 p1))))))
                          (else (+ sx (- sw 10))))))
+                  (glgui:draw-pixmap-center (- sx (car sad) 5) y (car sad) h sad White)
                   (glgui:draw-pixmap-center x y w h img White)
                   (glgui:draw-pixmap-center vx y 12 h m White)
+                  (glgui:draw-pixmap-center (+ sx sw 5) y (car happy) h happy White)
                   h)
               0)))
       #f)
+
+     ;; Register help button widget
+     (uiform-register 'help
+       (lambda (x y w . args)
+         (let ((img (uiget 'helpimage)))
+           (glgui:draw-pixmap-right (+ x (* w 0.075)) y (* w 0.85) (cadr img) img White)
+           30))
+       glgui:uiform-button-input)
   ))
   
   (onevent ,(lambda () (spo2spot-event)))
@@ -282,18 +305,20 @@
   "PARA\nPAediatric Risk Assessment"
   #f
   #f
-  (spacer)
+  (spacer height 10)
   (label size small text "In-hospital mortality and post-discharge")
   (label size small text "mortality prediction application")
-  (spacer)
+  (spacer height 15)
   (label text "For children 6 months to 5 years old")
   (label text "admitted with a proven or suspected")
   (label text "infectious illness")
-  (spacer)
+  (spacer height 42)
+  (box yofs 36 h 172)
   (textentry text "Username:" id login_uname)
   (spacer height 10)
   (textentry text "Password:" id login_pw password #t)
   (spacer height 50)
+  (box yofs 36 h 135)
   (button text "Login" action 
     ,(lambda () 
       (let* ((admin-uname  (dbget  'admin_uname))
@@ -315,10 +340,12 @@
         (uiset  'spo2_manual #f)
         (uiset  'admin (if admin-ok #t #f))
         result)))
-  (spacer height 100)
+  (spacer height 209)
+  (box yofs 195 h 79)
   (label text "Pediatric Anesthesia Research Team")
   (label text "The University of British Columbia")
   (spacer)
+  (box yofs 16 h 61)
  )
 
  ;; Main menu
@@ -326,12 +353,14 @@
    "Start"
    ("Logout" ,(lambda () 'main))
    #f
-   (spacer height 150)
+   (spacer height 179)
    (button size header text "New Child" action ,(lambda ()
                                       'newchild))
-   (spacer height 150)
+   (spacer height 199)
+   (box yofs 179 h 96)
    (button size header text "Load Child File" action ,(lambda () 'load))
    (spacer)
+   (box yofs 10 h 96)
  )
 
  ;; New screen
@@ -361,15 +390,17 @@
                           (dbset 'date (seconds->string ##now "%Y-%m-%d"))
                           'demog)))
                   (list "Enter an ID for the Child." (list "OK" #f))))))
-   (spacer)
+   (spacer height 34)
    (label text "Please enter an ID for this child")
    (spacer height 10)
    (textentry id childid keypad numint)
-   (spacer)
+   (spacer height 55)
+   (box left #t yofs 42 h 101)
    (textentry id first text "First Name:")
-   (spacer)
+   (spacer height 20)
    (textentry id last text "Last Name:")
    (spacer)
+   (box right #t yofs 10 h 157)
  )
   
  ;; Load screen
@@ -388,14 +419,19 @@
                         'editchild)
                       (list (string-append "File " filename " missing.") (list "OK" #f))))
                   (list "Select a child by ID" (list "OK" #f))))))
-   (spacer)
+   (spacer height 50)
+   (label text "Records")
+   (spacer height 10)
    ,(lambda ()
-       (let* ((register (dbget 'register '())))
+       (let ((register (dbget 'register '())))
           (if (= (length register) 0)
             '(label text "None")
             `(list id editname entries ,register))
        ))
    (spacer)
+   (box yofs 10 h ,(lambda () (let ((register (dbget 'register '())))
+                                (if (= (length register) 0) 86 (+ 60 (* 48 (length register)))))))
+   (spacer height 10)
  )
   
  ;; Edit child name
@@ -411,13 +447,15 @@
    ("Next" ,(lambda ()
               (sxrun 'save-child)
               'demog))
-   (spacer)
+   (spacer height 53)
    (label size small text ,(lambda () (string-append "Child ID: " (dbget 'childid ""))))
-   (spacer)
+   (spacer height 73)
+   (box left #t yofs 62 h 43)
    (textentry id first text "First Name:")
-   (spacer)
+   (spacer height 20)
    (textentry id last text "Last Name:")
    (spacer)
+   (box right #t yofs 10 h 157)
  )
   
  ;; Demographics screen
@@ -464,17 +502,17 @@
                                                              "risk will be less precise."))))))
                          (list message (list "Continue" 'anthro) (list "Fix" #f))))))
                 (list (uiget  'errmsg) (list "OK" #f)))))
-   (spacer height 45)
+   (spacer height 51)
    (label text "Proven or suspected infection")
    (spacer height 5)
    (radiobox id infection left ("Yes" "1" #f) right ("No" "0" ("This app is only valid for children with a proven or suspected infection: probabilities will not be calculated" ("OK" #f))))
-   (spacer height 40)
-   (box yofs 20 h 110)
+   (spacer height 60)
+   (box left #t yofs 50 h 95)
    (label text "Sex")
    (spacer height 5)
    (radiobox id sex left ("Male" "1" #f) right ("Female" "0" #f))
-   (spacer height 40)
-   (box yofs 20 h 110)
+   (spacer height 60)
+   (box right #t yofs 50 h 95)
    (label text "Birth Date")
    (spacer height 10)
    (dropdown text "Year of Birth" id yob entries ,(lambda () (uiget 'recent_years)))
@@ -507,16 +545,16 @@
                                  (begin
                                    (dbset 'age #f)
                                    ""))))))
-   (spacer height 40)
-   (box yofs 20 h ,(lambda ()
-                     (let ((dh1 (if (uiget "yob:expanded") 336 0))
-                           (dh2 (if (uiget "mob:expanded") 576 0)))
-                       (+ 231 dh1 dh2))))
+   (spacer height 65)
+   (box left #t yofs 50 h ,(lambda ()
+                             (let ((dh1 (if (uiget "yob:expanded") 336 0))
+                                   (dh2 (if (uiget "mob:expanded") 576 0)))
+                               (+ 193 dh1 dh2))))
    (label text "Time since last hospitalization")
    (spacer height 10)
    (dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
    (spacer height 40)
-   (box yofs 20 h ,(lambda () (if (uiget "lasthosp:expanded") 350 115)))
+   (box right #t yofs 25 h ,(lambda () (if (uiget "lasthosp:expanded") 340 105)))
  )
   
  ;; Anthropometric screen
@@ -574,11 +612,13 @@
                  ;; Return return value or run complete procedure
                  (if returnvalue returnvalue (completeproc)))))
                 
-   (spacer height 50)
+   (spacer height 70)
    (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg")
-   (spacer)
+   (spacer height 85)
+   (box left #t yofs 71 h 76)
    (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm")
-   (spacer height 200)
+   (spacer height 184)
+   (box right #t yofs 169 h 77)
    (label size small text "Calculated weight for age z-score")
    (spacer height 10)
    (label size big text ,(lambda () (let ((weight (dbget 'weight #f))
@@ -594,6 +634,7 @@
                                           (dbset 'zscore #f)
                                           "")))))
    (spacer)
+   (box yofs 16 h 100)
  )
  
   ;; Oxygen saturation screen
@@ -629,7 +670,18 @@
    (label text ,(lambda () (let ((sp (sxrun 'getnotemptystring 'spo2med)))
                              (if sp (string-append "Recorded " sp " %") ""))))
    (spacer height 120)
-   (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%")
+   (box left #t yofs ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 108 118))
+                h ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 106 76)))
+   ,(lambda ()
+      (if (sxrun 'getnotemptystring 'spo2med)
+        ;; If tablet based SpO2 done, don't allow entering manual SpO2
+        `(spacer)
+        `(textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%")))
+   (spacer)
+   ,(lambda ()
+      (if (sxrun 'getnotemptystring 'spo2med)
+        `(spacer height 0)
+        `(box right #t yofs 16 h 76)))
  )
    
   
@@ -704,7 +756,7 @@
                         ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
                         (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" 'summary) (list "Fix" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
-   (spacer)
+   (spacer height 50)
    (label size small text "Blantyre coma scale")
    (spacer)
    (label align left text "Eye Movement")
@@ -737,11 +789,16 @@
                                           (begin
                                             (dbset 'comascore #f)
                                             "")))))
-   (spacer height 40)
+   (spacer height 56)
+   (box left #t yofs 48 h ,(lambda () (+ 460
+                                         (if (uiget "eye:expanded") 96 0)
+                                         (if (uiget "motor:expanded") 144 0)
+                                         (if (uiget "verbal:expanded") 144 0))))
    (label align left text "HIV status")
    (spacer height 10)
    (dropdown id hiv entries ("Positive" "Negative" "Unknown"))
    (spacer)
+   (box right #t yofs 16 h ,(lambda () (if (uiget "hiv:expanded") 245 101)))
  )
   
   ;; Summary screen
@@ -770,9 +827,10 @@
             (a (dbget 'age #f))
             (w (dbget 'weight #f)))
      (string-append (if sexstr sexstr)
-                    (if a (string-append (if sexstr ", " "") (float->string a 1) " years") "")
+                    (if a (string-append (if sexstr ", " "") (float->string a 1) " years old") "")
                     (if w (string-append (if (or a sexstr) ", " "") w " kg") "")))))
    (spacer)
+   (box yofs 25 h 46)
    (label size small align center text "Risk Factors:")
    (spacer height 15)
    (label text ,(lambda ()
@@ -815,6 +873,7 @@
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'hiv_thresholds)) value ,(lambda () (let* ((hiv (dbget 'hiv #f)))
                                                                                 (if (string=? hiv "Positive") 0 (if (string=? hiv "Negative") 1 #f)))))
+   (box yofs -15 h 631)
  )
   
   ;; Risk screen
@@ -830,35 +889,99 @@
                      (dbclear 'first)
                      (dbclear 'last)
                      'menu))
-   (spacer)
+   (spacer height 45)
    (label size small text "In Hospital Risk of Mortality")
-   (spacer 10)
+   (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
                                        (if score
-                                         (if (< score 3.0) "Low" "High")
+                                         (if (<= score 3.0) "Low" "High")
                                          "Not Calculated"))))
-   (spacer 10)
+   (spacer)
+   (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
+                                       (if score
+                                         (if (<= score 3.0) "< 1 %" "> 15 %")
+                                         ""))))
+   (spacer)
    (scale thresholds ,(lambda () (uiget 'inhospital_thresholds)) value ,(lambda () (let ((score (dbget 'hospitalscore #f)))
                                                                                      (if score (- score) #f))))
-   (image file ,(lambda () (sxrun 'choose-scale (let ((sc (dbget 'hospitalscore 3.5)))
-                                                  (cond
-                                                     ((< sc 1) 6)
-                                                     ((< sc 2) 5)
-                                                     ((< sc 3) 4)
-                                                     ((< sc 4) 3)
-                                                     ((< sc 12) 2)
-                                                     ((< sc 20) 1)
-                                                     (else 0))))))
-   (spacer height 200)
+   (help action help-in-hospital)
+   (spacer height 58)
+   (box yofs 44 h 290)
    (label size small text "Post-Discharge Risk of Mortality")
-   (spacer 10)
+   (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                        (if score
-                                         (if (< score 3.5) "Low" "High")
+                                         (if (<= score 3.5) "Low" "High")
                                          "Not Calculated"))))
-   (spacer 10)
+   (spacer)
+   (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
+                                       (if score
+                                         (if (<= score 3.5) "< 1.5 %" "> 10 %")
+                                         ""))))
+   (spacer)
    (scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                                                                 (if score (- score) #f))))
+   (help action help-post-discharge)
+   (spacer)
+   (box yofs 15 h 290)
+ )
+ 
+  ;; Help page for in-hospital mortality
+  (help-in-hospital
+   "Post-Discharge Risk"
+   ("Back" risk)
+   #f
+   (spacer height 45)
+   (label size small text "In Hospital Risk of Mortality")
+   (spacer)
+   (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
+                                       (if score
+                                         (if (<= score 3.0) "Low" "High")
+                                         "Not Calculated"))))
+   (spacer)
+   (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
+                                       (if score
+                                         (if (<= score 3.0) "< 1 %" "> 15 %")
+                                         ""))))
+   (spacer)
+   (scale thresholds ,(lambda () (uiget 'inhospital_thresholds)) value ,(lambda () (let ((score (dbget 'hospitalscore #f)))
+                                                                                     (if score (- score) #f))))
+   (spacer height 70)
+   (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3%. "
+                                          "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
+                                          "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
+                                          "with the median population risk in the yellow zone.")))
+   (spacer)
+   (box yofs 10 h 516)
+ )
+  
+  ;; Help page for post-discharge mortality
+  (help-post-discharge
+   "Post-Discharge Risk"
+   ("Back" risk)
+   #f
+   (spacer height 98)
+   (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3.5%. "
+                                          "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
+                                          "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
+                                          "with the median population risk in the yellow zone.")))
+   (spacer height 70)
+   (label size small text "Post-Discharge Risk of Mortality")
+   (spacer)
+   (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
+                                       (if score
+                                         (if (<= score 3.5) "Low" "High")
+                                         "Not Calculated"))))
+   (spacer)
+   (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
+                                       (if score
+                                         (if (<= score 3.5) "< 1.5 %" "> 10 %")
+                                         ""))))
+   (spacer)
+   (scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
+                                                                                (if score (- score) #f))))
+   (spacer height 45)
+   (box h 565)
  )
   
  ;; Blinded risk screen
@@ -874,17 +997,19 @@
                      (dbclear 'first)
                      (dbclear 'last)
                      'menu))
-   (spacer)
+   (spacer height 162)
    (label size small text "In Hospital Risk of Mortality")
-   (spacer 10)
+   (spacer)
    (label text "No proven or suspected infection")
    (label text "so no probabilities calculated.")
-   (spacer 200)
+   (spacer height 176)
+   (box yofs 162 h 114)
    (label size small text "Post-Discharge Risk of Mortality")
-   (spacer 10)
+   (spacer)
    (label text "No proven or suspected infection")
    (label text "so no probabilities calculated.")
-   (spacer 10)
+   (spacer)
+   (box yofs 16 h 114)
  )
 )
   
