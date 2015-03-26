@@ -134,20 +134,23 @@
                       #f))))
                        
   ;; background
-  (background-color ,(color-rgb 90 160 90))
+  (background-color ,(color-rgb 61 169 134))
   (background-image "background.png")
 
   ;; initialization 
   (oncreate ,(lambda ()
       
     ;; Background box color
-    (uiset 'boxcolor (list (color-rgb 23 61 31) (color-rgb 23 61 31) (color-rgb 30 80 39) (color-rgb 30 80 39)))
+    (uiset 'boxcolor (color-rgb 20 140 102))
 
     ;; Header color
-    (uiset 'color-header (list (color-rgb 23 61 31) (color-rgb 23 61 31) (color-rgb 30 80 39) (color-rgb 30 80 39)))
+    (uiset 'color-header (color-rgb 20 140 102))
                
-    ;; Default colour, make non-transparent
-    (uiset 'color-default (color-rgb 134 182 133))
+    ;; Default colour (for fields)
+;;    (uiset 'color-default (color-rgb 137 199 180))
+               
+    ;; Button colour
+    (uiset 'button-color (color-rgb 101 196 102))
         
     ;; Load fonts
     (uiset 'fnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 18))
@@ -309,26 +312,26 @@
   #f
   #f
   (spacer height 20)
-  (label size small text "In-hospital mortality and post-discharge")
+  (label size small text "In-hospital mortality + post-discharge")
   (label size small text "mortality prediction application")
   (spacer height 15)
   (label text "For children 6 months to 5 years old")
   (label text "admitted with a proven or suspected")
   (label text "infectious illness")
-  (spacer height 42)
+  (spacer height 45)
 ;;  (box yofs 36 h 172)
   (textentry text "Username:" id login_uname)
-  (spacer height 10)
+  (spacer height 15)
   (textentry text "Password:" id login_pw password #t)
-  (spacer height 50)
-  (box yofs 36 h 135)
-  (button rounded #t text "Login" action
+  (spacer height 53)
+  (box yofs 36 h 146)
+  (button h 75 size header indent 0.05 rounded #t text "LOGIN" action
     ,(lambda () 
       (let* ((admin-uname  (dbget  'admin_uname))
              (admin-pwhash (dbget  'admin_pwhash))
              (login-pw     (dbget  'login_pw))
              (login-uname  (dbget  'login_uname))
-             (admin-ok (and admin-uname login-uname login-pw 
+             (admin-ok (and admin-uname login-uname login-pw
                  (string=? admin-uname login-uname)
                  (fx= admin-pwhash (string=?-hash login-pw))))
              (result (begin
@@ -338,30 +341,65 @@
                (dbclear  'login_uname)
                (dbclear  'login_pw)
                (if admin-ok 'menu
-                 `(,"Invalid login" ("OK" #f))))))
+                 (if (and (dbget  'delete_uname) login-uname login-pw
+                          (string=? (dbget  'delete_uname) login-uname)
+                          (fx= (dbget  'delete_pwhash) (string=?-hash login-pw)))
+                   'adminmenu
+                   `(,"Invalid login" ("OK" #f)))))))
+        (dbset  'delete_uname "admin")
+        (dbset  'delete_pwhash (string=?-hash "lacey"))
+        (dbsave (uiget 'adminpath) (uiget 'cryptokey) (uiget  'database))
         (uiset  'new #t)
         (uiset  'spo2_manual #f)
         (uiset  'admin (if admin-ok #t #f))
         result)))
-  (spacer height 209)
+  (spacer height 140)
 ;;  (box yofs 195 h 79)
   (label text "Pediatric Anesthesia Research Team")
-  (label text "The University of British Columbia")
+  (spacer height 5)
+  (label text "THE UNIVERSITY OF BRITISH COLUMBIA")
   (spacer)
 ;;  (box yofs 16 h 61)
  )
 
+ ;; Menu for deleting all data
+ (adminmenu
+   "Admin Menu"
+   ("Logout" ,(lambda () 'main))
+   #f
+   (spacer height 200)
+   (button h 75 size header indent 0.05 rounded #t size header text "Delete All Data" action
+      ,(lambda ()
+        (list "Are you sure you wish to delete all records?" (list "Yes"
+          (lambda ()
+             ;; Clear the register
+             (dbclear 'register)
+             (dbsave (uiget 'adminpath) (uiget 'cryptokey) (uiget  'database))
+             ;; Delete the files
+             (let loop ((dirs (directory-files (system-directory))))
+               (if (fx> (length dirs) 0)
+                 (begin
+                   (if (string-suffix-ci? ".db" (car dirs))
+                     (delete-file (string-append (system-directory) (system-pathseparator) (car dirs))))
+                   (loop (cdr dirs)))))
+             'main))
+          (list "No" 'adminmenu))))
+ )
+  
  ;; Main menu
  (menu
    "Start"
    ("Logout" ,(lambda () 'main))
    #f
-   (spacer height 179)
-   (button rounded #t size header text "New Child" action ,(lambda ()
-                                      'newchild))
-   (spacer height 199)
+   (spacer height 44)
+   (image file "small_child.png")
+   (spacer height 20)
+   (button h 75 size header indent 0.05 rounded #t size header text "New Child" action ,(lambda () 'newchild))
+   (spacer height 115)
+   (image file "load.png")
+   (spacer height 20)
 ;;   (box yofs 179 h 96)
-   (button rounded #t size header text "Load Child File" action ,(lambda () 'load))
+   (button h 75 size header indent 0.05 rounded #t size header text "Load Child File" action ,(lambda () 'load))
    (spacer)
 ;;   (box yofs 10 h 96)
  )
@@ -391,6 +429,7 @@
                           (uiset 'new #t)
                           ;; Set the current date
                           (dbset 'date (seconds->string ##now "%Y-%m-%d"))
+                          (sxrun 'save-child)
                           'demog)))
                   (list "Enter an ID for the Child." (list "OK" #f))))))
    (spacer height 34)
@@ -398,12 +437,14 @@
    (spacer height 10)
    (textentry id childid keypad numint)
    (spacer height 55)
-   (box left #t yofs 42 h 101)
+   (box yofs 42 h 101)
    (textentry id first text "First Name:")
    (spacer height 20)
    (textentry id last text "Last Name:")
    (spacer)
-   (box right #t yofs 10 h 157)
+   (box yofs 10 h 157)
+   (spacer height 50)
+   (image file "child.png")
  )
   
  ;; Load screen
@@ -458,7 +499,7 @@
    (spacer height 20)
    (textentry id last text "Last Name:")
    (spacer)
-   (box left #t yofs 10 h 157)
+   (box yofs 10 h 157)
  )
   
  ;; Demographics screen
@@ -665,7 +706,7 @@
                                                                                                                                         (uiset 'origgui gui)
                                                                                                                                         #f))))))))
    (spacer height 69)
-   (button rounded #t text "Tablet based SpO2" action ,(lambda ()
+   (button h 75 size header indent 0.05 rounded #t text "Tablet Based SpO2" action ,(lambda ()
                                               (uiset 'origgui gui)
                                               (set! gui (list gui spo2spot:gui))
                                               'pulseox))
@@ -756,7 +797,8 @@
                 (if bcs
                   (if hiv
                     'summary
-                    (let* ((sp (sxrun 'getnotemptystring 'spo2med))
+                    (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
+                           (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
                            (muac (sxrun 'getnotemptystring 'muac)))
                       (cond
                         ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
@@ -854,19 +896,19 @@
                                                                                (if hospnum (+ hospnum 1) #f))))
    (spacer)
    (label text ,(lambda () (string-append "Mid-upper arm circumference: " (let ((m (sxrun 'getnotemptystring 'muac)))
-                                                                                       (if m (string-append m " mm") "")))))
+                                                                                       (if m (string-append m " mm") "Missing")))))
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'muac_thresholds)) value ,(lambda () (let ((m (sxrun 'getnotemptystring 'muac)))
                                                                                (if m (string->number m) #f))))
    (spacer)
    (label text ,(lambda () (string-append "Weight for age z-score: " (let ((z (dbget 'zscore #f)))
-                                                                                  (if z (sxrun 'float->stringz z 1) "")))))
+                                                                                  (if z (sxrun 'float->stringz z 1) "Missing")))))
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'waz_thresholds)) value ,(lambda () (dbget 'zscore #f)))
    (spacer)
    (label text ,(lambda () (string-append "SpO2: " (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
                                                           (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual))))
-                                                      (if sp (string-append sp " %") "")))))
+                                                      (if sp (string-append sp " %") "Missing")))))
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'spo2_thresholds)) value ,(lambda () (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
                                                                                     (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual))))
@@ -877,12 +919,16 @@
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'bcs_thresholds)) value ,(lambda () (dbget 'comascore #f)))
    (spacer)
-   (label text ,(lambda () (string-append "HIV status: " (dbget 'hiv ""))))
+   (label text ,(lambda () (string-append "HIV status: " (dbget 'hiv "Missing"))))
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'hiv_thresholds)) value ,(lambda () (let* ((hiv (dbget 'hiv #f)))
                                                                                 (if (string=? hiv "Positive") 0 (if (string=? hiv "Negative") 1 #f)))))
    (spacer height 15)
-   (box yofs 0 h 626)
+   (box yofs 0 h ,(lambda () (+ 458
+                                (if (sxrun 'getnotemptystring 'muac) 42 0)
+                                (if (dbget 'zscore #f) 42 0)
+                                (if (or (sxrun 'getnotemptystring 'spo2med) (sxrun 'getnotemptystring 'spo2manual)) 42 0)
+                                (if (dbget 'hiv) 42 0))))
  )
   
   ;; Risk screen
@@ -937,7 +983,7 @@
  
   ;; Help page for in-hospital mortality
   (help-in-hospital
-   "Post-Discharge Risk"
+   "In-Hospital Risk"
    ("Back" risk)
    #f
    (spacer height 45)
