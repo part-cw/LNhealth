@@ -146,6 +146,9 @@
     ;; Header color
     (uiset 'color-header (list (color-rgb 23 61 31) (color-rgb 23 61 31) (color-rgb 30 80 39) (color-rgb 30 80 39)))
                
+    ;; Default colour, make non-transparent
+    (uiset 'color-default (color-rgb 134 182 133))
+        
     ;; Load fonts
     (uiset 'fnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 18))
     (uiset 'smlfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 20))
@@ -305,7 +308,7 @@
   "PARA\nPAediatric Risk Assessment"
   #f
   #f
-  (spacer height 10)
+  (spacer height 20)
   (label size small text "In-hospital mortality and post-discharge")
   (label size small text "mortality prediction application")
   (spacer height 15)
@@ -313,13 +316,13 @@
   (label text "admitted with a proven or suspected")
   (label text "infectious illness")
   (spacer height 42)
-  (box yofs 36 h 172)
+;;  (box yofs 36 h 172)
   (textentry text "Username:" id login_uname)
   (spacer height 10)
   (textentry text "Password:" id login_pw password #t)
   (spacer height 50)
   (box yofs 36 h 135)
-  (button text "Login" action 
+  (button rounded #t text "Login" action
     ,(lambda () 
       (let* ((admin-uname  (dbget  'admin_uname))
              (admin-pwhash (dbget  'admin_pwhash))
@@ -341,11 +344,11 @@
         (uiset  'admin (if admin-ok #t #f))
         result)))
   (spacer height 209)
-  (box yofs 195 h 79)
+;;  (box yofs 195 h 79)
   (label text "Pediatric Anesthesia Research Team")
   (label text "The University of British Columbia")
   (spacer)
-  (box yofs 16 h 61)
+;;  (box yofs 16 h 61)
  )
 
  ;; Main menu
@@ -354,13 +357,13 @@
    ("Logout" ,(lambda () 'main))
    #f
    (spacer height 179)
-   (button size header text "New Child" action ,(lambda ()
+   (button rounded #t size header text "New Child" action ,(lambda ()
                                       'newchild))
    (spacer height 199)
-   (box yofs 179 h 96)
-   (button size header text "Load Child File" action ,(lambda () 'load))
+;;   (box yofs 179 h 96)
+   (button rounded #t size header text "Load Child File" action ,(lambda () 'load))
    (spacer)
-   (box yofs 10 h 96)
+;;   (box yofs 10 h 96)
  )
 
  ;; New screen
@@ -450,12 +453,12 @@
    (spacer height 53)
    (label size small text ,(lambda () (string-append "Child ID: " (dbget 'childid ""))))
    (spacer height 73)
-   (box left #t yofs 62 h 43)
+;;   (box left #t yofs 62 h 43)
    (textentry id first text "First Name:")
    (spacer height 20)
    (textentry id last text "Last Name:")
    (spacer)
-   (box right #t yofs 10 h 157)
+   (box left #t yofs 10 h 157)
  )
   
  ;; Demographics screen
@@ -615,10 +618,10 @@
    (spacer height 70)
    (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg")
    (spacer height 85)
-   (box left #t yofs 71 h 76)
+;;   (box left #t yofs 71 h 76)
    (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm")
    (spacer height 184)
-   (box right #t yofs 169 h 77)
+;;   (box right #t yofs 169 h 77)
    (label size small text "Calculated weight for age z-score")
    (spacer height 10)
    (label size big text ,(lambda () (let ((weight (dbget 'weight #f))
@@ -661,27 +664,31 @@
                     (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
                                                                                                                                         (uiset 'origgui gui)
                                                                                                                                         #f))))))))
-   (spacer)
-   (button text "Tablet based SpO2" action ,(lambda ()
+   (spacer height 69)
+   (button rounded #t text "Tablet based SpO2" action ,(lambda ()
                                               (uiset 'origgui gui)
                                               (set! gui (list gui spo2spot:gui))
                                               'pulseox))
    (spacer height 10)
    (label text ,(lambda () (let ((sp (sxrun 'getnotemptystring 'spo2med)))
                              (if sp (string-append "Recorded " sp " %") ""))))
-   (spacer height 120)
-   (box left #t yofs ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 108 118))
-                h ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 106 76)))
+   (spacer height 73)
+   ,(lambda ()
+      (if (sxrun 'getnotemptystring 'spo2med)
+        `(box yofs 61 h 106)
+        `(spacer height 0)))
+;;   (box yofs ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 61 71))
+;;        h ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 106 76)))
    ,(lambda ()
       (if (sxrun 'getnotemptystring 'spo2med)
         ;; If tablet based SpO2 done, don't allow entering manual SpO2
         `(spacer)
         `(textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%")))
    (spacer)
-   ,(lambda ()
-      (if (sxrun 'getnotemptystring 'spo2med)
-        `(spacer height 0)
-        `(box right #t yofs 16 h 76)))
+;;   ,(lambda ()
+;;      (if (sxrun 'getnotemptystring 'spo2med)
+;;        `(spacer height 0)
+;;        `(box right #t yofs 16 h 76)))
  )
    
   
@@ -790,10 +797,11 @@
                                             (dbset 'comascore #f)
                                             "")))))
    (spacer height 56)
-   (box left #t yofs 48 h ,(lambda () (+ 460
+   (box left #t yofs 48 h ,(lambda () (+ 420
                                          (if (uiget "eye:expanded") 96 0)
                                          (if (uiget "motor:expanded") 144 0)
-                                         (if (uiget "verbal:expanded") 144 0))))
+                                         (if (uiget "verbal:expanded") 144 0)
+                                         (if (dbget 'comascore) 40 0))))
    (label align left text "HIV status")
    (spacer height 10)
    (dropdown id hiv entries ("Positive" "Negative" "Unknown"))
@@ -818,7 +826,7 @@
                 ;; No infection, blinded, no probabilities
                 'blinded)))
    (spacer height 10)
-   (label text ,(lambda ()
+   (label indent 0.1 align left text ,(lambda ()
      (let* ((sex (dbget 'sex ""))
             (sexstr (cond
                       ((string=? sex "1") "Male")
@@ -829,8 +837,8 @@
      (string-append (if sexstr sexstr)
                     (if a (string-append (if sexstr ", " "") (float->string a 1) " years old") "")
                     (if w (string-append (if (or a sexstr) ", " "") w " kg") "")))))
-   (spacer)
-   (box yofs 25 h 46)
+   (spacer height 15)
+;;   (box yofs 25 h 46)
    (label size small align center text "Risk Factors:")
    (spacer height 15)
    (label text ,(lambda ()
@@ -873,7 +881,8 @@
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'hiv_thresholds)) value ,(lambda () (let* ((hiv (dbget 'hiv #f)))
                                                                                 (if (string=? hiv "Positive") 0 (if (string=? hiv "Negative") 1 #f)))))
-   (box yofs -15 h 631)
+   (spacer height 15)
+   (box yofs 0 h 626)
  )
   
   ;; Risk screen
@@ -950,9 +959,9 @@
    (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
                                           "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
-                                          "with the median population risk in the yellow zone.")))
+                                          "the risk cut-off (3%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
    (spacer)
-   (box yofs 10 h 516)
+   (box yofs 9 h 553)
  )
   
   ;; Help page for post-discharge mortality
@@ -960,11 +969,11 @@
    "Post-Discharge Risk"
    ("Back" risk)
    #f
-   (spacer height 98)
+   (spacer height 70)
    (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3.5%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
                                           "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
-                                          "with the median population risk in the yellow zone.")))
+                                          "the risk cut-off (3.5%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
    (spacer height 70)
    (label size small text "Post-Discharge Risk of Mortality")
    (spacer)
@@ -980,8 +989,8 @@
    (spacer)
    (scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                                                                 (if score (- score) #f))))
-   (spacer height 45)
-   (box h 565)
+   (spacer height 35)
+   (box h 595)
  )
   
  ;; Blinded risk screen
