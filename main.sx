@@ -165,6 +165,7 @@
     ;; Setup rtaudio for pulse oximetry and setup SpO2 page
     (rtaudio-start 96000 1.0)
     (spo2spot-init 0 0 (glgui-width-get) (glgui-height-get) store)
+    (spo2-set-length 30)
                
     (if (string=? (system-platform) "android")
        (make-instance store "Oximeter" "oximeter" '("Port" "/dev/ttyUSB0")))
@@ -298,6 +299,10 @@
        (uiset  'sp (if (number? sp) (fix sp) 0))
        (uiset  'sqi (if (number? sqi) (fix sqi) 0))
        (uiset  'pleth newpleth)
+       (if (and (stget "CaseID" #f) (uiget 'invalidspo2))
+         (begin
+           (uiset 'invalidspo2 #f)
+           (stclear "SPMedian")))
       (spo2spot-scheduled)
     )))
 
@@ -690,8 +695,8 @@
    ("Next" ,(lambda ()
               (sxrun 'save-child)
               (uiset 'frompulseox #f)
-              (let* ((sp0 (stget "SPMedian" #f))
-                     (sp (if (number? sp0) (number->string sp0) (sxrun 'getnotemptystring 'spo2manual)))
+              (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
+                     (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
                      (muac (sxrun 'getnotemptystring 'muac)))
                 (if sp
                   (if (> (string->number sp) 100)
@@ -737,6 +742,10 @@
   (pulseox
    " Oxygen Saturation"
    ("Back" ,(lambda ()
+              (if (uiget 'invalidspo2)
+                (begin
+                  (stclear "SPMedian")
+                  (uiset 'invalidspo2 #f)))
               (if (stget "CaseID" #f)
                 (begin
                   (set! gui (uiget 'origgui gui))
@@ -744,38 +753,60 @@
                                                                      (scheduler-endcase store)
                                                                      (spo2spot:progress-clear)
                                                                      (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                                                                     (uiset 'invalidspo2 #t)
                                                                      (sxrun 'save-child)
                                                                      'spo2))
                                                        (list "No" (lambda ()
                                                                     (set! gui (list gui spo2spot:gui))
                                                                     #f))))
-                (begin
+                (let ((sp (stget "SPMedian" #f)))
+                  (if (number? sp) (dbset 'spo2med (number->string sp)))
                   (set! gui (uiget 'origgui gui))
                   (sxrun 'save-child)
                   'spo2))))
    ("Next" ,(lambda ()
-              (sxrun 'save-child)
-              (uiset 'frompulseox #t)
-              (let* ((sp0 (stget "SPMedian" #f))
-                     (sp (if (number? sp0) (number->string sp0) (sxrun 'getnotemptystring 'spo2manual)))
-                     (muac (sxrun 'getnotemptystring 'muac)))
-                (if sp
+              (if (uiget 'invalidspo2)
+                (begin
+                  (stclear "SPMedian")
+                  (uiset 'invalidspo2 #f)))
+              (let ((exitproc (lambda ()
+                                (sxrun 'save-child)
+                                (uiset 'frompulseox #t)
+                                (let* ((sp0 (stget "SPMedian" (sxrun 'getnotemptystring 'spo2med)))
+                                       (sp (if (number? sp0) (number->string sp0) (if (string? sp0) sp0 (sxrun 'getnotemptystring 'spo2manual))))
+                                       (muac (sxrun 'getnotemptystring 'muac)))
+                                  (if sp
+                                    (begin
+                                      (dbset 'spo2med sp)
+                                      (set! gui (uiget 'origgui gui))
+                                      'clinical)
+                                    (begin
+                                      (set! gui (uiget 'origgui gui))
+                                      (if muac
+                                        (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
+                                                                                                                 (list "Fix" (lambda ()
+                                                                                                                                (uiset 'origgui gui)
+                                                                                                                                (set! gui (list gui spo2spot:gui))
+                                                                                                                                #f)))
+                                        (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
+                                                                                                                                                            (uiset 'origgui gui)
+                                                                                                                                                            (set! gui (list gui spo2spot:gui))
+                                                                                                                                                            #f))))))))))
+                (if (stget "CaseID" #f)
+                  ;; In the middle of a recording, ask them if they wish to stop it
                   (begin
-                    (dbset 'spo2med sp)
                     (set! gui (uiget 'origgui gui))
-                    'clinical)
-                  (begin
-                    (set! gui (uiget 'origgui gui))
-                    (if muac
-                      (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
-                                                                                               (list "Fix" (lambda ()
-                                                                                                              (uiset 'origgui gui)
-                                                                                                              (set! gui (list gui spo2spot:gui))
-                                                                                                              #f)))
-                      (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
-                                                                                                                                          (uiset 'origgui gui)
-                                                                                                                                          (set! gui (list gui spo2spot:gui))
-                                                                                                                                          #f)))))))))
+                    (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
+                                                                       (scheduler-endcase store)
+                                                                       (spo2spot:progress-clear)
+                                                                       (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                                                                       (uiset 'invalidspo2 #t)
+                                                                       (exitproc)))
+                                                         (list "No" (lambda ()
+                                                                      (set! gui (list gui spo2spot:gui))
+                                                                      #f))))
+                  ;; Not in the middle of a recording, run exit procedure
+                  (exitproc)))))
    (spacer)
  )
  
@@ -783,6 +814,10 @@
  (clinical
    "Clinical Data"
    ("Back" ,(lambda ()
+              (if (uiget 'invalidspo2)
+                (begin
+                  (stclear "SPMedian")
+                  (uiset 'invalidspo2 #f)))
               (sxrun 'save-child)
               (if (uiget 'frompulseox)
                 (begin
@@ -791,6 +826,10 @@
                   'pulseox)
                 'spo2)))
    ("Next" ,(lambda ()
+              (if (uiget 'invalidspo2)
+                (begin
+                  (stclear "SPMedian")
+                  (uiset 'invalidspo2 #f)))
               (sxrun 'save-child)
               (let ((bcs (dbget 'comascore #f))
                     (hiv (dbget 'hiv #f)))
@@ -928,7 +967,7 @@
                                 (if (sxrun 'getnotemptystring 'muac) 42 0)
                                 (if (dbget 'zscore #f) 42 0)
                                 (if (or (sxrun 'getnotemptystring 'spo2med) (sxrun 'getnotemptystring 'spo2manual)) 42 0)
-                                (if (dbget 'hiv) 42 0))))
+                                (if (and (dbget 'hiv) (not (string=? (dbget 'hiv) "Unknown"))) 42 0))))
  )
   
   ;; Risk screen
