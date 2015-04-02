@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 |#
 
 (include "embed.scm")
+(include "download.scm")
 
 (define app:debuglevel 0)
 (define (app:log level . x)
@@ -190,6 +191,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (sxz->sandbox (car sxz)))
             (sandbox-load #f) 
             #f) '("Please select a package" ("OK" #f))))))
+     (spacer)
+     ,(lambda () (if (uiget 'web-sxz #f)
+       '(label text "Install additional packages:" align center)
+       `(button text "Get list of additional packages" action
+         ,(lambda () (let ((host (dbget 'web-host "ecem.ece.ubc.ca")) (folder (dbget 'web-url "/LNhealth/")))
+           (uiset 'web-sxz (download-list host folder))
+           (uiset 'nodemap '())
+           #f
+         ))
+       )
+     ))
+     ,(lambda () (if (uiget 'web-sxz #f)
+       (let ((entries (uiget 'web-sxz '())))
+         (if (> (length entries) 0)
+           `(checklist id web-sxz-selected location ui default ,entries)
+           '(label text "No files found")
+         )
+       )
+       '(spacer height 0)
+     ))
+     ,(lambda () (if (uiget 'web-sxz #f)
+       `(button text "Download selected" action
+         ,(lambda () (let ((host (dbget 'web-host "ecem.ece.ubc.ca")) (folder (dbget 'web-url "/LNhealth/")) (lst (uiget 'web-sxz-selected '())))
+           (for-each (lambda (l) (download-getfile host folder l)) lst)
+           (uiclear 'web-sxz)
+           (uiset 'nodemap '())
+           #f
+         ))
+       )
+       '(spacer height 0)
+     ))
      (spacer)
      (label text "Select Package:" align center)
      (spacer)
