@@ -7,8 +7,13 @@
                           (if (fx> (string-length val) 0) val #f))))
   
   ;; Float to string which replaces -. with -0.
-  (float->stringz ,(lambda (str i)
-                     (string-replace-substring (float->string str i) "-." "-0.")))
+  (float->stringz ,(lambda (num i)
+                     (let* ((str (float->string num i))
+                            (f (string-ref str 0)))
+                       (cond
+                         ((char=? f #\-) (string-replace-substring str "-." "-0."))
+                         ((or (char=? f #\+) (string=? str "0")) str)
+                         (else (string-append "+" str))))))
   
   ;; Calculate a z-score
   (z-score ,(lambda (age weight boy?)
@@ -190,7 +195,7 @@
     (uiset 'months (list "January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"))
                
     ;; Options for time since last hospitalization
-    (uiset 'hosp_options (list "< 7 days" "7 - 30 days" "30 days - 1 year" "> 1 year" "Never hospitalized"))
+    (uiset 'hosp_options (list "Less than 7 days ago" "7 to 30 days ago" "30 days to 1 year ago" "more than 1 year ago" "Never"))
                
     ;; Lists of options for Blantyre coma scale
     (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow "))
@@ -282,6 +287,11 @@
            (glgui:draw-pixmap-right (+ x (* w 0.075)) y (* w 0.85) (cadr img) img White)
            30))
        glgui:uiform-button-input)
+
+     ;; Keypad after char callback procedure to not allow spaces
+     (uiset 'nospacecb (lambda (floc fid str)
+                          (if (and (string? str) (fx> (string-length str) 0) (char=? (string-ref str (fx- (string-length str) 1)) #\space))
+                            (xxset floc fid (substring str 0 (fx- (string-length str) 1))))))
   ))
   
   (onevent ,(lambda () (spo2spot-event)))
@@ -325,9 +335,9 @@
   (label text "infectious illness")
   (spacer height 45)
 ;;  (box yofs 36 h 172)
-  (textentry text "Username:" id login_uname)
+  (textentry text "Username:" id login_uname keycb ,(lambda () (uiget 'nospacecb)))
   (spacer height 15)
-  (textentry text "Password:" id login_pw password #t)
+  (textentry text "Password:" id login_pw password #t keycb ,(lambda () (uiget 'nospacecb)))
   (spacer height 53)
   (box yofs 36 h 146)
   (button h 75 size header indent 0.05 rounded #t text "LOGIN" action
@@ -399,7 +409,7 @@
    (spacer height 44)
    (image file "small_child.png")
    (spacer height 20)
-   (button h 75 size header indent 0.05 rounded #t size header text "New Child" action ,(lambda () 'newchild))
+   (button h 75 size header indent 0.05 rounded #t size header text "Add New Child" action ,(lambda () 'newchild))
    (spacer height 115)
    (image file "load.png")
    (spacer height 20)
@@ -443,9 +453,9 @@
    (textentry id childid keypad numint)
    (spacer height 55)
    (box yofs 42 h 101)
-   (textentry id first text "First Name:")
+   (textentry id first name #t text "Other Name:")
    (spacer height 20)
-   (textentry id last text "Last Name:")
+   (textentry id last name #t text "Surname:")
    (spacer)
    (box yofs 10 h 157)
    (spacer height 50)
@@ -500,9 +510,9 @@
    (label size small text ,(lambda () (string-append "Child ID: " (dbget 'childid ""))))
    (spacer height 73)
 ;;   (box left #t yofs 62 h 43)
-   (textentry id first text "First Name:")
+   (textentry id first name #t text "Other Name:")
    (spacer height 20)
-   (textentry id last text "Last Name:")
+   (textentry id last name #t text "Surname:")
    (spacer)
    (box yofs 10 h 157)
  )
@@ -515,7 +525,7 @@
               'editchild))
    ("Next" ,(lambda ()
               (sxrun 'save-child)
-              (if (and (sane  'infection (lambda (str) #t) "Enter whether there is a suspected or proven infection" "")
+              (if (and (sane  'infection (lambda (str) #t) "Enter whether there is a suspected infection" "")
                        (sane  'lasthosp (lambda (str) #t) "Enter the time since last hospitalization" ""))
                 ;; First question answered
                 (let* ((sex (dbget 'sex #f))
@@ -552,9 +562,9 @@
                          (list message (list "Continue" 'anthro) (list "Fix" #f))))))
                 (list (uiget  'errmsg) (list "OK" #f)))))
    (spacer height 51)
-   (label text "Proven or suspected infection")
+   (label text "Suspected infection")
    (spacer height 5)
-   (radiobox id infection left ("Yes" "1" #f) right ("No" "0" ("This app is only valid for children with a proven or suspected infection: probabilities will not be calculated" ("OK" #f))))
+   (radiobox id infection left ("Yes" "1" #f) right ("No" "0" ("This app is only valid for children with a suspected infection: probabilities will not be calculated" ("OK" #f))))
    (spacer height 60)
    (box left #t yofs 50 h 95)
    (label text "Sex")
@@ -599,7 +609,7 @@
                              (let ((dh1 (if (uiget "yob:expanded") 336 0))
                                    (dh2 (if (uiget "mob:expanded") 576 0)))
                                (+ 193 dh1 dh2))))
-   (label text "Time since last hospitalization")
+   (label text "Last hospitalized...")
    (spacer height 10)
    (dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
    (spacer height 40)
@@ -896,7 +906,7 @@
    ("Back" ,(lambda ()
               (sxrun 'save-child)
               'clinical))
-   ("Calculate" ,(lambda ()
+   ("Next" ,(lambda ()
               (sxrun 'save-child)
               (if (string=? (dbget 'infection "0") "1")
                 (let ((hscore (sxrun 'calc-hospital-score))
@@ -925,9 +935,7 @@
    (label text ,(lambda ()
                    (let ((hosp (dbget 'lasthosp #f)))
                       (if hosp
-                        (if (string=? hosp "Never hospitalized")
-                          hosp
-                          (string-append "Hospitalized " hosp " ago"))
+                        (string-append "Hospitalized " hosp)
                         "Last hospitalization not answered"))))
    (spacer height 10)
    (scale thresholds ,(lambda () (uiget 'hosp_thresholds)) value ,(lambda () (let* ((hosp (dbget 'lasthosp #f))
@@ -983,7 +991,7 @@
                      (dbclear 'first)
                      (dbclear 'last)
                      'menu))
-   (spacer height 45)
+   (spacer height 77)
    (label size small text "In Hospital Risk of Mortality")
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
@@ -995,12 +1003,10 @@
                                        (if score
                                          (if (<= score 3.0) "< 1 %" "> 15 %")
                                          ""))))
-   (spacer)
-   (scale thresholds ,(lambda () (uiget 'inhospital_thresholds)) value ,(lambda () (let ((score (dbget 'hospitalscore #f)))
-                                                                                     (if score (- score) #f))))
+   (spacer height 22)
    (help action help-in-hospital)
-   (spacer height 58)
-   (box yofs 44 h 290)
+   (spacer height 92)
+   (box yofs 78 h 240)
    (label size small text "Post-Discharge Risk of Mortality")
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
@@ -1012,12 +1018,10 @@
                                        (if score
                                          (if (<= score 3.5) "< 1.5 %" "> 10 %")
                                          ""))))
-   (spacer)
-   (scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
-                                                                                (if score (- score) #f))))
+   (spacer height 22)
    (help action help-post-discharge)
-   (spacer)
-   (box yofs 15 h 290)
+   (spacer height 80)
+   (box yofs 65 h 240)
  )
  
   ;; Help page for in-hospital mortality
@@ -1025,7 +1029,7 @@
    "In-Hospital Risk"
    ("Back" risk)
    #f
-   (spacer height 45)
+   (spacer height 77)
    (label size small text "In Hospital Risk of Mortality")
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
@@ -1054,7 +1058,7 @@
    "Post-Discharge Risk"
    ("Back" risk)
    #f
-   (spacer height 70)
+   (spacer height 64)
    (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3.5%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
                                           "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
