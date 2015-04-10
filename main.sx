@@ -169,7 +169,7 @@
     
     ;; Setup rtaudio for pulse oximetry and setup SpO2 page
     (rtaudio-start 96000 1.0)
-    (spo2spot-init 0 0 (glgui-width-get) (glgui-height-get) store)
+    (spo2spot-init 0 80 (glgui-width-get) (- (glgui-height-get) 80) store)
     (spo2-set-length 30)
                
     (if (string=? (system-platform) "android")
@@ -312,7 +312,7 @@
        (if (and (stget "CaseID" #f) (uiget 'invalidspo2))
          (begin
            (uiset 'invalidspo2 #f)
-           (stclear "SPMedian")))
+           (stclear "SP_Median")))
       (spo2spot-scheduled)
     )))
 
@@ -425,8 +425,8 @@
    ("Back" menu)
    ("Next" ,(lambda ()
               (let ((id (sxrun 'getnotemptystring 'childid))
-                    (first (sxrun 'getnotemptystring 'first))
-                    (last (sxrun 'getnotemptystring 'last)))
+                    (first (dbget 'first))
+                    (last (dbget 'last)))
                 (if id
                   (let ((db (uiget  'database))
                         (register (dbget 'register '())))
@@ -439,8 +439,8 @@
                           (uiset  'admin-database db)
                           (uiset  'database (make-table))
                           (dbset  'childid id)
-                          (dbset  'first first)
-                          (dbset  'last last)
+                          (if first (dbset  'first first))
+                          (if last (dbset  'last last))
                           (uiset 'new #t)
                           ;; Set the current date
                           (dbset 'date (seconds->string ##now "%Y-%m-%d"))
@@ -475,6 +475,12 @@
                         (uiset 'new #f)
                         (uiset  'admin-database db)
                         (uiset  'database (dbload filename (uiget 'cryptokey)))
+                        ;; Populate SpO2 page with saved values
+                        (let ((sp (sxrun 'getnotemptystring 'spo2med))
+                              (hr (sxrun 'getnotemptystring 'hrmed))
+                              (sptime (dbget 'sptime)))
+                          (if (and sp hr)
+                            (spo2spot-load hr sp sptime)))
                         'editchild)
                       (list (string-append "File " filename " missing.") (list "OK" #f))))
                   (list "Select a child by ID" (list "OK" #f))))))
@@ -502,6 +508,10 @@
               (dbclear 'childid)
               (dbclear 'first)
               (dbclear 'last)
+              (spo2spot-reset)
+              (stclear "SP_Median")
+              (stclear "HR_Median")
+              (stclear "SP_Timestamp")
               (if (uiget 'new #f) 'menu 'load)))
    ("Next" ,(lambda ()
               (sxrun 'save-child)
@@ -640,14 +650,20 @@
                                                 (list "OK" #f))
                                           (if (and z muac)
                                             ;; All complete
-                                            'spo2
+                                            (begin
+                                              (uiset 'origgui gui)
+                                              (set! gui (list gui spo2spot:gui))
+                                              'pulseox)
                                             ;; Missing one or the other
                                             (list
                                                (cond
                                                  ((not weight) "Missing weight. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
                                                  ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
                                                  (else "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise."))
-                                               (list "Continue" 'spo2)
+                                               (list "Continue" (lambda ()
+                                                                  (uiset 'origgui gui)
+                                                                  (set! gui (list gui spo2spot:gui))
+                                                                  'pulseox))
                                                (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
                   ;; Check for out of range values
                   (if muac
@@ -696,12 +712,13 @@
    (box yofs 16 h 100)
  )
  
-  ;; Oxygen saturation screen
+  ;; Oxygen saturation from another device
   (spo2
    " Oxygen Saturation"
    ("Back" ,(lambda ()
-              (sxrun 'save-child)
-              'anthro))
+              (uiset 'origgui gui)
+              (set! gui (list gui spo2spot:gui))
+              'pulseox))
    ("Next" ,(lambda ()
               (sxrun 'save-child)
               (uiset 'frompulseox #f)
@@ -720,31 +737,9 @@
                     (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
                                                                                                                                         (uiset 'origgui gui)
                                                                                                                                         #f))))))))
-   (spacer height 69)
-   (button h 75 size header indent 0.05 rounded #t text "Tablet Based SpO2" action ,(lambda ()
-                                              (uiset 'origgui gui)
-                                              (set! gui (list gui spo2spot:gui))
-                                              'pulseox))
-   (spacer height 10)
-   (label text ,(lambda () (let ((sp (sxrun 'getnotemptystring 'spo2med)))
-                             (if sp (string-append "Recorded " sp " %") ""))))
-   (spacer height 73)
-   ,(lambda ()
-      (if (sxrun 'getnotemptystring 'spo2med)
-        `(box yofs 61 h 106)
-        `(spacer height 0)))
-;;   (box yofs ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 61 71))
-;;        h ,(lambda () (if (sxrun 'getnotemptystring 'spo2med) 106 76)))
-   ,(lambda ()
-      (if (sxrun 'getnotemptystring 'spo2med)
-        ;; If tablet based SpO2 done, don't allow entering manual SpO2
-        `(spacer)
-        `(textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%")))
+   (spacer height 70)
+   (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%")
    (spacer)
-;;   ,(lambda ()
-;;      (if (sxrun 'getnotemptystring 'spo2med)
-;;        `(spacer height 0)
-;;        `(box right #t yofs 16 h 76)))
  )
    
   
@@ -754,7 +749,7 @@
    ("Back" ,(lambda ()
               (if (uiget 'invalidspo2)
                 (begin
-                  (stclear "SPMedian")
+                  (stclear "SP_Median")
                   (uiset 'invalidspo2 #f)))
               (if (stget "CaseID" #f)
                 (begin
@@ -765,29 +760,43 @@
                                                                      (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                                                                      (uiset 'invalidspo2 #t)
                                                                      (sxrun 'save-child)
-                                                                     'spo2))
+                                                                     'anthro))
                                                        (list "No" (lambda ()
                                                                     (set! gui (list gui spo2spot:gui))
                                                                     #f))))
-                (let ((sp (stget "SPMedian" #f)))
-                  (if (number? sp) (dbset 'spo2med (number->string sp)))
+                (let ((sp (stget "SP_Median" ""))
+                      (hr (stget "HR_Median" ""))
+                      (sptime (stget "SP_Timestamp" #f)))
+                  (if (fx> (string-length sp) 0) (dbset 'spo2med sp))
+                  (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
+                  (if sptime (dbset 'sptime sptime))
                   (set! gui (uiget 'origgui gui))
                   (sxrun 'save-child)
-                  'spo2))))
+                  'anthro))))
    ("Next" ,(lambda ()
               (if (uiget 'invalidspo2)
                 (begin
-                  (stclear "SPMedian")
+                  (stclear "SP_Median")
                   (uiset 'invalidspo2 #f)))
               (let ((exitproc (lambda ()
                                 (sxrun 'save-child)
                                 (uiset 'frompulseox #t)
-                                (let* ((sp0 (stget "SPMedian" (sxrun 'getnotemptystring 'spo2med)))
-                                       (sp (if (number? sp0) (number->string sp0) (if (string? sp0) sp0 (sxrun 'getnotemptystring 'spo2manual))))
+                                       ;; SpO2 just recorded
+                                (let* ((sp0 (stget "SP_Median" #f))
+                                       ;; SpO2 possibly previous recorded
+                                       (sp1 (if (string? sp0) sp0 (sxrun 'getnotemptystring 'spo2med)))
+                                       ;; SpO2 possibly from a manual entry
+                                       (sp (if (string? sp1) sp1 (sxrun 'getnotemptystring 'spo2manual)))
                                        (muac (sxrun 'getnotemptystring 'muac)))
                                   (if sp
                                     (begin
-                                      (dbset 'spo2med sp)
+                                      (if (and sp0 (fx> (string-length sp0) 0))
+                                        ;; Just recorded SpO2
+                                        (let ((hr (stget "HR_Median" #f))
+                                              (sptime (stget "SP_Timestamp" #f)))
+                                          (dbset 'spo2med sp0)
+                                          (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
+                                          (if sptime (dbset 'sptime sptime))))
                                       (set! gui (uiget 'origgui gui))
                                       'clinical)
                                     (begin
@@ -817,7 +826,22 @@
                                                                       #f))))
                   ;; Not in the middle of a recording, run exit procedure
                   (exitproc)))))
-   (spacer)
+   (spacer height 600)
+   ,(lambda ()
+       (let ((id (stget "CaseID" #f)))
+          (if (or id (sxrun 'getnotemptystring 'spo2med) (stget "SP_Median" #f))
+            ;; If tablet based SpO2 being done or is already done, don't allow manual
+            '(spacer height 0)
+            `(button height 30 rounded #t indent 0.2 text "SpO2 from another device" action ,(lambda ()
+                (if (uiget 'invalidspo2)
+                  (begin
+                     (stclear "SP_Median")
+                     (uiset 'invalidspo2 #f)))
+                (let ((sp (stget "SP_Median" #f)))
+                  (if (number? sp) (dbset 'spo2med (number->string sp)))
+                  (set! gui (uiget 'origgui gui))
+                  (sxrun 'save-child)
+                  'spo2))))))
  )
  
  ;; Clinical data screen
@@ -826,7 +850,7 @@
    ("Back" ,(lambda ()
               (if (uiget 'invalidspo2)
                 (begin
-                  (stclear "SPMedian")
+                  (stclear "SP_Median")
                   (uiset 'invalidspo2 #f)))
               (sxrun 'save-child)
               (if (uiget 'frompulseox)
@@ -838,7 +862,7 @@
    ("Next" ,(lambda ()
               (if (uiget 'invalidspo2)
                 (begin
-                  (stclear "SPMedian")
+                  (stclear "SP_Median")
                   (uiset 'invalidspo2 #f)))
               (sxrun 'save-child)
               (let ((bcs (dbget 'comascore #f))
@@ -990,6 +1014,10 @@
                      (dbclear 'childid)
                      (dbclear 'first)
                      (dbclear 'last)
+                     (spo2spot-reset)
+                     (stclear "SP_Median")
+                     (stclear "HR_Median")
+                     (stclear "SP_Timestamp")
                      'menu))
    (spacer height 77)
    (label size small text "In Hospital Risk of Mortality")
@@ -1094,6 +1122,10 @@
                      (dbclear 'childid)
                      (dbclear 'first)
                      (dbclear 'last)
+                     (spo2spot-reset)
+                     (stclear "SP_Median")
+                     (stclear "HR_Median")
+                     (stclear "SP_Timestamp")
                      'menu))
    (spacer height 162)
    (label size small text "In Hospital Risk of Mortality")
