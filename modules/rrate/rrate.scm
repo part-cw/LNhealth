@@ -655,7 +655,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     
    (set! rrate:tapbg (glgui-pixmap rrate:cont 0 43 stage1_bg.img))
  
-   (set! rrate:cancelbutton (local-dynamic-button rrate:cont 12 6 145 32 "CANCEL" text_20.fnt
+   (set! rrate:cancelbutton (glgui-button-local rrate:cont 12 6 145 32 "CANCEL" text_20.fnt
      (lambda (g . x)
        ;; Determine if there are any taps, if none then cancel out of module, otherwise just reset
        (if (fx= (length rrate:times) 0)
@@ -688,7 +688,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (if rrate:no-settings? (glgui-widget-set! rrate:cont rrate:settingsbutton 'hidden #t))
      
    ;; Remove the confirm question and show the other buttons instead
-   (set! rrate:nobutton (local-dynamic-button rrate:cont 6 6 68 32 "NO" text_20.fnt
+   (set! rrate:nobutton (glgui-button-local rrate:cont 6 6 68 32 "NO" text_20.fnt
      (lambda (g . x)
        ;; Reset trend text colour
        (glgui-widget-set! rrate:cont rrate:value 'color rrate:textcolor)
@@ -706,7 +706,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:nobutton 'button-selected-color DarkOrange)
    (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
      
-   (set! rrate:restartbutton (local-dynamic-button rrate:cont 6 6 120 32 "RESTART" text_20.fnt
+   (set! rrate:restartbutton (glgui-button-local rrate:cont 6 6 120 32 "RESTART" text_20.fnt
      (lambda (g . x)
        (rrate-reset)
      )
@@ -716,12 +716,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #t)
      
    ;; Confirmation question about animation
-   (set! rrate:confirm (local-dynamic-label rrate:cont 79 2 (- (glgui-width-get) 75 72) 36
+   (set! rrate:confirm (glgui-label-local rrate:cont 79 2 (- (glgui-width-get) 75 72) 36
      "RR_MATCH" text_14.fnt White))
    (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
      
    ;; Remove the confirm question and show the other buttons instead, run done procedure
-   (set! rrate:yesbutton (local-dynamic-button rrate:cont (- (glgui-width-get) 65 6) 6 65 32 "YES" text_20.fnt
+   (set! rrate:yesbutton (glgui-button-local rrate:cont (- (glgui-width-get) 65 6) 6 65 32 "YES" text_20.fnt
      (lambda (g . x)
        ;; Save the RR to the store
        (if rrate:store (store-set! rrate:store "RR" (glgui-widget-get rrate:cont rrate:value 'label)))
@@ -737,7 +737,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:yesbutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
      
-   (set! rrate:exitbutton (local-dynamic-button rrate:cont (- (glgui-width-get) 120 6) 6 120 32 "EXIT" text_20.fnt
+   (set! rrate:exitbutton (glgui-button-local rrate:cont (- (glgui-width-get) 120 6) 6 120 32 "EXIT" text_20.fnt
      (lambda (g . x)
        ;; Prepare for next time
        (rrate-reset)   
@@ -771,8 +771,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    ;; Circle, head and bubble
    (set! rrate:toplayer (glgui-pixmap rrate:cont x (+ y 43) top_layer.img))
-   (set! rrate:toplayer_rrate (local-dynamic-label rrate:cont (+ x 5) (+ y 362) 100 40 "RRATE" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNTOP))
-   (set! rrate:toplayer_unit (local-dynamic-label rrate:cont (+ x 5) (+ y 295) 105 40 "RRATE_UNIT" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
+   (set! rrate:toplayer_rrate (glgui-label-local rrate:cont (+ x 5) (+ y 362) 100 40 "RRATE" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNTOP))
+   (set! rrate:toplayer_unit (glgui-label-local rrate:cont (+ x 5) (+ y 295) 105 40 "RRATE_UNIT" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
    (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #t))
      (list rrate:toplayer rrate:toplayer_rrate rrate:toplayer_unit))
   
@@ -789,7 +789,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:value 'hidden #t)
 
    ;; Message about synchronizing the animation
-   (set! rrate:tapmessage (local-dynamic-label rrate:cont 2 105 75 55 "TAP_TO_SYNC" text_11.fnt White GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
+   (set! rrate:tapmessage (glgui-label-local rrate:cont 2 105 75 55 "TAP_TO_SYNC" text_11.fnt White GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
    (glgui-widget-set! rrate:cont rrate:tapmessage 'color Black)
    (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden #t)
 
@@ -797,9 +797,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:qualitybg (glgui-pixmap rrate:cont 0 53 quality_lines.img))
    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden #t)
    (let ((x (- (glgui-width-get) 128)) (w 125) (h 20))
-     (set! rrate:qualitybg_high (local-dynamic-label rrate:cont x 87 w h "FAST" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
-     (set! rrate:qualitybg_consistent (local-dynamic-label rrate:cont x 69 w h "CONSISTENT" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
-     (set! rrate:qualitybg_low (local-dynamic-label rrate:cont x 50 w h "SLOW" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
+     (set! rrate:qualitybg_high (glgui-label-local rrate:cont x 87 w h "FAST" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
+     (set! rrate:qualitybg_consistent (glgui-label-local rrate:cont x 69 w h "CONSISTENT" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
+     (set! rrate:qualitybg_low (glgui-label-local rrate:cont x 50 w h "SLOW" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
    )
    (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #t))
      (list rrate:qualitybg_high rrate:qualitybg_consistent rrate:qualitybg_low))
@@ -821,7 +821,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:trigger 'hidden #t)
      
    ;; Tap button
-   (set! rrate:tapbutton (local-dynamic-button rrate:cont 3 165 (- w 6) (- h 165) "TAP_INHALATION" text_40.fnt
+   (set! rrate:tapbutton (glgui-button-local rrate:cont 3 165 (- w 6) (- h 165) "TAP_INHALATION" text_40.fnt
      (lambda (g wgt . x)
        (rrate:tapcb g wgt)
      )
@@ -838,15 +838,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:bg 'modal #t)
 
    ;; Error messages about respiratory rate
-   (set! rrate:popup:inconsistent (local-dynamic-label rrate:popup:cont 40 166 240 50
+   (set! rrate:popup:inconsistent (glgui-label-local rrate:popup:cont 40 166 240 50
      "TAPS_INCONSISTENT" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'modal #t)
-   (set! rrate:popup:notenough (local-dynamic-label rrate:popup:cont 40 166 240 50
+   (set! rrate:popup:notenough (glgui-label-local rrate:popup:cont 40 166 240 50
       "NOT_ENOUGH_TAPS" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'modal #t)
-   (set! rrate:popup:toofast (local-dynamic-label rrate:popup:cont 40 166 240 50
+   (set! rrate:popup:toofast (glgui-label-local rrate:popup:cont 40 166 240 50
      "TAPS_TOO_FAST" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
@@ -854,7 +854,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Popup buttons
 
    ;; Make retry button with the same callback as the no button
-   (set! rrate:popup:retrybutton (local-dynamic-button rrate:popup:cont 43 125 109 32 "RETRY" text_20.fnt
+   (set! rrate:popup:retrybutton (glgui-button-local rrate:popup:cont 43 125 109 32 "RETRY" text_20.fnt
      (lambda (g wgt . x) 
        (rrate:hide-popup)
        ;; Reset trend text colour
@@ -871,7 +871,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'modal #t)
      
    ;; Make Ignore button for rejecting retry, use same callback as Yes button for matching animation
-   (set! rrate:popup:ignorebutton (local-dynamic-button rrate:popup:cont 159 125 109 32 "IGNORE" text_20.fnt
+   (set! rrate:popup:ignorebutton (glgui-button-local rrate:popup:cont 159 125 109 32 "IGNORE" text_20.fnt
      (lambda (g wgt . x)
        ;; Exit modal mode and go to animation
        (rrate:hide-popup)
