@@ -334,6 +334,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (lambda (t x y) 
      (orientation-event t x y GUI_PORTRAIT GUI_UPSIDEDOWN)
     (if hook:onevent (hook:onevent))
+    (if (= t EVENT_BATTERY) (store-set! store "BATTERY" x))
     (scheduler-iterate (lambda ()
       (if devplatform? (autoload))
       (if hook:onscheduler (hook:onscheduler))))
