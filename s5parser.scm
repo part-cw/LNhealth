@@ -682,14 +682,12 @@
             )))
          (store-set! s "gotwaveforms?" #t "s5")
          (store-waveform-append s wavename wavedata)
-         (store-waveform-scale s wavename '(0 0 0 0)) ;; This is actually not doing anything 
        )
        (begin
          (if (and wavename (> wavelen 0) (not wavevalid)) (s5parser:log 1 "s5parser: invalid waveform data: [" buf "]" ))
          (if (and wavename (or (fx= type 1) (fx= type 8) (fx= type 9)) (fx> wavelen 0)) (begin
 ;;         (if (and wavename (> wavelen 0)) (begin
            (store-waveform-append s wavename (make-f32vector wavelen))
-           (store-waveform-scale s wavename '(0 0 0 0))
          ))
        ))
      (loop (cdr srs))))))
