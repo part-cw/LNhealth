@@ -63,8 +63,8 @@
 ;; Draw a log-list element with data from the entry field
 (define (log-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 16) 2)) 70 16 (seconds->string (car entry) "%T") ascii_16.fnt White)  
-    (glgui:draw-text-left (+ x 75) (+ y (/ (- h 24) 2)) (- w 90) 24 (cadr entry) ascii_24.fnt White)  
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 16) 2)) 70 16 (seconds->string (car entry) "%T") ascii_16.fnt White)
+    (glgui:draw-text-left (+ x 75) (+ y (/ (- h 24) 2)) (- w 90) 24 (cadr entry) ascii_24.fnt White)
   )
 )
 
@@ -76,7 +76,7 @@
   (set! gui:trends (make-glgui))
   ;; Positions of the trend numbers
   (set! hr_value (glgui-valuelabel gui:trends (+ 5 400 70) (- (glgui-height-get) 115 (* 90 0))
-    label_hr.img ascii_40.fnt Green))  
+    label_hr.img ascii_40.fnt Green))
   (set! map_value (glgui-valuelabel gui:trends (+ 5 400 70) (- (glgui-height-get) 115 (* 90 1))
     label_map.img ascii_40.fnt Red))
   (set! mac_value (glgui-valuelabel gui:trends (+ 5 400 75) (- (glgui-height-get) 115 (* 90 2))
@@ -194,7 +194,7 @@
             (art-hr-val (store-timedref store "p1_hr"))
             (nibp-map-val (store-timedref store "nibp_mean")))
         (glgui-widget-set! gui:trends map_value 'label
-          (if (and art-hr-val art-map-val) 
+          (if (and art-hr-val art-map-val)
             (number->string (fix art-map-val))
             (if nibp-map-val (number->string (fix nibp-map-val)) "")
           ))
@@ -218,19 +218,6 @@
   )
 )
 
-(define (detect-mac-usb-serial)
-  (let loop ((files (directory-files "/dev")))
-    (if (fx= (length files) 0)
-      ""
-      (let ((file (car files)))
-        (if (and (fx> (string-length file) 14)
-                 (string=? (substring file 0 14) "tty.usbserial-"))
-          (string-append "/dev/" file)
-          (loop (cdr files))
-        ))
-    )
-  ))
-
 ;; -----------------------------------------------------------------------------
 ;;  MAIN PROGRAM
 ;; -----------------------------------------------------------------------------
@@ -238,18 +225,18 @@
 ;; initialization
   (lambda (w h)
     (if (or (string=? (system-platform) "macosx")
-            (string=? (system-platform) "linux") 
+            (string=? (system-platform) "linux")
             (string=? (system-platform) "win32")) (make-window 1000 475))
     (glgui-orientation-set! GUI_LANDSCAPE)
     ;; Initialize the gui and the monitor connection
     (set! store (make-store "main"))
     (init-gui-main)
-    (init-gui-trends)    
+    (init-gui-trends)
 
     ;; Initialize the datex monitor plugin
-    (make-instance store "S5monitor" "monitor" `("Port" ,(cond 
-      ((string=? (system-platform) "linux") "/dev/ttyUSB0")
-      ((string=? (system-platform) "macosx") (detect-mac-usb-serial))
+    (make-instance store "S5monitor" "monitor" `("Port" ,(cond
+      ((string=? (system-platform) "linux") (detect-usb-serial))
+      ((string=? (system-platform) "macosx") (detect-usb-serial))
       ((string=? (system-platform) "win32") "COM1")
       (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
     ;; Initialize the CardioQ monitor plugin
@@ -277,13 +264,13 @@
     (scheduler-startcase store (time->timestamp (current-time)))
   )
 ;; events
-  (lambda (t x y) 
+  (lambda (t x y)
     (update-trends store)
     (update-values store)
     (if (= t EVENT_KEYPRESS) (begin
       (cond
-        ((= x EVENT_KEYESCAPE) 
-          (if quit-armed 
+        ((= x EVENT_KEYESCAPE)
+          (if quit-armed
             (terminate)
             (begin
               (set! quit-armed #t)
@@ -326,7 +313,7 @@
     (scheduler-iterate)
   )
 ;; termination
-  (lambda () 
+  (lambda ()
     (scheduler-cleanup)
     #t
   )
