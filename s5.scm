@@ -35,7 +35,7 @@
   (let ((mlen (u8vector-length msg)))
     (let loop ((i 0)(t 0))
       (if (fx= i mlen) t ;;(u8vector t)
-        (loop (fx+ i 1) (bitwise-and 
+        (loop (fx+ i 1) (bitwise-and
           (fx+ t (u8vector-ref msg i)) #xff))))))
 
 ;; return the senders checksum
@@ -74,7 +74,7 @@
       (if err (set! s5:error #t)
         (if (fx> (length m) 0) (begin
           (serial-writechar dev (car m))
-          (loop (cdr m) (if (or (serial-error) 
+          (loop (cdr m) (if (or (serial-error)
              (serial-timeout)) #t #f))))))))
 
 ;; ----------
@@ -87,29 +87,30 @@
        (let* ((devname (instance-refvar store instance "Port" #f))
           (baudrate 19200) (databits 8) (parity 2) (stopbits 1)
           (newdev (serial-try devname baudrate databits parity stopbits #f)))
-          (if newdev (begin 
+          (if newdev (begin
             (instance-setvar! store instance "Device" newdev) 1) 0)))
-      ((fx= runlevel 1) 
+      ((fx= runlevel 1)
          ;; ask for trends
          ;;(instance-setvar! store instance "Update" .01)
          (store-clear! store "gotwaveforms?")
-         (s5:send dev (u8vector #x31 
+         (s5:send dev (u8vector #x31
               0 0 0 0 0
-              0 0 0 0 0 
-              0 0 0 0 0 
+              0 0 0 0 0
+              0 0 0 0 0
               0 0 0 0 0 #xff
               0 0 0 0 0 0
               0 0 0 0 0 0
-              0 0 0 0 0 0 1 
+              0 0 0 0 0 0 1
               5 0   ;; interval in seconds
-              #x0e 0 0 0 0 0)) 
-            (s5:log 2 "runlevel 1")
-          2)
+              #x0e 0 0 0 0 0))
+         (serial-flush dev)
+         (serial-cache-setup dev #x7e #x7e)
+         (s5:log 2 "runlevel 1")
+         2)
       ((fx= runlevel 2)
-         (if (instance-refvar store instance "Waveforms" #f) 
+         (if (instance-refvar store instance "Waveforms" #f)
            (instance-setvar! store instance "Update" 0.05)
            (instance-setvar! store instance "Update" 1.0))
-         (serial-cache-setup dev #x7e #x7e)
          (s5:recv store dev)
          (s5:log 2 "runlevel 3 error=" s5:error)
          (if (not (store-timedrefsec store "timestamp" 300)) (begin
@@ -117,7 +118,7 @@
            (store-set! store "MonitorAlarm" (list 0 "Not connected - check cable?" "Monitor"))
            (store-set! store "timestamp" 0. "s5")
          ))
-         (if (and (not s5:error) s5:data) (begin 
+         (if (and (not s5:error) s5:data) (begin
            (instance-setvar! store instance "LastGood" ##now)
            (s5:log 1 "connect")
            (store-event-add store 0 "Connect" instance)
@@ -131,10 +132,10 @@
   (let ((runlevel (instance-refvar store instance "RunLevel" 0))
         (dev      (instance-refvar store instance "Device" #f)) )
   (if (fx= runlevel 16) (begin
-    (let loop () 
-      (s5:recv store dev) 
+    (let loop ()
+      (s5:recv store dev)
       (if (or s5:error (not s5:data))
-        ;; we failed 
+        ;; we failed
         (let ((lastgood (instance-refvar store instance "LastGood" 0.)))
           (if (> (- ##now lastgood) 15) (begin
               ;; prevent audible alarms outside of case
@@ -146,15 +147,15 @@
               ;; See if we can get a new monitor connect?
               (instance-setvar! store instance "RunLevel" 0)
             )))
-       ;; we are good 
-       (begin 
+       ;; we are good
+       (begin
          (instance-setvar! store instance "LastGood" ##now)
          (s5parser store s5:data)
 
          ;; 20130227: repeating waveform request
          (let ((wneeded (instance-refvar store instance "Waveforms" #f))
                (wpresent (store-ref store "gotwaveforms?"))
-               (wlast (instance-refvar store instance "LastWaveformRequest" 0.))) 
+               (wlast (instance-refvar store instance "LastWaveformRequest" 0.)))
            (if (and wneeded (not wpresent) (fl> (fl- ##now wlast) 10.)) (begin
              (s5:log 2 "sending waveform request")
              (let ((req (u8vector
@@ -214,7 +215,7 @@
     ))))
 
 (define (s5-close store instance)
-  (let ((dev      (instance-refvar store instance "Device" #f)))  
+  (let ((dev      (instance-refvar store instance "Device" #f)))
     (s5:log 2 "close")
     (if dev (begin (serial-close dev)
        (instance-setvar!  store instance "Device" #f)))))
