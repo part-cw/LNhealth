@@ -103,7 +103,6 @@
               0 0 0 0 0 0 1
               5 0   ;; interval in seconds
               #x0e 0 0 0 0 0))
-         (serial-flush dev)
          (serial-cache-setup dev #x7e #x7e)
          (s5:log 2 "runlevel 1")
          2)
