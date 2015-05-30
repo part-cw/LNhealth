@@ -6,6 +6,7 @@
 
 (define s5:error #f)
 (define s5:data #f)
+(define s5:retry 0)
 
 (define (s5:decodemsg ibuf)
   (let ((buflen (u8vector-length ibuf)))
@@ -88,7 +89,10 @@
           (baudrate 19200) (databits 8) (parity 2) (stopbits 1)
           (newdev (serial-try devname baudrate databits parity stopbits #f)))
           (if newdev (begin
-            (instance-setvar! store instance "Device" newdev) 1) 0)))
+            (serial-flush newdev)
+            (set! s5:retry 0)
+            (instance-setvar! store instance "Device" newdev)
+            1) 0)))
       ((fx= runlevel 1)
          ;; ask for trends
          ;;(instance-setvar! store instance "Update" .01)
@@ -107,6 +111,7 @@
          (s5:log 2 "runlevel 1")
          2)
       ((fx= runlevel 2)
+         (set! s5:retry (fx+ s5:retry 1))
          (if (instance-refvar store instance "Waveforms" #f)
            (instance-setvar! store instance "Update" 0.05)
            (instance-setvar! store instance "Update" 1.0))
@@ -124,7 +129,7 @@
            (store-set! store "MonitorAlarm" '(0 "Connect" "Monitor"))
            16) (begin
            ;; try to purge any fragmented data
-           (s5:recv store dev) 0)))
+           (s5:recv store dev) (if (> s5:retry 3) 0 1))))
       )))
 
 (define (s5-run store instance)
