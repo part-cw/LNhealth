@@ -25,6 +25,27 @@
                      (s (caddr row)))
                 (/ (- (expt (/ weight m) l) 1) (* l s)))))
   
+  ;; Format the age to X year(s), Y month(s)
+  (format-age ,(lambda (age)
+                 (let* ((agefl0 (fix age))
+                        (agefl (if (> (- age agefl0) 0.958) (+ agefl0 1) agefl0))
+                        (ageyears (number->string agefl))
+                        (ageyearsstr (cond
+                                       ((string=? ageyears "0") "")
+                                       ((string=? ageyears "1") "1 year")
+                                       (else (string-append ageyears " years"))))
+                        (agemonths (number->string (fix (round (* (max (- age agefl) 0.) 12)))))
+                        (agemonthsstr (cond
+                                        ((string=? agemonths "0") "")
+                                        ((string=? agemonths "1") "1 month")
+                                        (else (string-append agemonths " months")))))
+                    (string-append ageyearsstr
+                                   (if (or (fx= (string-length agemonthsstr) 0)
+                                           (fx= (string-length ageyearsstr) 0))
+                                     ""
+                                     ", ")
+                                  agemonthsstr))))
+  
   ;; Save the child data
   (save-child ,(lambda ()
                  (let* ((childid (dbget 'childid "dummy"))
@@ -134,7 +155,14 @@
   (classify-factor ,(lambda (threshvar value str)
                       (let ((thresholds (uiget threshvar)))
                         (cond
-                          ((or (not value) (<= value (cadr thresholds)))
+                          ((not value)
+                            ;; Add item to the end of the string
+                            (uiset 'missingrisk
+                              (let ((missing (uiget 'missingrisk)))
+                                (if (fx= (string-length missing) 0)
+                                  str
+                                  (string-append missing ", " str)))))
+                          ((<= value (cadr thresholds))
                             (uiset 'highrisk (append (uiget 'highrisk) (list str))))
                           ((< value (cadddr thresholds))
                             (uiset 'moderaterisk (append (uiget 'moderaterisk) (list str))))
@@ -146,6 +174,7 @@
                          (uiset 'littlerisk '())
                          (uiset 'moderaterisk '())
                          (uiset 'highrisk '())
+                         (uiset 'missingrisk "")
                          
                          (let* ((hosp (dbget 'lasthosp #f))
                                 (hospnum (if hosp (+ (list-pos (uiget 'hosp_options '()) hosp) 1) #f))
@@ -156,26 +185,30 @@
                          
                          (let* ((muac (sxrun 'getnotemptystring 'muac))
                                 (muacnum (if muac (string->number muac) #f))
-                                (muacstr (string-append "Mid-upper arm circumference: " (if muac (string-append muac " mm") "Missing"))))
+                                (muacstr (string-append "Mid-upper arm circumference" (if muac (string-append ": " muac " mm") ""))))
                            (sxrun 'classify-factor 'muac_thresholds muacnum muacstr))
                                 
                          (let* ((z (dbget 'zscore #f))
-                                (zstr (string-append "Weight for age z-score: " (if z (sxrun 'float->stringz z 1) "Missing"))))
+                                (zstr (string-append "Weight for age z-score" (if z (string-append ": " (sxrun 'float->stringz z 1)) ""))))
                            (sxrun 'classify-factor 'waz_thresholds z zstr))
                          
                          (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
                                 (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
                                 (spnum (if sp (string->number sp) #f))
-                                (spstr (string-append "SpO2: " (if sp (string-append sp " %") "Missing"))))
+                                (spstr (string-append "SpO2" (if sp (string-append ": " sp " %") ""))))
                            (sxrun 'classify-factor 'spo2_thresholds spnum spstr))
                                 
                          (let* ((bcs (dbget 'comascore #f))
-                                (bscstr (string-append "Blantyre coma score: " (if bcs (number->string bcs) ""))))
+                                (bscstr (string-append "Blantyre coma score" (if bcs (string-append ": " (number->string bcs)) ""))))
                            (sxrun 'classify-factor 'bcs_thresholds bcs bscstr))
                            
                          (let* ((hiv (dbget 'hiv #f))
-                                (hivnum (if (string=? hiv "Positive") 0 (if (string=? hiv "Negative") 1 #f)))
-                                (hivstr (string-append "HIV status: " (if hiv hiv "Missing"))))
+                                (hivnum (cond
+                                          ((not (string? hiv)) #f)
+                                          ((string=? hiv "Positive") 0)
+                                          ((string=? hiv "Negative") 1)
+                                          (else #f)))
+                                (hivstr (string-append "HIV status" (if hiv (string-append ": " hiv) ""))))
                            (sxrun 'classify-factor 'hiv_thresholds hivnum hivstr))))
   
   ;; Load an image file to use within a custom widget
@@ -243,7 +276,7 @@
     (uiset 'months (list "January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"))
                
     ;; Options for time since last hospitalization
-    (uiset 'hosp_options (list "Less than 7 days ago" "7 to 30 days ago" "30 days to 1 year ago" "more than 1 year ago" "Never"))
+    (uiset 'hosp_options (list "Less than 7 DAYS ago" "7 to 30 DAYS ago" "30 DAYS to 1 YEAR ago" "more than 1 YEAR ago" "Never"))
                
     ;; Lists of options for Blantyre coma scale
     (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow "))
@@ -386,7 +419,7 @@
 ;; LOGIN
 
  (main
-  "PARA\nPAediatric Risk Assessment"
+  logo.png
   #f
   #f
   (spacer height 20)
@@ -511,14 +544,12 @@
                           'demog)))
                   (list "Enter an ID for the Child." (list "OK" #f))))))
    (spacer height 34)
-   (label text "Please enter an ID for this child")
-   (spacer height 10)
-   (textentry id childid keypad numint)
+   (textentry id childid text "Enter Child ID:" indent 0.35 keypad numint)
    (spacer height 55)
-   (box yofs 42 h 101)
+   (box yofs 42 h 74)
    (textentry id last name #t text "Surname:")
    (spacer height 20)
-   (textentry id first name #t text "Other Name:")
+   (textentry id first name #t text "First Name:")
    (spacer)
    (box yofs 10 h 157)
    (spacer height 50)
@@ -553,12 +584,14 @@
    ,(lambda ()
        (let ((register (dbget 'register '())))
           (if (= (length register) 0)
-            '(label text "None")
+            '(label text "No records to load")
             `(list id editname entries ,register))
        ))
    (spacer)
    (box yofs 10 h ,(lambda () (let ((register (dbget 'register '())))
                                 (if (= (length register) 0) 86 (+ 60 (* 48 (length register)))))))
+   (spacer height 40)
+   (button h 75 size header indent 0.05 rounded #t text "Add New Child" action ,(lambda () 'newchild))
    (spacer height 10)
  )
   
@@ -585,7 +618,7 @@
 ;;   (box left #t yofs 62 h 43)
    (textentry id last name #t text "Surname:")
    (spacer height 20)
-   (textentry id first name #t text "Other Name:")
+   (textentry id first name #t text "First Name:")
    (spacer)
    (box yofs 10 h 157)
  )
@@ -670,7 +703,7 @@
                                            "Invalid - Too Young")
                                          (begin
                                            (dbset 'age age)
-                                           (string-append (float->string age 1) " years"))))
+                                           (sxrun 'format-age age))))
                                      (begin
                                        (dbset 'age #f)
                                        "Invalid - Fix Current Date")))
@@ -742,19 +775,19 @@
                   (if (not returnvalue)
                     (if (and z (or (< z -4.0) (> z 3.0)))
                       (let ((gender (if (string=? (dbget 'sex) "1") "Male" "Female"))
-                            (age (float->string (dbget 'age) 1)))
+                            (age (sxrun 'format-age (dbget 'age))))
                         (set! returnvalue (list (string-append "The weight for age score is outside the acceptable range of -4 to +3. "
-                                                               "Please confirm child is a " age " year old " gender " with weight " weight " kg.")
+                                                               "Please confirm child is a " age " old " gender " with weight " weight " kg.")
                                                 (list "Yes" completeproc) (list "No" #f))))))
                  
                  ;; Return return value or run complete procedure
                  (if returnvalue returnvalue (completeproc)))))
                 
    (spacer height 32)
-   (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg")
+   (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg" units "kg")
    (spacer height 31)
 ;;   (box left #t yofs 71 h 76)
-   (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm")
+   (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm" units "mm")
 ;;   (box right #t yofs 169 h 77)
    (spacer height 49)
    (label size small text "Calculated weight for age z-score")
@@ -801,7 +834,7 @@
                                                                                                                                         (uiset 'origgui gui)
                                                                                                                                         #f))))))))
    (spacer height 70)
-   (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%")
+   (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%" units "%")
    (spacer)
  )
    
@@ -941,7 +974,7 @@
                       (cond
                         ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
                         ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
-                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" 'summary) (list "Fix" #f))))))
+                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" (begin (sxrun 'make-summary-items) 'summary)) (list "Fix" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
    (spacer height 50)
    (label size small text "Blantyre coma scale")
@@ -1015,7 +1048,7 @@
             (a (dbget 'age #f))
             (w (dbget 'weight #f)))
      (string-append (if sexstr sexstr)
-                    (if a (string-append (if sexstr ", " "") (float->string a 1) " years old") "")
+                    (if a (string-append (if sexstr ", " "") (sxrun 'format-age a) " old") "")
                     (if w (string-append (if (or a sexstr) ", " "") w " kg") "")))))
    (spacer height 15)
    (label size small align center text "Risk Factors:")
@@ -1082,7 +1115,7 @@
         (if (fx= lmr 0)
           '(spacer height 0)
           (let ((bh (+ 55 (* 36 lmr))))
-            `(box yofs 0 h ,bh border ,Orange)))))
+            `(box yofs 0 h ,bh border ,Yellow)))))
    ,(lambda ()
       (if (fx= (length (uiget 'littlerisk)) 0)
         '(spacer height 0)
@@ -1115,6 +1148,16 @@
           '(spacer height 0)
           (let ((bh (+ 55 (* 36 llr))))
             `(box yofs 0 h ,bh border ,Green)))))
+   ,(lambda ()
+      (if (fx= (string-length (uiget 'missingrisk)) 0)
+        '(spacer height 0)
+        '(spacer height 38)))
+   ,(lambda ()
+      (let ((mr (uiget 'missingrisk)))
+        (if (fx> (string-length mr) 0)
+          (let ((str (string-append "Missing: " mr)))
+            `(label align center text ,str))
+          '(spacer height 0))))
    (spacer height 38)
    (button h 75 size header indent 0.05 rounded #t text "Calculate Mortality Risk" action
       ,(lambda ()
