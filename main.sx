@@ -252,6 +252,7 @@
     (rtaudio-start 96000 1.0)
     (spo2spot-init 0 80 (glgui-width-get) (- (glgui-height-get) 80) store)
     (spo2-set-length 30)
+    (spo2-set-quality-length 15)
                
     (if (string=? (system-platform) "android")
        (make-instance store "Oximeter" "oximeter" '("Port" "/dev/ttyUSB0")))
@@ -749,6 +750,7 @@
                                             (begin
                                               (uiset 'origgui gui)
                                               (set! gui (list gui spo2spot:gui))
+                                              (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                                               'pulseox)
                                             ;; Missing one or the other
                                             (list
@@ -759,6 +761,7 @@
                                                (list "Continue" (lambda ()
                                                                   (uiset 'origgui gui)
                                                                   (set! gui (list gui spo2spot:gui))
+                                                                  (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                                                                   'pulseox))
                                                (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
                   ;; Check for out of range values
@@ -814,6 +817,7 @@
    ("Back" ,(lambda ()
               (uiset 'origgui gui)
               (set! gui (list gui spo2spot:gui))
+              (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
               'pulseox))
    ("Next" ,(lambda ()
               (sxrun 'save-child)
@@ -851,9 +855,7 @@
                 (begin
                   (set! gui (uiget 'origgui gui))
                   (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
-                                                                     (scheduler-endcase store)
-                                                                     (spo2spot:progress-clear)
-                                                                     (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                                                                     (spo2spot-stop-recording)
                                                                      (uiset 'invalidspo2 #t)
                                                                      (sxrun 'save-child)
                                                                      'anthro))
@@ -912,9 +914,7 @@
                   (begin
                     (set! gui (uiget 'origgui gui))
                     (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
-                                                                       (scheduler-endcase store)
-                                                                       (spo2spot:progress-clear)
-                                                                       (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                                                                       (spo2spot-stop-recording)
                                                                        (uiset 'invalidspo2 #t)
                                                                        (exitproc)))
                                                          (list "No" (lambda ()
@@ -953,6 +953,7 @@
                 (begin
                   (uiset 'origgui gui)
                   (set! gui (list gui spo2spot:gui))
+                  (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                   'pulseox)
                 'spo2)))
    ("Next" ,(lambda ()
