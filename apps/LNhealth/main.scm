@@ -329,6 +329,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       )
 
       (scheduler-init)
+      (audiofile-init)
   ))
 ;; events
   (lambda (t x y) 
