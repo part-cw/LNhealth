@@ -1,262 +1,39 @@
 ;; belly breath johnny in the hot air!
-;; Christian Leth Petersen 2012, 2014
+;; Christian Leth Petersen 2012, 2014, 2015
 
 (c-declare  #<<end-of-c-declare
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
+
+#include "LNCONFIG.h"
 
 void rtaudio_register(void (*)(int), void (*)(float), void (*)(float*,float*));
 
+double t_input=0;
+double t_output=0;
+
 double srate=0;
+double orate=800.;
 
-double belly_idx=0;
-static FILE *fd=0;
-
-static void start_recording(char *filename)
-{
-  belly_idx=0;
-  fd=fopen(filename,"w");
-}
-
-static void stop_recording()
-{
-  FILE *tmp = fd;
-  fd=0; 
-  if (tmp) fclose(tmp);
-}
-
-#define OFREQ 800.
-
-#define BUFSIZE 200
-static double buf[8000*BUFSIZE];
-int bufidx=0;
-
-struct ma_filter {
-  int n, idx;
-  double *x,*y;
-  double sx, sy, sxx, syy, sxy;
-  double min,max;
-  int count;
-  int useminmax;
-};
-
-void ma_init(struct ma_filter *f, int n, int useminmax)
-{
-  f->n = n; f->idx = 0;
-  f->y = (double *)malloc(n*sizeof(double));
-  f->x = (double *)malloc(n*sizeof(double));
-  f->count=0;
-  f->min=f->max=0;
-  f->useminmax=useminmax;
-  f->sx=f->sy=f->sxy=f->sxx=f->syy=0;
-}
-
-void ma_input(struct ma_filter *f, double y)
-{
-  double x = (double)f->count;
-  double y_old=(f->count<f->n?0:f->y[f->idx]);
-  double x_old=(f->count<f->n?0:f->x[f->idx]);
-
-  f->y[f->idx]=y;
-  f->x[f->idx]=x;
-
-  if (f->count>=f->n) {
-    f->sy-=y_old;
-    f->syy-=y_old*y_old;
-    f->sx-=x_old;
-    f->sxx-=x_old*x_old;
-    f->sxy-=x_old*y_old;
-  }
-
-  f->sx+=x;
-  f->sxx+=x*x;
-  f->sy+=y;
-  f->syy+=y*y;
-  f->sxy+=x*y;
-
-  f->idx++; if (f->idx==f->n) f->idx=0;
-  f->count++;
-  if (f->useminmax) {
-    if (y_old==f->min||y_old==f->max) {
-      f->min=f->max=y;
-      int i;
-      for (i=0;i<(f->count<f->n?f->count:f->n);i++) {
-        if (f->y[i]<f->min) f->min=f->y[i];
-        if (f->y[i]>f->max) f->max=f->y[i];
-      }
-    } else {
-      if (y<f->min) f->min=y;
-      if (y>f->max) f->max=y;
-    }
-  }
-}
-
-double ma_avg(struct ma_filter *f)
-{
-  if (f->count==0) return 0;
-  return (f->sy/(double)(f->count<f->n?f->count:f->n));
-}
-
-double ma_avg2(struct ma_filter *f)
-{
-  if (f->count==0) return 0;
-  return (f->syy/(double)(f->count<f->n?f->count:f->n));
-}
-
-double ma_var(struct ma_filter *f)
-{
-  if (f->count==0) return 0;
-  double avg = ma_avg(f);
-  double avg2 = ma_avg2(f);
-  return avg2-avg*avg;
-}
-
-double ma_std(struct ma_filter *f)
-{
-  if (f->count==0) return 0;
-  return sqrt(ma_var(f));
-}
-
-double hrv_alpha = 2./(10.+1.);
-struct ma_filter hrv;
-double hrv_val = 0;
-
-void my_realtime_init(int samplerate) { 
-  srate=(double)samplerate; 
-  ma_init(&hrv,5,0);
-}
-
-double phasefilter(double v)
-{
-  static double pf[8000];
-  double pf_alpha = 2. / (100 + 1.);
-  static int idx = 0;
-  int stride = (int)(8000./OFREQ+0.5);
-  if (idx>=stride) idx=0;
-  if (!pf[idx]) pf[idx]=v; else pf[idx] = pf_alpha * v + (1.-pf_alpha)*pf[idx];
-  double res=pf[idx];
-  idx++;
-  return res;
-}
-
-double hr=0;
-int my_state=1;
-double hr_t=0;
-
-void my_hr(double v, double t)
-{
-  static double hr_pos, hr_neg;
-  double threshold=1e-3;
-  static double prv_v=0, prv_f=0.5, prv_t_pos=0, prv_t_neg, f=0.5;
-  if (!prv_v) prv_v=v;
-  if (v>prv_v) f = 0.5*(f+1); else f = 0.5*f;
-  if (f<0.6&&prv_f>1.-threshold) {
-    double newhr;
-    if (prv_t_pos) { hr_pos = 60./(t-prv_t_pos); }
-    prv_t_pos=t;
-  }
-  if (f>0.4&&prv_f<threshold) {
-    if (prv_t_neg) { 
-      hr_neg = 60./(t-prv_t_neg); 
-      if (hr_neg>30&&hr_neg<250&&hr_pos>30&&hr_pos<250) {
-        double newhr = (hr_neg+hr_pos)/2.;
-        if (!hr||fabs(newhr-hr)<10) {
-          ma_input(&hrv,newhr);
-          double a = 100.*ma_std(&hrv)/ma_avg(&hrv); 
-          if (!hrv_val) hrv_val=a;
-            else hrv_val = hrv_alpha*a + (1-hrv_alpha)*hrv_val;
-          if (hrv_val>6) my_state = 0;
-            else if (hrv_val>3) my_state = 1;
-              else my_state = 2;
-          hr = newhr;
-          hr_t = t;
-        }
-      }
-    }
-    prv_t_neg=t;  
-  }
-  prv_v=v;
-  prv_f=f;
-}
-
-#define MAX(a,b) (a>b?a:b)
-#define MIN(a,b) (a<b?a:b)
-
-static double breath_factor=0;
-static double breath_cycle_t=0;
-
-void belly_hrv(double ppg_raw, double t)
-{
-  static double ppg=0;
-  static int needs_init=1;
-  static struct ma_filter ma;
-  if (needs_init) { ma_init(&ma,40,0); needs_init=0; } // 20
-  double alpha = 2/(20+1.);
-  double alpha2 = 2/(50+1.);
-  static double ppglp=0;
-  static double hr_neg=0, hr_pos=0;
-  static int arm_pos=0, arm_neg=0;
-  static double ppg_pos, ppg_pos_t=0, ppg_pos_t_prv=0;
-  static double ppg_neg, ppg_neg_t=0, ppg_neg_t_prv=0;
-  ppglp = alpha * ppg_raw + (1-alpha)*ppglp;
-  double tmp_ppg = ppg_raw - ppglp;
-  ppg = alpha2*tmp_ppg + (1-alpha2)*ppg;
-  if (ppg>0) {
-    if (arm_pos) {
-      ppg_pos=0;
-      if (ppg_pos_t_prv) {
-        hr_pos = 60/(ppg_pos_t-ppg_pos_t_prv);
-        ma_input(&ma, ppg_pos_t-ppg_pos_t_prv);
-      }
-      ppg_pos_t_prv=ppg_pos_t;
-      if (hr_pos>30&&hr_pos<250&&hr_neg>30&&hr_neg<250&&fabs(hr_pos-hr_neg)<10) {
-        double tmp = hr;
-        hr = (hr_pos + hr_neg)/2;
-        belly_idx+=(hr-tmp>0?1.:-1.)*breath_factor;
-        if (belly_idx<0) belly_idx=0;
-        hr_t = 0;
-      }
-      arm_pos=0;
-    }
-    if (ppg>ppg_pos) { ppg_pos=ppg; ppg_pos_t=t; }
-    arm_neg=1;
-  }
-  if (ppg<0) {
-    if (arm_neg) {
-      ppg_neg=0;
-      if (ppg_neg_t_prv) {
-        hr_neg = 60/(ppg_neg_t-ppg_neg_t_prv);
-        ma_input(&ma, ppg_neg_t-ppg_neg_t_prv);
-      }
-      ppg_neg_t_prv=ppg_neg_t;
-      arm_neg=0;
-    }
-    if (ppg<ppg_neg) { ppg_neg=ppg; ppg_neg_t=t; }
-    arm_pos=1;
-  }
-  if (hr) {
-    double tmp = 100.*ma_std(&ma)/ma_avg(&ma);
-    hrv_val = (tmp>20?5:tmp);
-    if (hrv_val>9) my_state = 0;
-      else if (hrv_val>4) my_state = 1;
-        else my_state = 2;
-  }
-}
+// -----------------------
+// breath cycle
 
 #define BREATH_IN	0 
 #define BREATH_HOLD	1
 #define BREATH_OUT	2
 
-static double breath_duration[3]={3.,3.,3.};
+//static double breath_duration[4]={2.,2.,4.};
+static double breath_duration[4]={3.,3.,4.};
 static int breath_state=BREATH_IN;
 static double breath_t=0;
+static double breath_cycle_t=0;
 
 static void update_breath(double t)
 {
   double delta = t-breath_cycle_t;
-  breath_factor=(delta>1.5&&delta<4.5?1:-1);
   if (t-breath_t>breath_duration[breath_state]) {
      breath_t=t;
      breath_state++;
@@ -264,79 +41,103 @@ static void update_breath(double t)
   }
 } 
 
-void my_realtime_input(float v) 
-{
-  static int n;
-  static double prv_t, prv_r, prv_r1;
-  static int arm=0;
-  static double t=0;
-  static double m1, m2, r1, ppg;
-  double s = sin(2*M_PI*OFREQ*t);
-  double c = cos(2*M_PI*OFREQ*t);
-  double alpha = 2. / ( 200. + 1. );
-  double alpha2 = 2. / ( 8000. + 1. );
-//  double alpha3 = 2. / ( 10. + 1. );
-  double alpha3 = 2. / ( 10. + 1. ); // 1000
-  // double vd = phasefilter((double)v);
-  double vd = (double)v;
-  if (!m1) m1=vd * s; else m1 = alpha*(vd * s)+(1-alpha)*m1;
-  if (!m2) m2=vd * c; else m2 = alpha*(vd * s)+(1-alpha)*m2;
-  double r = sqrt(m1*m1+m2*m2);
+// -----------------------
+// recording
 
-  if (!r1) r1=r; else r1 = alpha2*r+(1-alpha2)*r1;
-  if (r<prv_r) { 
-     if (arm>1) {
-        if (!ppg) ppg=prv_r-prv_r1; else ppg = alpha3*(prv_r-prv_r1)+(1-alpha3)*ppg;
-     } 
-     arm=0;
+#define RECLEN 120
+static char        *rec_name=0;
+static unsigned int rec_size=0;
+static float 	    *rec_buf=0;
+static unsigned int rec_idx=0;
+
+static void start_recording(char *filename)
+{
+  rec_size = (unsigned int)(RECLEN*srate*2);
+  rec_buf = (float *)malloc(rec_size*sizeof(float));
+  if (rec_buf) rec_name = strdup(filename);
+  rec_idx=0;
+  t_input = t_output = 0; 
+  breath_t = breath_cycle_t=0; breath_state=0;
+}
+
+static void stop_recording()
+{
+  if (rec_name) {
+    if (rec_idx>=rec_size/4) {
+      FILE *fd=fopen(rec_name,"wb");
+      fprintf(fd,"%s %s\n(RAW INPUT:FLOAT,BREATH STATE:FLOAT)\nSRATE=%06i\nORATE=%06i\n",
+        SYS_APPNAME, SYS_APPVERSION, (int)srate,(int)orate);
+      //fwrite(rec_buf,sizeof(float),rec_size,fd);
+      fwrite(rec_buf,sizeof(float),rec_idx,fd);
+      fclose(fd);
+    }
+    char *tmp = rec_name;
+    rec_name=0;
+    free(tmp);
+    free(rec_buf); 
+    rec_buf=0;
   }
-  if (r>prv_r) arm++;
-  if (++n>=100) {
-    if (fd) fprintf(fd,"%e %e %f %f %f %i\n",t,ppg,hr, hrv_val, belly_idx, breath_state);
-//    my_hr(ppg,t);
-    belly_hrv(ppg,t);
-    n=0;
+}
+
+// -----------------------
+// real time audio
+
+void my_realtime_init(int samplerate) { 
+  srate=(double)samplerate; 
+}
+
+double POWER=0;
+
+#define AMPL_HI 1
+#define AMPL_LO 2
+
+int ampl = AMPL_HI;
+
+void my_realtime_input(float v)
+{
+  if (rec_name&&rec_idx<rec_size) {
+    rec_buf[rec_idx]=v;
+    rec_buf[rec_idx+1]=(float)breath_state;
+    rec_idx+=2;
   }
-//  if (t-hr_t>3.) { my_state=1; hr=0; hrv_val=0; }
-  prv_r=r;
-  prv_t=t;
-  prv_r1=r1;
-  update_breath(t);
-  t+=1/srate;
+  double pwr = v*v;
+  if (pwr>POWER) POWER=pwr; else POWER=pwr*1./srate + POWER*(1-1./srate);
+  if (POWER<0.1) { ampl = AMPL_HI; }
+  if (POWER>0.9) { ampl = AMPL_LO; }
+  update_breath(t_input);
+  t_input+=1./srate;
 }
 
 void my_realtime_output(float *v1,float *v2)
 {
-  float buffer;
-  static double t=0;
-  buffer = (float)0.95*sin(2*M_PI*OFREQ*t);
-  if (buffer>0.5) {
-    *v1=buffer;
-    *v2=-buffer;
-  } else {
-    *v1=*v2=0;
-  }
-  t+=1/srate;
+  float buffer = (float)sin(2*M_PI*orate*t_output);
+  double a=(ampl==AMPL_HI?1:0.8);
+  *v1 = (buffer<0?a*0.95:a*0.70)*buffer; // red:ir
+  *v2 = -*v1;
+  t_output+=1./srate;
 }
 
 end-of-c-declare
 )
 
+;; @@
+
 (c-initialize "rtaudio_register(my_realtime_init,my_realtime_input,my_realtime_output);")
 
 (define (start-recording) ((c-lambda (char-string) void "start_recording")
-   (string-append (system-directory) (system-pathseparator) (time->string (current-time) "%y%m%d-%H%M%S") ".txt")))
+   (string-append (system-directory) (system-pathseparator) (time->string (current-time) "%y%m%d-%H%M%S") ".bin")))
 (define stop-recording (c-lambda () void "stop_recording"))
 
-(define DYNSTATE (c-lambda () int "___result = my_state;"))
-(define DYNHR (c-lambda () double "___result = hr;"))
-(define DYNHRV (c-lambda () double "___result = hrv_val;"))
+;;(define DYNSTATE (c-lambda () int "___result = my_state;"))
+;;(define DYNHR (c-lambda () double "___result = hr;"))
+;;(define DYNHRV (c-lambda () double "___result = hrv_val;"))
 (define DYNBREATH (c-lambda () int "___result = breath_state;"))
-(define DYNBELLY (c-lambda () double "___result = belly_idx;"))
+;;(define DYNBELLY (c-lambda () double "___result = belly_idx;"))
 
 (define BREATH_IN ((c-lambda () int "___result=BREATH_IN;")))
 (define BREATH_HOLD ((c-lambda () int "___result=BREATH_HOLD;")))
 (define BREATH_OUT ((c-lambda () int "___result=BREATH_OUT;")))
+;;(define BREATH_PAUSE ((c-lambda () int "___result=BREATH_PAUSE;")))
 
 (define GOING_UP 0)
 (define GOING_NOWHERE 1)
@@ -569,16 +370,19 @@ end-of-c-declare
     (glgui-button-string splash bx by bw bh "Start" measure_24.fnt (lambda (x . y) 
       (glgui-set! world 'yofs 0) 
       (set! menu-mode 'FEEDBACK)
+      (reset-time)
       (start-recording)))
     (set! by (- by (* 1.5 bh)))
     (glgui-button-string splash bx by bw bh "Trainer" measure_24.fnt (lambda (x . y) 
       (set! state GOING_NOWHERE)
       (glgui-set! world 'yofs 0)
       (set! menu-mode 'TEACH)
+      (reset-time)
       (start-recording)))
     (set! by (- by (* 1.5 bh)))
     (glgui-button-string splash bx by bw bh "Blank Recorder" measure_24.fnt (lambda (x . y) 
       (set! menu-mode 'MEASURE)
+      (reset-time)
       (start-recording)))
     (set! by (- by (* 1.5 bh)))
     (glgui-button-string splash bx by bw bh "Demo" measure_24.fnt (lambda (x . y) 
@@ -594,7 +398,8 @@ end-of-c-declare
 
 (define (make-height w h)
   (set! height (make-glgui))
-  (set! height-label (glgui-label height 0 0 w 64 "1m" height_64.fnt Black))
+  ;;(set! height-label (glgui-label height 0 0 w 64 "1m" height_64.fnt Black))
+  (set! height-label (glgui-label height 0 32 w 64 "1m" height_64.fnt Black))
   (glgui-widget-set! height height-label 'align GUI_ALIGNCENTER)
 )
 
@@ -620,12 +425,15 @@ end-of-c-declare
 )
 
 (define (update-measure)
+#|
   (let* ((mhr (DYNHR))
          (mhrstr (number->string (/ (fix (* 10. mhr)) 10.)))
          (mhrv (DYNBELLY))
          (mhrvstr (number->string (/ (fix (* 10. mhrv)) 10.))))
     (glgui-widget-set! measure measure-label 'label (string-append mhrstr " " mhrvstr))
- ))
+  )
+|# 
+  #t)
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; bubbles
@@ -710,7 +518,9 @@ end-of-c-declare
          (curstate (cond
            ((fx= dynstate BREATH_IN) 'IN)
            ((fx= dynstate BREATH_HOLD) 'HOLD)
-           ((fx= dynstate BREATH_OUT) 'OUT))))
+           ((fx= dynstate BREATH_OUT) 'OUT)
+         ;;   ((fx= dynstate BREATH_PAUSE) 'PAUSE)
+           )))
      (if (not (eq? prvstate curstate)) (begin
        (case prvstate ((OUT) (return-bubbles)) ((HOLD) (reset-bubbles)))
        (set! breath-state curstate)
@@ -750,37 +560,164 @@ end-of-c-declare
 ;; instructions
 
 (define instructions #f)
-(define instructions-label #f)
+;;(define instructions-label #f)
+(define instructions-breathe #f)
+(define instructions-breathe-fader 0.)
+(define instructions-hold #f)
+(define instructions-hold-fader 0.)
+(define instructions-blow #f)
+(define instructions-blow-fader 0.)
 
 (define (make-instructions w h)
   (set! instructions (make-glgui))
-  (set! instructions-label (glgui-label instructions 0 (* 0.8 h) w 64 "" height_64.fnt Black))
-  (glgui-widget-set! instructions instructions-label 'align GUI_ALIGNCENTER)
+ ;; (set! instructions-label (glgui-label instructions 0 (* 0.8 h) w 64 "" height_64.fnt Black))
+ ;; (glgui-widget-set! instructions instructions-label 'align GUI_ALIGNCENTER)
+  (set! instructions-breathe (glgui-label instructions 0 (* 0.8 h) w 64 "Breathe-2-3" height_64.fnt (color-fade Black 1.)))
+  (set! instructions-hold (glgui-label instructions 0 (* 0.8 h) w 64 "Hold-2-3" height_64.fnt (color-fade Black 1.)))
+  (set! instructions-blow (glgui-label instructions 0 (* 0.8 h) w 64 "Blow-2-3" height_64.fnt (color-fade Black 1.)))
+  (glgui-widget-set! instructions instructions-breathe 'align GUI_ALIGNCENTER)
+  (glgui-widget-set! instructions instructions-hold 'align GUI_ALIGNCENTER)
+  (glgui-widget-set! instructions instructions-blow 'align GUI_ALIGNCENTER)
 )
 
 (define (update-instructions)
+  (let ((factor 0.1)
+        (breathe-factor (if (eq? breath-state 'IN) 1. 0.))
+        (hold-factor    (if (eq? breath-state 'HOLD) 1. 0.))
+        (blow-factor    (if (eq? breath-state 'OUT) 1. 0.)))
+    (set! instructions-breathe-fader (+ (* factor breathe-factor) (* (- 1. factor) instructions-breathe-fader)))
+    (set! instructions-hold-fader    (+ (* factor hold-factor) (* (- 1. factor) instructions-hold-fader)))
+    (set! instructions-blow-fader    (+ (* factor blow-factor) (* (- 1. factor) instructions-blow-fader)))
+    (glgui-widget-set! instructions instructions-breathe 'color (color-fade Black instructions-breathe-fader))
+    (glgui-widget-set! instructions instructions-hold 'color (color-fade Black instructions-hold-fader))
+    (glgui-widget-set! instructions instructions-blow 'color (color-fade Black instructions-blow-fader))
+  ))
+
+#|
   (glgui-widget-set! instructions instructions-label 'label
     (case breath-state
       ((IN) "Breathe-2-3")
       ((HOLD) "Hold-2-3")
-      ((OUT) "Blow-2-3"))
+      ((OUT) "Blow-2-3")
+     ;; ((PAUSE) "")
     ))
+|#
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; touch element
 
-(define touch #f)
+(define touch-gui #f)
 
-(define (make-touch w h)
-  (set! touch (make-glgui))
-  (let ((wgt (glgui-box touch 0 0 w h (color-fade Red 0.5))))
-    (glgui-widget-set! touch wgt 'draw-handle #f)
-    (glgui-widget-set! touch wgt 'callback (lambda (x . y) 
+(define (make-touch-gui w h)
+  (set! touch-gui (make-glgui))
+  (let ((wgt (glgui-box touch-gui 0 0 w h (color-fade Red 0.5))))
+    (glgui-widget-set! touch-gui wgt 'draw-handle #f)
+    (glgui-widget-set! touch-gui wgt 'callback (lambda (x . y) 
        (stop-recording)
        (set! menu-mode 'MENU) 
        (glgui-set! world 'yofs 0)
+       (set! time-active #f)
        (set! state GOING_UP)))
   ))
+
+;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;; time element
+
+(define time-duration 120.)
+
+(define time-gui #f)
+(define time-bar #f)
+(define time-start 0.)
+(define time-x 0.)
+(define time-y 0.)
+(define time-w 0.)
+(define time-h 0.)
+(define time-active #f)
+
+(define (make-time-gui w h)
+  (set! time-gui (make-glgui))
+  (set! time-x 10.)
+  (set! time-y 10.)
+  (set! time-h 32.)
+  (set! time-w (- w 10. 10.))
+  (glgui-box time-gui time-x time-y time-w time-h (color-fade White 0.25))
+  (set! time-bar (glgui-box time-gui 
+    (+ time-x 2.) (+ time-y 2.) (- time-w 4.) (- time-h 4.) (color-fade Green 0.5)))
+  )
+
+(define (update-time n)
+  (let* ((dt (- n time-start))
+         (dur (* (if (eq? menu-mode 'MEASURE) 0.5 1.) time-duration))
+         (r (min 1. (max 0. (/ dt dur)))))
+    (glgui-widget-set! time-gui time-bar 'w (* r time-w))
+    (if (and (= r 1.) time-active) (begin
+      (stop-recording)
+      (set! menu-mode 'MENU)
+      (glgui-set! world 'yofs 0)
+      (set! state GOING_UP)
+      (set! time-active #f)
+  ))))
+
+(define (reset-time)
+  (set! time-start (time->seconds (current-time)))
+  (set! time-active #t))
+
+;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;; clock element
+
+(define clock-gui #f)
+(define clock-label #f)
+(define clock-lastupdate 0.)
+
+(define (make-clock-gui w h)
+  (let* ((bw 300) (bh 50)
+         (bx (/ (- w bw) 2.)))
+  (set! clock-gui (make-glgui))
+  (set! clock-label 
+     (glgui-label clock-gui bx 24 bw bh "" measure_24.fnt Black))
+  (glgui-widget-set! clock-gui clock-label 'align GUI_ALIGNCENTER)
+  (glgui-widget-set! clock-gui clock-label 'bgcolor (color-fade White 0.5))
+))
+
+(define (update-clock n)
+  (if (>= (fl- n clock-lastupdate) 1.0)
+    (let ((tstr (seconds->string n "%H:%M:%S")))
+      (glgui-widget-set! clock-gui clock-label 'label tstr)
+      (set! clock-lastupdate n))))
+
+;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;; status element
+
+(define status-gui #f)
+(define status-label #f)
+(define status-lastupdate 0.)
+
+(define (make-status-gui w h)
+  (let* ((bw 300) (bh 50)
+         (bx (/ (- w bw) 2.)))
+  (set! status-gui (make-glgui))
+  (set! status-label
+     (glgui-label status-gui 0 (- h bh) w bh "" measure_24.fnt Black))
+  (glgui-widget-set! status-gui status-label 'align GUI_ALIGNCENTER)
+  (glgui-widget-set! status-gui status-label 'bgcolor (color-fade Red 0.5))
+  (glgui-widget-set! status-gui status-label 'hidden #t)
+))
+
+(define (update-status n)
+  (if (>= (fl- n status-lastupdate) 1.0)
+    (let* ((pwr ((c-lambda () double "___result=POWER;")))
+           (str (cond
+             ((fl< pwr 0.005) "SENSOR ERROR")
+             ((fl> pwr 0.85) "NO FINGER")
+             (else #f))))
+      (if (string? str) (begin
+        (glgui-widget-set! status-gui status-label 'label str)
+        (glgui-widget-set! status-gui status-label 'bgcolor (color-fade 
+          (if (string=? str "SENSOR ERROR") Red Yellow) 0.5))))
+      (glgui-widget-set! status-gui status-label 'hidden (not (string? str)))
+      (set! status-lastupdate n)
+   )))
+
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; main program
@@ -813,13 +750,18 @@ end-of-c-declare
      (make-height w h)
      (make-measure w h)
      (make-instructions w h)
-     (make-touch w h)
-
-     (rtaudio-start 8000 1.0)
+     (make-touch-gui w h)
+     (make-time-gui w h)
+     (make-clock-gui w h)
+     (make-status-gui w h)
    )
+   (let ((logdir (string-append (system-directory) "/log")))
+     (if (not (file-exists? logdir)) (create-directory logdir)))
+   (rtaudio-start 8000 1.0)
  )
  (lambda (t x y)
    (let* ((now (time->seconds (current-time))))
+     ;; (scheduler-iterate (lambda () #t))
      (update-blink now)
      (update-johnny now state)
      (update-gondola now state)
@@ -829,6 +771,9 @@ end-of-c-declare
      (update-measure)
      (update-bubbles now)
      (update-breath now)
+     (update-time now)
+     (update-clock now)
+     (update-status now)
      (if (eq? menu-mode 'TEACH) (update-instructions))
      (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYESCAPE)) (terminate))
      (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYUP)) (set! state GOING_UP))
@@ -836,7 +781,9 @@ end-of-c-declare
      (if (and (= t EVENT_KEYPRESS) (= x 32)) (set! state GOING_NOWHERE))
      (if (eq? menu-mode 'FEEDBACK)
         (let ((ypos (- (glgui-get world 'yofs)))
-              (bellyidx (* 10. (DYNBELLY))))
+             ;; (bellyidx (* 10. (DYNBELLY)))
+              (bellyidx 0.)
+             )
           (set! state (cond
             ((> bellyidx ypos) GOING_UP)
             ((> bellyidx (- ypos 50)) GOING_NOWHERE)
@@ -849,11 +796,11 @@ end-of-c-declare
          (if (= yofs (- world-ofs-max)) (set! state GOING_DOWN))))
      (glgui-event 
         (case menu-mode
-          ((MENU)  (list world splash))
-          ((TEACH) (list world gui instructions touch))
-          ((DEMO) (list world gui clouds touch))
-          ((FEEDBACK) (list world gui clouds height measure touch))
-          ((MEASURE) (list touch))) t x y)
+          ((MENU)  (list world clock-gui status-gui splash))
+          ((TEACH) (list world gui instructions time-gui status-gui touch-gui))
+          ((DEMO) (list world gui clouds touch-gui))
+          ((FEEDBACK) (list world gui clouds height measure time-gui status-gui touch-gui))
+          ((MEASURE) (list time-gui status-gui touch-gui))) t x y)
   ))
  (lambda () #t)
  (lambda () (glgui-suspend) (stop-recording) (terminate))
