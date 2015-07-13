@@ -314,6 +314,7 @@
   )
 ;; termination
   (lambda ()
+    (scheduler-endcase store)
     (scheduler-cleanup)
     #t
   )
