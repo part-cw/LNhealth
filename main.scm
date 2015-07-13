@@ -272,7 +272,8 @@
     (scheduler-iterate)
   )
 ;; termination
-  (lambda () 
+  (lambda ()
+    (scheduler-endcase "main")
     (scheduler-cleanup)
     #t
   )
