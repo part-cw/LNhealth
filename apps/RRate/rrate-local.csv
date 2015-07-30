@@ -1,10 +1,9 @@
 Key,English,Luganda,Khmer
-CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,Londako emirundi gy'okoonye ku lutimbe egyetaagisibwa okubala enzisa,ជ្រើសរើសចំនួនចុចសមស្របក្នុងការគណនាអត្រាដង្ហើម
-CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,ជ្រើសរើសកម្រិតភាពសមស្រប
-VIBRATE_SOUND,Vibrate with sound.,,
-DONE,Done,,
+CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,Londako emirundi gy'okoonye ku lutimbe egyetaagisibwa okubala enzisa,[t]
+CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,[t]
+VIBRATE_SOUND,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.
 CANCEL,Cancel,Sazaamu,[t]
-SETTINGS,Settings,Entereeza,កំណត់ការប្រើប្រាស់
+SETTINGS,Settings,Entereeza,[t]
 NO,No,Nedda,[t]
 YES,Yes,Yee,[t]
 RESTART,Restart,[t],[t]
@@ -15,13 +14,14 @@ RRATE_UNIT,Breaths/min,[t],[t]
 TAP_TO_SYNC,Tap on inhalation to synchronize,[t],[t]
 FAST,Fast,Kumuukum,[t]
 CONSISTENT,Consistent,Bikwatagana,[t]
+CONSISTENTD,Consistent,Bikwatagana,[t]
 SLOW,Slow,Mpola,[t]
-TAP_INHALATION,Tap on inhalation,Koona wano buli lussa,[t]
+TAP_INHALATION,Tap on inhalation,Koona ku kigambo "okusika omukka",[t]
 TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,[t]
 NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,[t]
 TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,[t]
 RETRY,Retry,[t],បាទ
 IGNORE,Ignore,[t],[t]
-INCONSISTENT,Inconsistent,Tebikwatagana,មិនសមស្រប
-M_MEDIAN,M = Median Time Interval,M etegeeza amakati ng'obala essaawa mu kussa,ពេលវេលាចន្លោះមេដ្យាន
-C_CONSISTENCY,C = Consistency Threshold,C etegeeza webikoma okukwatagana,កម្រិតភាពសមស្រប
+INCONSISTENT,Inconsistent,Tebikwatagana,[t]
+M_MEDIAN,M = Median Time Interval,M = amakati ng'obala essaawa mu kussa,[t]
+C_CONSISTENCY,C = Consistency Threshold,C = webikoma okukwatagana,[t]

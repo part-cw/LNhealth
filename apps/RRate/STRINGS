@@ -21,3 +21,11 @@ Busra-R.ttf 11 'តើអត្រាដកដង្ហើមមានភាព�
 Busra-R.ttf 14 'រឹមត្រូវ' YES3 Script=Khmer
 Busra-R.ttf 20 'ចាប់ផ្តើមជាថ្មី' RESTART3 Script=Khmer
 Busra-R.ttf 20 'ចាកចេញ' EXIT3 Script=Khmer
+Busra-R.ttf 20 'កំណត់ការប្រើប្រាស់' SETTINGS3 Script=Khmer
+Busra-R.ttf 20 'ជ្រើសរើសចំនួនចុចសមស្របក្នុ//ងការគណនាអត្រាដង្ហើម' CONSISTENCY_NUM_TAPS3 Script=Khmer
+Busra-R.ttf 20 'រើសរើសកម្រិតភាពសមស្រប' CONSISTENCY_THRESH3 Script=Khmer
+Busra-R.ttf 14 'M = ពេលវេលាចន្លោះមេដ្យាន' M_MEDIAN3 Script=Khmer
+Busra-R.ttf 14 'C = កម្រិតភាពសមស្រប' C_CONSISTENCY3 Script=Khmer
+Busra-R.ttf 14 'ធម្មតា' CONSISTENTD3 Script=Khmer
+Busra-R.ttf 14 'មិនសមស្រប' INCONSISTENT3 Script=Khmer
+

@@ -37,8 +37,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 |#
 
 ;; Module for measuring and confirming respiratory rate
-;; Christian Leth Petersen 2012, Dustin Dunsmuir 2014, Matthias Görges 2015
-(define rrate:no-settings? #t)
+;; Christian Leth Petersen 2012, Dustin Dunsmuir 2015, Matthias Görges 2015
+(define rrate:no-settings? #f)
+
+;; Standard fonts, to switch back to if switching languages
+(define rrate:stfnt_11.fnt text_11.fnt)
+(define rrate:stfnt_14.fnt text_14.fnt)
+(define rrate:stfnt_20.fnt text_20.fnt)
+(define rrate:stfnt_40.fnt text_40.fnt)
 
 ;; Load the localization support
 (define rrate:setup? #f)
@@ -53,13 +59,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 )
 
 ;; Settings page for configuring number of taps and consistency percent for threshold
-(define rrate:settings:cont #f)
+(define rrate:settings:bg #f)
+(define rrate:settings:language #f)
+(define rrate:settings:languagelist #f)
+(define rrate:settings:taps #f)
 (define rrate:settings:tapslist #f)
+(define rrate:settings:consistency #f)
 (define rrate:settings:percentlist #f)
-(define rrate:settings:donebutton #f)
+(define rrate:settings:backbutton #f)
+(define rrate:settings:nextbutton #f)
 
-;; Flag for whether on settings page or not
+;; Flag for whether on settings pages or not, index of settings page
 (define rrate:settings:viewing #f)
+(define rrate:settings:page 0)
 
 ;; Setting options to chose from
 (define rrate:settings:tapchoices (list "3" "4" "5" "6"))
@@ -72,46 +84,86 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:settings:show_vibrate #f)
 
 (define (rrate:setting-init x y w h)
-  (set! rrate:settings:cont (glgui-container rrate:gui x y w h))
+  (set! rrate:settings:bg (glgui-container rrate:gui x y w h))
+  (glgui-pixmap rrate:settings:bg 0 43 settings_bg.img)
   
   ;; Only show option for vibrating the phone with sound if on Android
   (set! rrate:settings:show_vibrate (string=? (system-platform) "android"))
-
-  (glgui-pixmap rrate:settings:cont 0 43 settings_bg.img)
   
+  ;; Go back to previous settings page or out of settings completely
+  (set! rrate:settings:backbutton (glgui-button rrate:settings:bg 12 6 100 32 left_arrow.img
+    (lambda (g . x)
+      (if (fx= rrate:settings:page 0)
+        (set! rrate:settings:viewing #f)
+        (set! rrate:settings:page (- rrate:settings:page 1))))))
+  (glgui-widget-set! rrate:settings:bg rrate:settings:backbutton 'button-normal-color Green)
+  (glgui-widget-set! rrate:settings:bg rrate:settings:backbutton 'button-selected-color DarkGreen)
+  
+  ;; The first page of settings, the language
+  (set! rrate:settings:language (glgui-container rrate:gui x y w h))
+  (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language (+ x 10) (+ y (- h 285)) (- w 20) 275 (color:shuffle #xd7eaefff)) 'rounded #t)
+  (glgui-label rrate:settings:language (+ x 30) (+ y (- h 50)) (- w 60) 23 "Select language" text_20.fnt Black)
+  (set! rrate:settings:languagelist (glgui-list rrate:settings:language (+ x 50) (+ y (- h 215)) 165 180 60
+    (map (lambda (lan)
+           (lambda (g wgt bx by bw bh selected?)
+             (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+             (glgui:draw-text-left (+ bx 42) (+ by 2) (- bw 52) 23 lan text_20.fnt Black)))
+         (table-ref local:table "Key" '()))
+    (lambda (g wgt type mx my)
+      ;; Save the new settings
+      (let* ((lindex (+ (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'current) 1)))
+        (settings-set! "Language" lindex)
+        (local-index-set! lindex)
+        (rrate-init x y w h rrate:store rrate:cancelproc rrate:doneproc)))))
+  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'autohidebar #t)
+  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol1 (color-fade White 0))
+  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol2 (color-fade White 0))
+  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current (- (settings-ref "Language" 1) 1))
+  
+  ;; The second page of settings, number of taps
+  (set! rrate:settings:taps (glgui-container rrate:gui x y w h))
+
   ;; Setting for how many taps are needed
-  (glgui-widget-set! rrate:settings:cont (glgui-box rrate:settings:cont 10 (- h 150) 300 145 (color:shuffle #xd7eaefff)) 'rounded #t)
-  (glgui-label-wrapped rrate:settings:cont 20 (- h 155) 215 140 
-    (local-get-text "CONSISTENCY_NUM_TAPS") text_20.fnt Black)
-  (set! rrate:settings:tapslist (glgui-list rrate:settings:cont 218 (- h 145) 90 140 35 
+  (glgui-widget-set! rrate:settings:taps (glgui-box rrate:settings:taps (+ x 10) (+ y 53) 300 (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
+  (glgui-label-local rrate:settings:taps (+ x 25) (+ y (- h 150)) (- w 50) 110 "CONSISTENCY_NUM_TAPS" text_20.fnt Black)
+  (set! rrate:settings:tapslist (glgui-list rrate:settings:taps (+ x 20) (+ y (- h 360)) (- w 40) 200 50 
     (map (lambda (n) (lambda (g wgt bx by bw bh selected?)
-      (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-      (glgui:draw-text-left (+ bx 42) (+ by 2) 40 23 (local-get-text n) text_20.fnt Black)
+      (let ((cx (+ bx (- (/ bw 2) 50))))
+        (glgui:draw-pixmap-center cx (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+        (glgui:draw-text-left (+ cx 42) (+ by 9) 40 23 (local-get-text n) text_20.fnt Black))
     )) rrate:settings:tapchoices)
     (lambda (g wgt type mx my)
       ;; Save the new settings
-      (let* ((tindex (glgui-widget-get rrate:settings:cont rrate:settings:tapslist 'current))
+      (let* ((tindex (glgui-widget-get rrate:settings:taps rrate:settings:tapslist 'current))
              (tstr (list-ref rrate:settings:tapchoices (max tindex 0)))
              (tvalue (string->number tstr)))
         (settings-set! "Taps" tvalue)
       )
     )
   ))
-  (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'autohidebar #t)
-  (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'bgcol1 (color-fade White 0))
-  (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'bgcol2 (color-fade White 0))
-  (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'current 2)
+  (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'autohidebar #t)
+  (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'bgcol1 (color-fade White 0))
+  (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'bgcol2 (color-fade White 0))
+  (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'current 2)
   
-  ;; Setting for consistency percent threshold
-  (set! rrate:settings:consistency (glgui-container rrate:settings:cont 9 (if rrate:settings:show_vibrate 85 50) 302 187))
-  (glgui-widget-set! rrate:settings:consistency (glgui-box rrate:settings:consistency 1 1 300 185 (color:shuffle #xd7eaefff)) 'rounded #t)
-  (glgui-label-wrapped rrate:settings:consistency 11 80 215 100 
-    (local-get-text "CONSISTENCY_THRESH") text_20.fnt Black)
-  (glgui-pixmap rrate:settings:consistency 16 4 diagram.img)
-  (set! rrate:settings:percentlist (glgui-list rrate:settings:consistency 209 10 100 175 35 
+  ;; The third page of settings, consistency threshold
+  (set! rrate:settings:consistency (glgui-container rrate:gui x y w h))
+  (glgui-widget-set! rrate:settings:consistency (glgui-box rrate:settings:consistency (+ x 10) (+ y 53) 300 (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
+  (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 80)) (- w 10) 60 "CONSISTENCY_THRESH" text_20.fnt Black)
+  (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 100)) (- w 10) 20 "M_MEDIAN" text_14.fnt Black)
+  (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 120)) (- w 10) 20 "C_CONSISTENCY" text_14.fnt Black)
+  (glgui-widget-set! rrate:settings:consistency (glgui-label rrate:settings:consistency (+ x 20) (+ y (- h 155)) 55 20 "M + C" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+  (glgui-widget-set! rrate:settings:consistency (glgui-label rrate:settings:consistency (+ x 20) (+ y (- h 170)) 55 20 "M" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+  (glgui-widget-set! rrate:settings:consistency (glgui-label rrate:settings:consistency (+ x 20) (+ y (- h 185)) 55 20 "M - C" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+  (glgui-pixmap rrate:settings:consistency (+ x 78) (+ y (- h 190)) diagram.img)
+  (glgui-label-local rrate:settings:consistency (+ x 123) (+ y (- h 150)) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
+  (glgui-label-local rrate:settings:consistency (+ x 126) (+ y (- h 170)) (- w 10) 20 "CONSISTENTD" text_14.fnt Black)
+  (glgui-label-local rrate:settings:consistency (+ x 123) (+ y (- h 190)) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
+  (set! rrate:settings:percentlist (glgui-list rrate:settings:consistency (+ x 20) (+ y (- h 390)) (- w 40) 180 35 
     (map (lambda (p) (lambda (g wgt bx by bw bh selected?)
-      (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-      (glgui:draw-text-left (+ bx 42) (+ by 2) 50 23 (string-append (local-get-text p) "%") text_20.fnt Black)
+      (let ((cx (+ bx (- (/ bw 2) 50))))
+        (glgui:draw-pixmap-center cx (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+        (glgui:draw-text-left (+ cx 42) (+ by 9) 50 23 (string-append (local-get-text p) "%") text_20.fnt Black))
     )) rrate:settings:percentchoices)
     ;; Save the setting
     (lambda (g wgt type mx my)
@@ -127,32 +179,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'bgcol2 (color-fade White 0))
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'current 4)
   
+  ;; Show vibrate option on first page under language options
   (if rrate:settings:show_vibrate
     ;; Show checkbox for turning on and off vibration with sound (only Android)
-    (begin
-      (glgui-widget-set! rrate:settings:cont (glgui-box rrate:settings:cont 10 48 300 30 (color:shuffle #xd7eaefff)) 'rounded #t)
-      (glgui-label rrate:settings:cont 42 50 205 25 (local-get-text "VIBRATE_SOUND") text_20.fnt Black)
-      (set! rrate:settings:vibrate_box (glgui-pixmap rrate:settings:cont 258 48 checkedbox.img))
-      (set! rrate:settings:vibrate_trigger (glgui-box rrate:settings:cont 42 48 268 30 (color-fade White 0)))
-      (glgui-widget-set! rrate:settings:cont rrate:settings:vibrate_trigger 'callback
+    (let ((vbottom (+ y 53))
+          ;; Put below language options
+          (vh (- h 348)))
+      (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language (+ x 10) vbottom (- w 20) vh (color:shuffle #xd7eaefff)) 'rounded #t)
+      (glgui-label rrate:settings:language (+ x 95) (+ vbottom (- (/ vh 2) 15)) (- w 105) 25 (local-get-text "VIBRATE_SOUND") text_20.fnt Black)
+      (set! rrate:settings:vibrate_box (glgui-pixmap rrate:settings:language (+ x 55) (+ vbottom (- (/ vh 2) 15)) checkedbox.img))
+      (set! rrate:settings:vibrate_trigger (glgui-box rrate:settings:language (+ x 42) (+ vbottom (- (/ vh 2) 25)) (- w 52) 50 (color-fade White 0)))
+      (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_trigger 'callback
           (lambda (g . x)
              (if (settings-ref "VibrateSound")
                (begin
                  (settings-set! "VibrateSound" #f)
-                 (glgui-widget-set! rrate:settings:cont rrate:settings:vibrate_box 'image uncheckedbox.img))
+                 (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image uncheckedbox.img))
                (begin
                  (settings-set! "VibrateSound" #t)
-                 (glgui-widget-set! rrate:settings:cont rrate:settings:vibrate_box 'image checkedbox.img)))))))
+                 (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image checkedbox.img)))))))
   
-  ;; Back to the rest of the app
-  (set! rrate:settings:donebutton (glgui-button-string rrate:settings:cont 218 6 95 32 (local-get-text "DONE") text_20.fnt
+  ;; Go to the next page or finish settings
+  (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg 213 6 100 32 right_arrow.img
     (lambda (g . x)
-      ;; Leave the settings page
-      (set! rrate:settings:viewing #f)
-    )
-  ))
-  (glgui-widget-set! rrate:settings:cont rrate:settings:donebutton 'button-normal-color Green)
-  (glgui-widget-set! rrate:settings:cont rrate:settings:donebutton 'button-selected-color DarkGreen)
+      (if (fx= rrate:settings:page 2)
+        ;; Leave the settings page
+        (begin
+          (set! rrate:settings:page 0)
+          (set! rrate:settings:viewing #f))
+        (set! rrate:settings:page (+ rrate:settings:page 1))))))
+  (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-normal-color Green)
+  (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-selected-color DarkGreen)
 )
    
 (define rrate:gui #f)
@@ -634,16 +691,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:gui (make-glgui))
    (set! rrate:cont (glgui-container rrate:gui x y w h))
 
+   ;; Switch which font is being used depending on the language
+   (if (fx= (settings-ref "Language" 1) 3) 
+     (begin
+       (set! text_11.fnt textK_11.fnt)
+       (set! text_14.fnt textK_14.fnt)
+       (set! text_20.fnt textK_20.fnt)
+       (set! text_40.fnt textK_40.fnt))
+     (begin
+       (set! text_11.fnt textEng_11.fnt)
+       (set! text_14.fnt textEng_14.fnt)
+       (set! text_20.fnt textEng_20.fnt)
+       (set! text_40.fnt textEng_40.fnt)))
+  
    ;; Initialize the settings page and set the settings
    (rrate:setting-init 0 0 w h)
    (let* ((taps (settings-ref "Taps" 5))
           (tindex (list-pos rrate:settings:tapchoices (number->string taps)))
           (consistency (settings-ref "Consistency" 13))
           (pindex (list-pos rrate:settings:percentchoices (number->string consistency))))
-     (glgui-widget-set! rrate:settings:cont rrate:settings:tapslist 'current (if tindex tindex 0))
+     (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'current (if tindex tindex 0))
      (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'current (if pindex pindex 0))
      (if rrate:settings:show_vibrate
-       (glgui-widget-set! rrate:settings:cont rrate:settings:vibrate_box 'image (if (settings-ref "VibrateSound") checkedbox.img uncheckedbox.img))))
+       (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image (if (settings-ref "VibrateSound") checkedbox.img uncheckedbox.img))))
     
    ;; initialize audio - must come before audiofile-load! 
    (audiofile-init)
@@ -674,7 +744,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden (not rrate:cancelproc))
      
    ;; Go to the settings page after cancelling the current tapping
-   (set! rrate:settingsbutton (glgui-button-string rrate:cont 157 6 156 32 (local-get-text "SETTINGS") text_20.fnt
+   (set! rrate:settingsbutton (glgui-button rrate:cont 213 6 100 32 icon_setup.img
      (lambda (g . x)
        ;; Clear interval and scale values
        (set! rrate:calc:medinterval #f)
@@ -938,8 +1008,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Display either the main RRate page or the settings page
   (if (fx= t EVENT_REDRAW)
     (begin
-      (glgui-widget-set! rrate:gui rrate:settings:cont 'hidden (not rrate:settings:viewing))
-      (glgui-widget-set! rrate:gui rrate:cont 'hidden rrate:settings:viewing)))     
+      (glgui-widget-set! rrate:gui rrate:settings:bg 'hidden (not rrate:settings:viewing))
+      (glgui-widget-set! rrate:gui rrate:settings:language 'hidden (or (not rrate:settings:viewing) (not (fx= rrate:settings:page 0))))
+      (glgui-widget-set! rrate:gui rrate:settings:taps 'hidden (or (not rrate:settings:viewing) (not (fx= rrate:settings:page 1))))
+      (glgui-widget-set! rrate:gui rrate:settings:consistency 'hidden (or (not rrate:settings:viewing) (not (fx= rrate:settings:page 2))))
+      (glgui-widget-set! rrate:gui rrate:cont 'hidden rrate:settings:viewing)))
 )
 
 
