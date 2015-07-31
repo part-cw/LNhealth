@@ -1,3 +1,4 @@
+DejaVuSans.ttf 24 'RRate' RRATE
 DejaVuSans.ttf 11 'Era Ddamu//ogezeeko' RETRY2
 DejaVuSans.ttf 11 'Koona//ku "kusika//omuka"//bikwatagane' TAP_TO_SYNC2
 DejaVuSans.ttf 11 'Tokifaako' IGNORE2
@@ -13,6 +14,7 @@ Busra-R.ttf 10 'យឺត' SLOW3 Script=Khmer
 Busra-R.ttf 20 'ចុចមិនត្រឹមត្រូវ' TAPS_INCONSISTENT3 Script=Khmer
 Busra-R.ttf 20 'ចុចមិនគ្រប់ចំនួន' NOT_ENOUGH_TAPS3 Script=Khmer
 Busra-R.ttf 20 'ទេ' IGNORE3 Script=Khmer
+Busra-R.ttf 20 'បាទ' RETRY3 Script=Khmer
 Busra-R.ttf 14 'អត្រាដង្ហើម' RRATE3 Script=Khmer
 Busra-R.ttf 11 'ដង្ហើមក្នុងមួយនាទី' RRATE_UNIT3 Script=Khmer
 Busra-R.ttf 11 'ចុចមួយ//ពេលក្មេង//ដកដង្ហើមចូលមួយ' TAP_TO_SYNC3 Script=Khmer

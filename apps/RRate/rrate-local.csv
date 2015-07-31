@@ -20,7 +20,7 @@ TAP_INHALATION,Tap on inhalation,Koona ku kigambo "okusika omukka",[t]
 TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,[t]
 NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,[t]
 TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,[t]
-RETRY,Retry,[t],បាទ
+RETRY,Retry,[t],[t]
 IGNORE,Ignore,[t],[t]
 INCONSISTENT,Inconsistent,Tebikwatagana,[t]
 M_MEDIAN,M = Median Time Interval,M = amakati ng'obala essaawa mu kussa,[t]

@@ -54,7 +54,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (h (glgui-height-get)))
      ;; Setup the menubar     
      (glgui-menubar gui 0 (- h 44) w 44)
-     (glgui-label gui 8 (- h 32) 100 24 "RRate" sans_24.fnt White)
+     (glgui-pixmap gui 8 (- h 32) RRATE.img)
      (glgui-widget-set! gui (glgui-label-wrapped gui 120 (- h 44) 200 39 
        (string-append "RRate " (system-appversion) "\nCopyright \302\251 2015\nUniversity of British Columbia") sans_10.fnt White)
        'align GUI_ALIGNRIGHT)
@@ -67,12 +67,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (begin
            (set! language? l)
            (local-index-set! l)
-           (if (fx= l 3) (begin
-             (set! text_11.fnt textK_11.fnt)
-             (set! text_14.fnt textK_14.fnt)
-             (set! text_20.fnt textK_20.fnt)
-             (set! text_40.fnt textK_40.fnt)
-           ))
            (rrate-init 0 0 w 433 #f terminate #f)
          )
          (let ((lan 1))

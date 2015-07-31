@@ -692,17 +692,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:cont (glgui-container rrate:gui x y w h))
 
    ;; Switch which font is being used depending on the language
-   (if (fx= (settings-ref "Language" 1) 3) 
-     (begin
-       (set! text_11.fnt textK_11.fnt)
-       (set! text_14.fnt textK_14.fnt)
-       (set! text_20.fnt textK_20.fnt)
-       (set! text_40.fnt textK_40.fnt))
-     (begin
-       (set! text_11.fnt textEng_11.fnt)
-       (set! text_14.fnt textEng_14.fnt)
-       (set! text_20.fnt textEng_20.fnt)
-       (set! text_40.fnt textEng_40.fnt)))
+   (set! text_11.fnt textEng_11.fnt)
+   (set! text_14.fnt textEng_14.fnt)
+   (set! text_20.fnt textEng_20.fnt)
+   (set! text_40.fnt textEng_40.fnt)
   
    ;; Initialize the settings page and set the settings
    (rrate:setting-init 0 0 w h)
