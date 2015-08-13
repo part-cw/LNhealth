@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:no-settings? #f)
 
 ;; Standard fonts, to switch back to if switching languages
-(define rrate:stfnt_11.fnt text_11.fnt)
+(define rrate:stfnt_12.fnt text_12.fnt)
 (define rrate:stfnt_14.fnt text_14.fnt)
 (define rrate:stfnt_20.fnt text_20.fnt)
 (define rrate:stfnt_40.fnt text_40.fnt)
@@ -50,7 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:setup? #f)
 (define (rrate-setup)
   (local-load "rrate-local.csv")
-  (local-index-set! 1);; 1 English, 2 Lunganda, 3 Khmer
+  (local-index-set! 1);; 1 English, 2 Lunganda, 3 Khmer, 4 Amharic, 5 Dinka
   (set! rrate:setup? #t)
   ;; Initialize the settings
   (settings-init (list (cons "Taps" 5)
@@ -103,11 +103,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (set! rrate:settings:language (glgui-container rrate:gui x y w h))
   (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language (+ x 10) (+ y (- h 285)) (- w 20) 275 (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label rrate:settings:language (+ x 30) (+ y (- h 50)) (- w 60) 23 "Select language" text_20.fnt Black)
-  (set! rrate:settings:languagelist (glgui-list rrate:settings:language (+ x 50) (+ y (- h 215)) 165 180 60
+  (set! rrate:settings:languagelist (glgui-list rrate:settings:language (+ x 50) (+ y (- h 285)) 165 230 46
     (map (lambda (lan)
            (lambda (g wgt bx by bw bh selected?)
-             (glgui:draw-pixmap-center (+ bx 5) by 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-             (glgui:draw-text-left (+ bx 42) (+ by 2) (- bw 52) 23 lan text_20.fnt Black)))
+             (glgui:draw-pixmap-center (+ bx 5) (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+             (glgui:draw-text-left (+ bx 42) (+ by 11) (- bw 52) 23 lan text_20.fnt Black)))
          (table-ref local:table "Key" '()))
     (lambda (g wgt type mx my)
       ;; Save the new settings
@@ -152,9 +152,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 80)) (- w 10) 60 "CONSISTENCY_THRESH" text_20.fnt Black)
   (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 100)) (- w 10) 20 "M_MEDIAN" text_14.fnt Black)
   (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 120)) (- w 10) 20 "C_CONSISTENCY" text_14.fnt Black)
-  (glgui-widget-set! rrate:settings:consistency (glgui-label rrate:settings:consistency (+ x 20) (+ y (- h 155)) 55 20 "M + C" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-  (glgui-widget-set! rrate:settings:consistency (glgui-label rrate:settings:consistency (+ x 20) (+ y (- h 170)) 55 20 "M" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-  (glgui-widget-set! rrate:settings:consistency (glgui-label rrate:settings:consistency (+ x 20) (+ y (- h 185)) 55 20 "M - C" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+  (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 155)) 55 20 "M_pC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+  (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 170)) 55 20 "M" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+  (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 185)) 55 20 "M_mC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
   (glgui-pixmap rrate:settings:consistency (+ x 78) (+ y (- h 190)) diagram.img)
   (glgui-label-local rrate:settings:consistency (+ x 123) (+ y (- h 150)) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
   (glgui-label-local rrate:settings:consistency (+ x 126) (+ y (- h 170)) (- w 10) 20 "CONSISTENTD" text_14.fnt Black)
@@ -574,10 +574,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (if ignore?
      (begin
         (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'hidden #f)
-        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x 43))
+        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x 17))
      (begin
         (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'hidden #t)
-        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x 106)))
+        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x 90)))
   
   ;; Hide the cancel button
   (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden #t)
@@ -692,10 +692,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:cont (glgui-container rrate:gui x y w h))
 
    ;; Switch which font is being used depending on the language
-   (set! text_11.fnt textEng_11.fnt)
-   (set! text_14.fnt textEng_14.fnt)
-   (set! text_20.fnt textEng_20.fnt)
-   (set! text_40.fnt textEng_40.fnt)
+   (if (fx= (settings-ref "Language" 1) 4)
+     (begin
+       (set! text_12.fnt textEng_12.fnt)
+       (set! text_14.fnt textAm_14.fnt)
+       (set! text_20.fnt textAm_20.fnt)
+       (set! text_40.fnt textEng_40.fnt))
+     (begin
+       (set! text_12.fnt textEng_12.fnt)
+       (set! text_14.fnt textEng_14.fnt)
+       (set! text_20.fnt textEng_20.fnt)
+       (set! text_40.fnt textEng_40.fnt)))
   
    ;; Initialize the settings page and set the settings
    (rrate:setting-init 0 0 w h)
@@ -852,7 +859,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:value 'hidden #t)
 
    ;; Message about synchronizing the animation
-   (set! rrate:tapmessage (glgui-label-local rrate:cont 2 105 75 55 "TAP_TO_SYNC" text_11.fnt White GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
+   (set! rrate:tapmessage (glgui-label-local rrate:cont 2 105 80 55 "TAP_TO_SYNC" text_12.fnt White GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
    (glgui-widget-set! rrate:cont rrate:tapmessage 'color Black)
    (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden #t)
 
@@ -896,7 +903,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Create popup background and message
    (set! rrate:popup:cont (glgui-container rrate:gui 0 0 w h))
    (glgui-widget-set! rrate:gui rrate:popup:cont 'modal #t)
-   (set! rrate:popup:bg (glgui-box rrate:popup:cont 30 113 260 105 (color-fade Black 0.8)))
+   (set! rrate:popup:bg (glgui-box rrate:popup:cont 10 113 300 110 (color-fade Black 0.8)))
    (glgui-widget-set! rrate:popup:cont rrate:popup:bg 'rounded #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:bg 'modal #t)
 
@@ -917,7 +924,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Popup buttons
 
    ;; Make retry button with the same callback as the no button
-   (set! rrate:popup:retrybutton (glgui-button-local rrate:popup:cont 43 125 109 32 "RETRY" text_20.fnt
+   (set! rrate:popup:retrybutton (glgui-button-local rrate:popup:cont 17 125 139 32 "RETRY" text_20.fnt
      (lambda (g wgt . x) 
        (rrate:hide-popup)
        ;; Reset trend text colour
@@ -934,7 +941,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'modal #t)
      
    ;; Make Ignore button for rejecting retry, use same callback as Yes button for matching animation
-   (set! rrate:popup:ignorebutton (glgui-button-local rrate:popup:cont 159 125 109 32 "IGNORE" text_20.fnt
+   (set! rrate:popup:ignorebutton (glgui-button-local rrate:popup:cont 163 125 139 32 "IGNORE" text_20.fnt
      (lambda (g wgt . x)
        ;; Exit modal mode and go to animation
        (rrate:hide-popup)

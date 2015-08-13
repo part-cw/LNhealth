@@ -1,6 +1,6 @@
 DejaVuSans.ttf 24 'RRate' RRATE
 DejaVuSans.ttf 11 'Era Ddamu//ogezeeko' RETRY2
-DejaVuSans.ttf 11 'Koona//ku "kusika//omuka"//bikwatagane' TAP_TO_SYNC2
+DejaVuSans.ttf 12 'Koona//ku "kusika//omuka"//bikwatagane' TAP_TO_SYNC2
 DejaVuSans.ttf 11 'Tokifaako' IGNORE2
 DejaVuSans.ttf 11 'Emirundi//gy’okussa_///ddakiika' RRATE_UNIT2
 DejaVuSans.ttf 11 'Ddamu otandike' RESTART2
@@ -17,7 +17,7 @@ Busra-R.ttf 20 'ទេ' IGNORE3 Script=Khmer
 Busra-R.ttf 20 'បាទ' RETRY3 Script=Khmer
 Busra-R.ttf 14 'អត្រាដង្ហើម' RRATE3 Script=Khmer
 Busra-R.ttf 11 'ដង្ហើមក្នុងមួយនាទី' RRATE_UNIT3 Script=Khmer
-Busra-R.ttf 11 'ចុចមួយ//ពេលក្មេង//ដកដង្ហើមចូលមួយ' TAP_TO_SYNC3 Script=Khmer
+Busra-R.ttf 12 'ចុចមួយ//ពេលក្មេង//ដកដង្ហើមចូលមួយ' TAP_TO_SYNC3 Script=Khmer
 Busra-R.ttf 14 'មិនត្រឹមត្រូវ' NO3 Script=Khmer
 Busra-R.ttf 11 'តើអត្រាដកដង្ហើមមានភាពត្រឹមត្រូវ//នឹងស្ថានភាពអ្នកជម្ងឺឬទេ?' RR_MATCH3 Script=Khmer
 Busra-R.ttf 14 'រឹមត្រូវ' YES3 Script=Khmer
@@ -25,9 +25,13 @@ Busra-R.ttf 20 'ចាប់ផ្តើមជាថ្មី' RESTART3 Script=K
 Busra-R.ttf 20 'ចាកចេញ' EXIT3 Script=Khmer
 Busra-R.ttf 20 'កំណត់ការប្រើប្រាស់' SETTINGS3 Script=Khmer
 Busra-R.ttf 20 'ជ្រើសរើសចំនួនចុចសមស្របក្នុ//ងការគណនាអត្រាដង្ហើម' CONSISTENCY_NUM_TAPS3 Script=Khmer
-Busra-R.ttf 20 'រើសរើសកម្រិតភាពសមស្រប' CONSISTENCY_THRESH3 Script=Khmer
+Busra-R.ttf 20 'ជ្រើសរើសកម្រិតភាពសមស្រប' CONSISTENCY_THRESH3 Script=Khmer
 Busra-R.ttf 14 'M = ពេលវេលាចន្លោះមេដ្យាន' M_MEDIAN3 Script=Khmer
 Busra-R.ttf 14 'C = កម្រិតភាពសមស្រប' C_CONSISTENCY3 Script=Khmer
 Busra-R.ttf 14 'ធម្មតា' CONSISTENTD3 Script=Khmer
 Busra-R.ttf 14 'មិនសមស្រប' INCONSISTENT3 Script=Khmer
-
+AbyssinicaSIL-R.ttf 40 'ወደ ውስጥ//ሲተነፍለ ንኪ' TAP_INHALATION4 Script=Amharic
+DejaVuSans.ttf 14 'aci tade' NO5
+DejaVuSans.ttf 14 'ee tade' YES5
+DejaVuSans.ttf 12 'tuany//tene weei//alongthinic' TAP_TO_SYNC5
+AbyssinicaSIL-R.ttf 12 'አተነፋፈሱን//ለማመሳሰል//ወደ ውለኘ//በሚተነፍስበት ግዜ ንኪ' TAP_TO_SYNC4 Script=Amharic
