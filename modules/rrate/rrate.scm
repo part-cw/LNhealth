@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Module for measuring and confirming respiratory rate
 ;; Christian Leth Petersen 2012, Dustin Dunsmuir 2015, Matthias Görges 2015
 (define rrate:no-settings? #f)
+(define rrate:no-language? #f)
 
 ;; Standard fonts, to switch back to if switching languages
 (define rrate:stfnt_12.fnt text_12.fnt)
@@ -80,6 +81,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:settings:vibrate_trigger #f)
 (define rrate:settings:vibrate_box #f)
 
+;; List of language pairs of the form (<Language Index> <Language Name>) sorted alphabetically
+(define rrate:settings:languagechoices #f)
+
 ;; Showing vibrate setting option
 (define rrate:settings:show_vibrate #f)
 
@@ -90,10 +94,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Only show option for vibrating the phone with sound if on Android
   (set! rrate:settings:show_vibrate (string=? (system-platform) "android"))
   
+  ;; If not using the languages settings page, skip it
+  (if rrate:no-language? (set! rrate:settings:page 1))
+  
   ;; Go back to previous settings page or out of settings completely
   (set! rrate:settings:backbutton (glgui-button rrate:settings:bg 12 6 100 32 left_arrow.img
     (lambda (g . x)
-      (if (fx= rrate:settings:page 0)
+      (if (or (fx= rrate:settings:page 0) (and rrate:no-language? (fx= rrate:settings:page 1)))
         (set! rrate:settings:viewing #f)
         (set! rrate:settings:page (- rrate:settings:page 1))))))
   (glgui-widget-set! rrate:settings:bg rrate:settings:backbutton 'button-normal-color Green)
@@ -103,22 +110,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (set! rrate:settings:language (glgui-container rrate:gui x y w h))
   (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language (+ x 10) (+ y (- h 285)) (- w 20) 275 (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label rrate:settings:language (+ x 30) (+ y (- h 50)) (- w 60) 23 "Select language" text_20.fnt Black)
+  (rrate-setup-language-choices)
   (set! rrate:settings:languagelist (glgui-list rrate:settings:language (+ x 50) (+ y (- h 285)) 165 230 46
     (map (lambda (lan)
            (lambda (g wgt bx by bw bh selected?)
              (glgui:draw-pixmap-center (+ bx 5) (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-             (glgui:draw-text-left (+ bx 42) (+ by 11) (- bw 52) 23 lan text_20.fnt Black)))
-         (table-ref local:table "Key" '()))
+             (glgui:draw-text-left (+ bx 42) (+ by 11) (- bw 52) 23 (cdr lan) text_20.fnt Black)))
+         rrate:settings:languagechoices)
     (lambda (g wgt type mx my)
       ;; Save the new settings
-      (let* ((lindex (+ (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'current) 1)))
+      (let* ((cur (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'current))
+             (lindex (car (list-ref rrate:settings:languagechoices cur))))
         (settings-set! "Language" lindex)
         (local-index-set! lindex)
         (rrate-init x y w h rrate:store rrate:cancelproc rrate:doneproc)))))
   (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'autohidebar #t)
   (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol1 (color-fade White 0))
   (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol2 (color-fade White 0))
-  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current (- (settings-ref "Language" 1) 1))
+  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current (list-pos rrate:settings:languagechoices (assoc (settings-ref "Language" 1) rrate:settings:languagechoices)))
   
   ;; The second page of settings, number of taps
   (set! rrate:settings:taps (glgui-container rrate:gui x y w h))
@@ -205,13 +214,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (if (fx= rrate:settings:page 2)
         ;; Leave the settings page
         (begin
-          (set! rrate:settings:page 0)
+          (set! rrate:settings:page (if rrate:no-language? 1 0))
           (set! rrate:settings:viewing #f))
         (set! rrate:settings:page (+ rrate:settings:page 1))))))
   (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-normal-color Green)
   (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-selected-color DarkGreen)
 )
    
+;; Setup list of languages choices in alphabetical order but with original indices
+(define (rrate-setup-language-choices)
+  (set! rrate:settings:languagechoices '())
+  (let* ((lans (table-ref local:table "Key" '()))
+         (len (length lans)))
+    (let lloop ((i 0))
+      (if (fx< i len)
+        (begin
+          ;; Add pair of language index and then language name
+          (set! rrate:settings:languagechoices (append rrate:settings:languagechoices (list (cons (+ i 1) (list-ref lans i)))))
+          (lloop (+ i 1)))
+        ;; Sort pairs alphabetically
+        (set! rrate:settings:languagechoices (sort rrate:settings:languagechoices (lambda (a b) (string<=? (cdr a) (cdr b))))))))
+  rrate:settings:languagechoices
+)
+
 (define rrate:gui #f)
 (define rrate:cont #f)
 (define rrate:tapbg #f)
@@ -776,7 +801,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:nobutton 'button-selected-color DarkOrange)
    (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
      
-   (set! rrate:restartbutton (glgui-button-local rrate:cont 6 6 120 32 "RESTART" text_20.fnt
+   (set! rrate:restartbutton (glgui-button-local rrate:cont 6 6 140 32 "RESTART" text_20.fnt
      (lambda (g . x)
        (rrate-reset)
      )
@@ -807,7 +832,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:yesbutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
      
-   (set! rrate:exitbutton (glgui-button-local rrate:cont (- (glgui-width-get) 120 6) 6 120 32 "EXIT" text_20.fnt
+   (set! rrate:exitbutton (glgui-button-local rrate:cont (- (glgui-width-get) 140 6) 6 140 32 "EXIT" text_20.fnt
      (lambda (g . x)
        ;; Prepare for next time
        (rrate-reset)   

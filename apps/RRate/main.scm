@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; This is a thin wrapper around the rrate module
 (define gui #f)
 (define gui:lang #f)
+(define gui:langlist #f)
 (define language? #f)
 (include "embed.scm") ;; currently here until MODULES support their own embed files
 
@@ -69,12 +70,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            (local-index-set! l)
            (rrate-init 0 0 w 433 #f terminate #f)
          )
-         (let ((lan 1))
-           ;; Language selection
-           (set! language? lan)
-           (local-index-set! lan)
-           (rrate-init 0 0 w 433 #f terminate #f)
-           (set! rrate:settings:viewing #t)
+         ;; Language selection
+         (let ((lanlist (rrate-setup-language-choices)))
+           (glgui-widget-set! gui:lang (glgui-box gui:lang 10 (- h 385) (- w 20) 295 (color:shuffle #xd7eaefff)) 'rounded #t)
+           (glgui-label gui:lang 30 (- h 130) (- w 60) 23 "Select language" textEng_20.fnt Black)
+           (let loop ((i 0) (by (- h 180)))
+             (if (fx< i (length lanlist))
+               (let* ((entry (list-ref lanlist i))
+                      (lindex (car entry))
+                      (button (glgui-button-string gui:lang 85 by 150 32 (cdr entry) textEng_20.fnt
+                                (lambda (g wgt type mx my)
+                                  (settings-set! "Language" lindex)
+                                  (set! language? #t)
+                                  (local-index-set! lindex)
+                                  (rrate-init 0 0 w 433 #f terminate #f)))))
+                 (glgui-widget-set! gui:lang button 'button-normal-color Black)
+                 (glgui-widget-set! gui:lang button 'button-selected-color Gray)
+                 (loop (+ i 1) (- by 46)))))
          )
        )
      )
