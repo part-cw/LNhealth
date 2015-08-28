@@ -20,7 +20,7 @@ Busra-R.ttf 11 'ដង្ហើមក្នុងមួយនាទី' RRATE_UN
 Busra-R.ttf 12 'ចុចមួយ//ពេលក្មេង//ដកដង្ហើមចូលមួយ' TAP_TO_SYNC3 Script=Khmer
 Busra-R.ttf 14 'មិនត្រឹមត្រូវ' NO3 Script=Khmer
 Busra-R.ttf 11 'តើអត្រាដកដង្ហើមមានភាពត្រឹមត្រូវ//នឹងស្ថានភាពអ្នកជម្ងឺឬទេ?' RR_MATCH3 Script=Khmer
-Busra-R.ttf 14 'រឹមត្រូវ' YES3 Script=Khmer
+Busra-R.ttf 14 'ត្រឹមត្រូវ' YES3 Script=Khmer
 Busra-R.ttf 20 'ចាប់ផ្តើមជាថ្មី' RESTART3 Script=Khmer
 Busra-R.ttf 20 'ចាកចេញ' EXIT3 Script=Khmer
 Busra-R.ttf 20 'កំណត់ការប្រើប្រាស់' SETTINGS3 Script=Khmer
@@ -33,5 +33,5 @@ Busra-R.ttf 14 'មិនសមស្រប' INCONSISTENT3 Script=Khmer
 AbyssinicaSIL-R.ttf 40 'ወደ ውስጥ//ሲተነፍለ ንኪ' TAP_INHALATION4 Script=Amharic
 DejaVuSans.ttf 14 'aci tade' NO5
 DejaVuSans.ttf 14 'ee tade' YES5
-DejaVuSans.ttf 12 'tuany//tene weei//alongthinic' TAP_TO_SYNC5
+DejaVuSans.ttf 12 'thueny//tene weei//alongthinic' TAP_TO_SYNC5
 AbyssinicaSIL-R.ttf 12 'አተነፋፈሱን//ለማመሳሰል//ወደ ውለኘ//በሚተነፍስበት ግዜ ንኪ' TAP_TO_SYNC4 Script=Amharic

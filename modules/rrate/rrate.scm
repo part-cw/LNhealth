@@ -263,7 +263,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:larm #f)
 (define rrate:mouth #f)
 (define rrate:trigger #f)
-(define rrate:tapmessage #f)
+;;(define rrate:tapmessage #f)
 
 ;; The popup with error messages
 (define rrate:popup:cont #f)
@@ -548,7 +548,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! rrate:cont rrate:mouth 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:trigger 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:tapbutton 'hidden stage2)
-    (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden (not stage2))
+;;    (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:qualitybg_high 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:qualitybg_consistent 'hidden (not stage2))
@@ -884,9 +884,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:value 'hidden #t)
 
    ;; Message about synchronizing the animation
-   (set! rrate:tapmessage (glgui-label-local rrate:cont 2 105 80 55 "TAP_TO_SYNC" text_12.fnt White GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
-   (glgui-widget-set! rrate:cont rrate:tapmessage 'color Black)
-   (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden #t)
+;;   (set! rrate:tapmessage (glgui-label-local rrate:cont 2 105 80 55 "TAP_TO_SYNC" text_12.fnt White GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
+;;   (glgui-widget-set! rrate:cont rrate:tapmessage 'color Black)
+;;   (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden #t)
 
    ;; Make quality lines
    (set! rrate:qualitybg (glgui-pixmap rrate:cont 0 53 quality_lines.img))
