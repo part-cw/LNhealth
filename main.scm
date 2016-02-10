@@ -1,5 +1,5 @@
 ;; belly breath johnny in the hot air!
-;; Christian Leth Petersen 2012, 2014, 2015
+;; Christian Leth Petersen 2012, 2014, 2015, 2016
 
 (c-declare  #<<end-of-c-declare
 
@@ -93,6 +93,8 @@ double POWER=0;
 
 int ampl = AMPL_HI;
 
+extern void belly_input(double,double,int);
+
 void my_realtime_input(float v)
 {
   if (rec_name&&rec_idx<rec_size) {
@@ -104,6 +106,7 @@ void my_realtime_input(float v)
   if (pwr>POWER) POWER=pwr; else POWER=pwr*1./srate + POWER*(1-1./srate);
   if (POWER<0.1) { ampl = AMPL_HI; }
   if (POWER>0.9) { ampl = AMPL_LO; }
+  belly_input(t_input-breath_cycle_t,POWER,(POWER>0.85||POWER<0.005?1:0));
   update_breath(t_input);
   t_input+=1./srate;
 }
@@ -120,19 +123,15 @@ void my_realtime_output(float *v1,float *v2)
 end-of-c-declare
 )
 
-;; @@
-
 (c-initialize "rtaudio_register(my_realtime_init,my_realtime_input,my_realtime_output);")
 
 (define (start-recording) ((c-lambda (char-string) void "start_recording")
    (string-append (system-directory) (system-pathseparator) (time->string (current-time) "%y%m%d-%H%M%S") ".bin")))
 (define stop-recording (c-lambda () void "stop_recording"))
 
-;;(define DYNSTATE (c-lambda () int "___result = my_state;"))
-;;(define DYNHR (c-lambda () double "___result = hr;"))
-;;(define DYNHRV (c-lambda () double "___result = hrv_val;"))
 (define DYNBREATH (c-lambda () int "___result = breath_state;"))
-;;(define DYNBELLY (c-lambda () double "___result = belly_idx;"))
+(define DYNDIR belly-dir)
+(define DYNHEIGHT belly-height)
 
 (define BREATH_IN ((c-lambda () int "___result=BREATH_IN;")))
 (define BREATH_HOLD ((c-lambda () int "___result=BREATH_HOLD;")))
@@ -370,6 +369,7 @@ end-of-c-declare
     (glgui-button-string splash bx by bw bh "Start" measure_24.fnt (lambda (x . y) 
       (glgui-set! world 'yofs 0) 
       (set! menu-mode 'FEEDBACK)
+      (belly-init)
       (reset-time)
       (start-recording)))
     (set! by (- by (* 1.5 bh)))
@@ -758,6 +758,8 @@ end-of-c-declare
    (let ((logdir (string-append (system-directory) "/log")))
      (if (not (file-exists? logdir)) (create-directory logdir)))
    (rtaudio-start 8000 1.0)
+ ;;  (uploader-init "ecem.ece.ubc.ca" "/cgi-bin/bellybreath.cgi" "bin" 100000)
+ ;;  (uploader-trigger)
  )
  (lambda (t x y)
    (let* ((now (time->seconds (current-time))))
@@ -781,14 +783,11 @@ end-of-c-declare
      (if (and (= t EVENT_KEYPRESS) (= x 32)) (set! state GOING_NOWHERE))
      (if (eq? menu-mode 'FEEDBACK)
         (let ((ypos (- (glgui-get world 'yofs)))
-             ;; (bellyidx (* 10. (DYNBELLY)))
-              (bellyidx 0.)
-             )
-          (set! state (cond
-            ((> bellyidx ypos) GOING_UP)
-            ((> bellyidx (- ypos 50)) GOING_NOWHERE)
-            (else GOING_DOWN)))
-     ;;  (set! state (DYNSTATE))
+              (newypos (* 1. (DYNHEIGHT) (- world-ofs-max)))
+              (newstate (let ((d (DYNDIR))) (if (= d 1) GOING_UP (if (= d -1) GOING_DOWN GOING_NOWHERE)))))
+          (log-system "state=" newstate)
+          (glgui-set! world 'yofs newypos)
+          (set! state newstate)
      ))
      (if (or (eq? menu-mode 'DEMO) (eq? menu-mode 'MENU))
        (let ((yofs (glgui-get world 'yofs)))
