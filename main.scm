@@ -271,27 +271,32 @@ end-of-c-declare
 ;; johnny
 
 (define johnny #f)
+(define johnny-eyes #f)
+(define johnny-avatar #f)
 
 (define johnny:last 0.)
 
 (define johnnies (list
   ;; going up
-  (list pixmap_happy_up.img pixmap_smile_up.img pixmap_smile.img pixmap_happy.img) ;; (list pixmap_whistle_left.img -16) (list pixmap_whistle_right.img -13)
+  (list johnny-happy.img johnny-smile.img)
   ;; going nowhere
-  (list pixmap_smile.img) ;;  (list pixmap_whistle_left.img -16) (list pixmap_whistle_right.img -13))
+  (list johnny-happy.img) 
   ;; going down
-  (list pixmap_worried.img pixmap_unhappy_down.img)
+  (list johnny-worry.img johnny-sad.img)
   ;; breathe in
-  (list pixmap_nostrils.img)
+  (list johnny-breathe.img)
   ;; breathe out
-  (list pixmap_blow.img)
+  (list johnny-blow.img)
 ))
 
 (define (make-johnny w h)
-  (let ((jw (car pixmap_happy_up.img)) 
-        (jh (cadr pixmap_happy_up.img)))
-  (set! johnny  (glgui-sprite gui 'x (+ (/ (- w jw) 2.0) 10) 'y (- (/ (- h jh) 2.) 60) 'y0 (- (/ (- h jh) 2.) 60) 
-     'image pixmap_happy_up.img 'color White))
+  (let* ((jw (car johnny-happy.img)) 
+         (jh (cadr johnny-happy.img))
+         (x (+ (/ (- w jw) 2.0) 10))
+         (y (- (/ (- h jh) 2.) 60)))
+  (set! johnny  (glgui-sprite gui 'x x 'y y 'y0 y 'image johnny-happy.img 'color White))
+  (set! johnny-eyes  (glgui-sprite gui 'x x 'y y 'y0 y 'image eyes-straight.img 'color White))
+  (set! johnny-avatar  (glgui-sprite gui 'x x 'y y 'y0 y 'image avatar-super.img 'color White))
 ))
 
 (define (update-johnny now state)
@@ -302,12 +307,14 @@ end-of-c-declare
              ((> speed 0.01) 0)
              ((< speed -0.01) 2)
              (else 1)))
+           (eye? (> (random-real) 0.5))
            (js (list-ref johnnies idx))
            (j (list-ref js (random-integer (length js))))
            (img (if (= (length j) 2) (car j) j))
            (ofs (if (= (length j) 2) (cadr j) 0))
            (y0 (glgui-widget-get gui johnny 'y0)))
       (glgui-widget-set! gui johnny 'image img)
+      (glgui-widget-set! gui johnny-eyes 'image (if (and eye? (= idx 0)) eyes-up.img (if (and eye? (= idx 2)) eyes-down.img eyes-straight.img)))
       (glgui-widget-set! gui johnny 'y (+ y0 ofs))
       (set! johnny:last now))))
 
@@ -334,21 +341,46 @@ end-of-c-declare
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; blink
 
-(define blink #f)
 (define blink:last 0.)
 
-(define (make-blink w h)
-  (let ((jw (car pixmap_happy_up.img)) 
-        (jh (cadr pixmap_happy_up.img)))
-    (set! blink  (glgui-sprite gui 'x (+ (/ (- w jw) 2.) 10) 'y (- (/ (- h jh) 2.) 60.) 
-       'image pixmap_blink.img 'color White))))
-  
+(define (make-blink w h) #t)
+
 (define (update-blink now)
-  (let ((blinking? (not (glgui-widget-get gui blink 'hidden))))
+  (let ((blinking? (glgui-widget-get gui johnny-eyes 'hidden)))
     (cond ((and (not blinking?) (> (- now blink:last) 3.0)) 
-        (glgui-widget-set! gui blink 'hidden #f) (set! blink:last now))
+        (glgui-widget-set! gui johnny-eyes 'hidden #t) 
+        (glgui-widget-set! gui splash-johnny-eyes 'hidden #t) 
+        (set! blink:last now))
       ((and blinking? (> (- now blink:last) 0.1))
-        (glgui-widget-set! gui blink 'hidden #t) (set! blink:last now)))))
+        (glgui-widget-set! gui johnny-eyes 'hidden #f) 
+        (glgui-widget-set! gui splash-johnny-eyes 'hidden #f) 
+        (set! blink:last now)))))
+
+;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;; avatars
+
+(define avatars (list
+  (list avatar-nerd.img "Belly Brains")
+  (list avatar-redhead.img "Ms Belly")
+  (list avatar-super.img "FLASH BELLY!")
+  (list avatar-pigtail.img "Piggie Belly")
+  (list avatar-emo.img "Belly This.")
+  (list avatar-royal.img "Ribbed Belly")
+  (list avatar-emogirl.img "Belly Grrl")
+ ))
+
+(define avatar-idx 0)
+
+(define (avatar-rotate)
+  (let* ((idx (if (= avatar-idx 0) (- (length avatars) 1) (- avatar-idx 1)))
+         (entry (list-ref avatars idx))
+         (img (car entry))
+         (txt (cadr entry)))
+    (glgui-widget-set! gui johnny-avatar 'image img)
+    (glgui-widget-set! gui splash-johnny-avatar 'image img)
+    (glgui-widget-set! gui splash-johnny-label 'label txt)
+    (set! avatar-idx idx)
+  ))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; splash menu
@@ -356,6 +388,11 @@ end-of-c-declare
 (define menu-mode 'MENU)
 
 (define splash #f)
+
+(define splash-johnny #f)
+(define splash-johnny-eyes #f)
+(define splash-johnny-avatar #f)
+(define splash-johnny-label #f)
 
 (define (make-splash w h)
   (set! splash (make-glgui))
@@ -365,7 +402,21 @@ end-of-c-declare
          (bw 300) (bh 50)
          (bx (/ (- w bw) 2.))
          (by (- (/ (- h bh) 2.) 50.)))
-    (glgui-pixmap splash px py pixmap_title.img pwh (* 0.8 pwh))
+
+  (glgui-image splash 0 (- h 60 (cadr title.img)) w (cadr title.img) title.img White)
+
+    (let* ((jw (car johnny-happy.img)) 
+           (jh (cadr johnny-happy.img))
+           (x (+ (/ (- w jw) 2.0) 0))
+           (y (+ (/ (- h jh) 2.) 100)))
+      (set! splash-johnny  (glgui-sprite splash 'x x 'y y 'y0 y 'image johnny-happy.img 'color White))
+      (set! splash-johnny-eyes  (glgui-sprite splash 'x x 'y y 'y0 y 'image eyes-straight.img 'color White))
+      (set! splash-johnny-avatar  (glgui-sprite splash 'x x 'y y 'y0 y 'image (car (car avatars)) 'color White))
+      (set! splash-johnny-label (glgui-label splash 0 (- y 60) w 64 (cadr (car avatars)) measure_24.fnt Black))
+      (glgui-widget-set! splash splash-johnny-label 'align GUI_ALIGNCENTER)
+      (glgui-widget-set! splash splash-johnny-avatar 'releasecallback (lambda (x . y) (avatar-rotate)))
+     )
+
     (glgui-button-string splash bx by bw bh "Start" measure_24.fnt (lambda (x . y) 
       (glgui-set! world 'yofs 0) 
       (set! menu-mode 'FEEDBACK)
@@ -728,7 +779,7 @@ end-of-c-declare
 (define (drag-callback g wgt t x y)
   (let ((ox (glgui-widget-get g wgt 'offsetx))
         (oy (glgui-widget-get g wgt 'offsety)))
-    (log-system "ox=" ox " oy=" oy)
+;;    (log-system "ox=" ox " oy=" oy)
     (if (> oy 10) (set! state GOING_UP))
     (if (< oy -10) (set! state GOING_DOWN))
     (if (or (> ox 10) (< ox -10)) (set! state GOING_NOWHERE))
@@ -785,7 +836,7 @@ end-of-c-declare
         (let ((ypos (- (glgui-get world 'yofs)))
               (newypos (* 1. (DYNHEIGHT) (- world-ofs-max)))
               (newstate (let ((d (DYNDIR))) (if (= d 1) GOING_UP (if (= d -1) GOING_DOWN GOING_NOWHERE)))))
-          (log-system "state=" newstate)
+         ;; (log-system "state=" newstate)
           (glgui-set! world 'yofs newypos)
           (set! state newstate)
      ))
