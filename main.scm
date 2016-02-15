@@ -151,7 +151,7 @@ end-of-c-declare
 (define gui #f)
 
 (define color_cloud (color-fade White 0.5))
-(define color_gondola White)
+(define color_balloon White)
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; world
@@ -237,34 +237,56 @@ end-of-c-declare
   ))))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-;; gondola
+;; balloon
 
-(define gondola #f)
+(define balloon #f)
 
-(define gondola_ampl 0.)
+(define balloon_ampl 0.)
 
 (define AMPL_UP 2.5)
 (define AMPL_NOWHERE 0.)
 (define AMPL_DOWN 0.)
 
-(define (make-gondola w h)
-  (let ((gw (car pixmap_gondola.img))
-        (gh (cadr pixmap_gondola.img)))
-  (set! gondola (glgui-sprite gui 'x (/ (- w gw) 2.) 'y (/ (- h gh) 2.) 
-    'image pixmap_gondola.img 'color White))
- )) 
+(define balloons (list 
+  balloon_bear.img
+  balloon_frog.img
+  balloon_dino.img
+  balloon_robot.img
+  balloon_bat.img
+  balloon_skull.img
+  balloon_shark.img
+))
 
-(define (update-gondola now state)
+(define (select-balloon idx)
+    (let* ((w (glgui-width-get)) 
+           (h (glgui-height-get))
+           (img (list-ref balloons idx))
+           (gw (car img))
+           (gh (cadr img)) 
+           (x (/ (- w gw) 2.))
+           (y (/ (- h gh) 2.)))
+      (if balloon  (begin
+        (glgui-widget-set! gui balloon 'x x)
+        (glgui-widget-set! gui balloon 'y y)
+        (glgui-widget-set! gui balloon 'image img)
+      ) (set! balloon (glgui-sprite gui 'x x 'y y 'image img 'color White)))
+ ))
+
+(define (make-balloon w h)
+  (select-balloon 3)
+ ) 
+
+(define (update-balloon now state)
   (let* ((ampl_alpha (/ 2. (+ 30. 1.)))
         (newampl (+ (* ampl_alpha (cond 
           ((= state GOING_UP) AMPL_UP)
           ((= state GOING_NOWHERE) AMPL_NOWHERE)
           ((= state GOING_DOWN) AMPL_DOWN)))
-             (* (- 1. ampl_alpha) gondola_ampl)))
+             (* (- 1. ampl_alpha) balloon_ampl)))
         (angle (* newampl (sin (* 6.28 0.5 now)))))
-    (set! gondola_ampl newampl)
-    (glgui-widget-set! gui gondola 'angle angle)
-    (glgui-widget-set! gui gondola 'color (if (< speed 0.) Gray White))
+    (set! balloon_ampl newampl)
+    (glgui-widget-set! gui balloon 'angle angle)
+    (glgui-widget-set! gui balloon 'color (if (< speed 0.) Gray White))
   ))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -292,11 +314,14 @@ end-of-c-declare
 (define (make-johnny w h)
   (let* ((jw (car johnny-happy.img)) 
          (jh (cadr johnny-happy.img))
-         (x (+ (/ (- w jw) 2.0) 10))
-         (y (- (/ (- h jh) 2.) 60)))
+        ;; (x (+ (/ (- w jw) 2.0) 10))
+        ;; (y (- (/ (- h jh) 2.) 60))
+         (x (+ (/ (- w jw) 2.0) 0))
+         (y (- (/ (- h jh) 2.) 100))
+        )
   (set! johnny  (glgui-sprite gui 'x x 'y y 'y0 y 'image johnny-happy.img 'color White))
   (set! johnny-eyes  (glgui-sprite gui 'x x 'y y 'y0 y 'image eyes-straight.img 'color White))
-  (set! johnny-avatar  (glgui-sprite gui 'x x 'y y 'y0 y 'image avatar-super.img 'color White))
+  (set! johnny-avatar  (glgui-sprite gui 'x x 'y y 'y0 y 'image avatar-nerd.img 'color White))
 ))
 
 (define (update-johnny now state)
@@ -360,13 +385,13 @@ end-of-c-declare
 ;; avatars
 
 (define avatars (list
-  (list avatar-nerd.img "Belly Brains")
-  (list avatar-redhead.img "Ms Belly")
-  (list avatar-super.img "FLASH BELLY!")
-  (list avatar-pigtail.img "Piggie Belly")
-  (list avatar-emo.img "Belly This.")
-  (list avatar-royal.img "Ribbed Belly")
-  (list avatar-emogirl.img "Belly Grrl")
+  (list avatar-nerd.img "Belly Brains" 3)
+  (list avatar-redhead.img "Ms Belly" 0)
+  (list avatar-super.img "FLASH BELLY!" 2)
+  (list avatar-pigtail.img "Piggie Belly" 1)
+  (list avatar-emo.img "Belly Man" 5)
+  (list avatar-royal.img "Stud Belly" '(4 6))
+  (list avatar-emogirl.img "Belly Grrl" 5)
  ))
 
 (define avatar-idx 0)
@@ -375,10 +400,12 @@ end-of-c-declare
   (let* ((idx (if (= avatar-idx 0) (- (length avatars) 1) (- avatar-idx 1)))
          (entry (list-ref avatars idx))
          (img (car entry))
-         (txt (cadr entry)))
+         (txt (cadr entry))
+         (balloon (caddr entry)))
     (glgui-widget-set! gui johnny-avatar 'image img)
     (glgui-widget-set! gui splash-johnny-avatar 'image img)
     (glgui-widget-set! gui splash-johnny-label 'label txt)
+    (select-balloon (if (list? balloon) (list-ref balloon (random-integer (length balloon))) balloon))
     (set! avatar-idx idx)
   ))
 
@@ -504,9 +531,9 @@ end-of-c-declare
 (define (make-bubbles w h)
 
   (set! bubble-outx (flo (- (/ w 2.) 0.)))
-  (set! bubble-outy (flo (+ (/ h 2.) -90.)))
+  (set! bubble-outy (flo (+ (/ h 2.) -90. -40.)))
   (set! bubble-inx (flo (- (/ w 2.) 0.)))
-  (set! bubble-iny (flo (+ (/ h 2.) -80.)))
+  (set! bubble-iny (flo (+ (/ h 2.) -80. -40.)))
 
   ;; physics
   (set! cm-space (cpSpaceNew))
@@ -792,7 +819,7 @@ end-of-c-declare
    (set! gui (make-glgui))
    (let ((w (glgui-width-get)) (h (glgui-height-get)))
      (make-world w h)
-     (make-gondola w h)
+     (make-balloon w h)
      (make-johnny w h)
      (make-blink w h)
      (make-bubbles w h)
@@ -817,7 +844,7 @@ end-of-c-declare
      ;; (scheduler-iterate (lambda () #t))
      (update-blink now)
      (update-johnny now state)
-     (update-gondola now state)
+     (update-balloon now state)
      (update-cloud state)
      (update-world now state)
      (update-height)
