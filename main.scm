@@ -136,7 +136,6 @@ end-of-c-declare
 (define BREATH_IN ((c-lambda () int "___result=BREATH_IN;")))
 (define BREATH_HOLD ((c-lambda () int "___result=BREATH_HOLD;")))
 (define BREATH_OUT ((c-lambda () int "___result=BREATH_OUT;")))
-;;(define BREATH_PAUSE ((c-lambda () int "___result=BREATH_PAUSE;")))
 
 (define GOING_UP 0)
 (define GOING_NOWHERE 1)
@@ -174,9 +173,9 @@ end-of-c-declare
      (glgui-box world 0 (* 2 dh) w dh (list RoyalBlue RoyalBlue LightGoldenrod LightGoldenrod))
      (glgui-box world 0 (* 3 dh) w dh (list Black Black RoyalBlue RoyalBlue))
      
-     (glgui-pixmap world 0 0 pixmap_field.img w (/ h 5.))
+     (glgui-pixmap world (- 10) 0 field.img (+ w 10) (/ h 5.))
 
-     (glgui-pixmap world 0 (* 0.8 h) pixmap_rainbow.img w (/ h 2.))
+     (glgui-pixmap world 0 (* 0.8 h) rainbow.img w (/ h 2.))
 
      (let ((wgt (glgui-pixmap world 0 (- (* 2 h) w) pixmap_rays.img w (* 2 w))))
        (glgui-widget-set! world wgt 'color (color-fade White 0.25)))
@@ -212,18 +211,18 @@ end-of-c-declare
 
 (define (make-cloud w h)
   (set! clouds (make-glgui))
-;;  (glgui-sprite  clouds 'y (* 0.2 h) 'x -10 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 0.75 h) 'x (- w (car pixmap_cloud.img) -10) 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 1.25 h) 'x -10 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 1.7 h) 'x (- w (car pixmap_cloud.img) -10) 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 2.2 h) 'x -10 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 2.75 h) 'x (- w (car pixmap_cloud.img) -10) 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 3.25 h) 'x -10 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 3.7 h) 'x (- w (car pixmap_cloud.img) -10) 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 4.25 h) 'x -10 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 4.7 h) 'x (- w (car pixmap_cloud.img) -10) 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 5.25 h) 'x -10 'image pixmap_cloud.img 'color (color-fade White 0.7))
-  (glgui-sprite  clouds 'y (* 5.8 h) 'x (- w (car pixmap_cloud.img) -10) 'image pixmap_cloud.img 'color (color-fade White 0.7))
+;;  (glgui-sprite  clouds 'y (* 0.2 h) 'x -10 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 0.75 h) 'x (- w (car cloud.img) -10) 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 1.25 h) 'x -10 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 1.7 h) 'x (- w (car cloud.img) -10) 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 2.2 h) 'x -10 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 2.75 h) 'x (- w (car cloud.img) -10) 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 3.25 h) 'x -10 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 3.7 h) 'x (- w (car cloud.img) -10) 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 4.25 h) 'x -10 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 4.7 h) 'x (- w (car cloud.img) -10) 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 5.25 h) 'x -10 'image cloud.img 'color (color-fade White 0.7))
+  (glgui-sprite  clouds 'y (* 5.8 h) 'x (- w (car cloud.img) -10) 'image cloud.img 'color (color-fade White 0.7))
   (glgui-set! clouds 'cloudcolor  (color-fade White 0.7))
 )
 
@@ -314,8 +313,6 @@ end-of-c-declare
 (define (make-johnny w h)
   (let* ((jw (car johnny-happy.img)) 
          (jh (cadr johnny-happy.img))
-        ;; (x (+ (/ (- w jw) 2.0) 10))
-        ;; (y (- (/ (- h jh) 2.) 60))
          (x (+ (/ (- w jw) 2.0) 0))
          (y (- (/ (- h jh) 2.) 100))
         )
@@ -342,26 +339,6 @@ end-of-c-declare
       (glgui-widget-set! gui johnny-eyes 'image (if (and eye? (= idx 0)) eyes-up.img (if (and eye? (= idx 2)) eyes-down.img eyes-straight.img)))
       (glgui-widget-set! gui johnny 'y (+ y0 ofs))
       (set! johnny:last now))))
-
-;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-;; stars
-
-(define score 5)
-(define stars #f)
-
-(define (make-stars w h)
-  (let* ((dx (/ w 11.)) (y0  (- h 32)) (x0 (/ dx 2.)))
-    (set! stars
-      (let loop ((n 0)(x x0)(res '()))
-        (if (fx= n 10) res 
-          (loop (fx+ n 1) (+ x dx) (append res (list
-            (glgui-sprite gui 'x x 'y y0 'image pixmap_stargrey.img)))))))))
-
-(define (update-stars)
-  (let loop ((n 0)(s stars))
-    (if (and (> (length s) 0)) (begin
-       (glgui-widget-set! gui (car s) 'image (if (> score n) pixmap_star.img pixmap_stargrey.img))
-         (loop (fx+ n 1) (cdr s))))))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; blink
@@ -404,7 +381,6 @@ end-of-c-declare
          (balloon (caddr entry)))
     (glgui-widget-set! gui johnny-avatar 'image img)
     (glgui-widget-set! gui splash-johnny-avatar 'image img)
-    (glgui-widget-set! gui splash-johnny-label 'label txt)
     (select-balloon (if (list? balloon) (list-ref balloon (random-integer (length balloon))) balloon))
     (set! avatar-idx idx)
   ))
@@ -419,7 +395,12 @@ end-of-c-declare
 (define splash-johnny #f)
 (define splash-johnny-eyes #f)
 (define splash-johnny-avatar #f)
-(define splash-johnny-label #f)
+;;(define splash-johnny-label #f)
+
+(define splash-logo #f)
+(define splash-banner #f)
+(define splash-scorelabel #f)
+(define splash-hiscorelabel #f)
 
 (define (make-splash w h)
   (set! splash (make-glgui))
@@ -432,41 +413,146 @@ end-of-c-declare
 
   (glgui-image splash 0 (- h 60 (cadr title.img)) w (cadr title.img) title.img White)
 
+  (let ((banx 0)
+        (bany (+ 40 (/ h 3)))
+        (banw w)
+        (banh (/ h 3.)))
+    (set! splash-banner (glgui-image splash banx bany banw banh banner.img (color-fade White 0.5)))
+    (set! splash-logo (glgui-image splash banx bany banw banh bcch.img White))
+    (set! splash-scorelabel (glgui-label splash banx (+ bany banh -110) banw 50 "1213" score_48.fnt Yellow))
+    (set! splash-hiscorelabel (glgui-label splash banx (+ bany 90) banw 50 "*high*" score_48.fnt Yellow))
+    (glgui-widget-set! splash splash-scorelabel 'hidden #t)
+    (glgui-widget-set! splash splash-hiscorelabel 'hidden #t)
+    (glgui-widget-set! splash splash-banner 'hidden #t)
+  )
+  (glgui-widget-set! splash splash-scorelabel 'align GUI_ALIGNCENTER)
+  (glgui-widget-set! splash splash-hiscorelabel 'align GUI_ALIGNCENTER)
+
+   (let ((btnx 0)
+         (btny (+ 64 16))
+         (btnw w)
+         (btnh (/ h 3.)))
+     (glgui-image splash btnx btny btnw btnh buttons.img White)
+     (let ((wgt (glgui-box splash btnx btny btnw btnh (color-fade White 0.))))
+       (glgui-widget-set! splash wgt 'callback (lambda (g wgt type mx my)
+         (let ((rx (/ (- mx btnx) btnw))
+               (ry (/ (- my btny) btnh)))
+           (cond
+             ((and (< rx 0.5) (> ry 0.5))  ;; play
+                (glgui-set! world 'yofs 0)
+                (set! menu-mode 'FEEDBACK)
+                (belly-init)
+                (reset-time)
+                (start-recording))
+             ((and (> rx 0.5) (> ry 0.5)) ;; train
+                (set! state GOING_NOWHERE)
+                (glgui-set! world 'yofs 0)
+                (set! menu-mode 'TEACH)
+                (reset-time)
+                (start-recording))
+             ((and (< rx 0.5) (< ry 0.5)) ;; blank
+              (set! menu-mode 'MEASURE) 
+              (reset-time)
+              (start-recording))
+             ((and (> rx 0.5) (< ry 0.5)) ;; demo
+                (glgui-set! world 'yofs 0) 
+                (set! menu-mode 'DEMO))
+           )
+     )))))
+
     (let* ((jw (car johnny-happy.img)) 
            (jh (cadr johnny-happy.img))
            (x (+ (/ (- w jw) 2.0) 0))
-           (y (+ (/ (- h jh) 2.) 100)))
+           (y (- (/ (- h jh) 2.) 200 -16)))
       (set! splash-johnny  (glgui-sprite splash 'x x 'y y 'y0 y 'image johnny-happy.img 'color White))
       (set! splash-johnny-eyes  (glgui-sprite splash 'x x 'y y 'y0 y 'image eyes-straight.img 'color White))
       (set! splash-johnny-avatar  (glgui-sprite splash 'x x 'y y 'y0 y 'image (car (car avatars)) 'color White))
-      (set! splash-johnny-label (glgui-label splash 0 (- y 60) w 64 (cadr (car avatars)) measure_24.fnt Black))
-      (glgui-widget-set! splash splash-johnny-label 'align GUI_ALIGNCENTER)
       (glgui-widget-set! splash splash-johnny-avatar 'releasecallback (lambda (x . y) (avatar-rotate)))
      )
-
-    (glgui-button-string splash bx by bw bh "Start" measure_24.fnt (lambda (x . y) 
-      (glgui-set! world 'yofs 0) 
-      (set! menu-mode 'FEEDBACK)
-      (belly-init)
-      (reset-time)
-      (start-recording)))
-    (set! by (- by (* 1.5 bh)))
-    (glgui-button-string splash bx by bw bh "Trainer" measure_24.fnt (lambda (x . y) 
-      (set! state GOING_NOWHERE)
-      (glgui-set! world 'yofs 0)
-      (set! menu-mode 'TEACH)
-      (reset-time)
-      (start-recording)))
-    (set! by (- by (* 1.5 bh)))
-    (glgui-button-string splash bx by bw bh "Blank Recorder" measure_24.fnt (lambda (x . y) 
-      (set! menu-mode 'MEASURE)
-      (reset-time)
-      (start-recording)))
-    (set! by (- by (* 1.5 bh)))
-    (glgui-button-string splash bx by bw bh "Demo" measure_24.fnt (lambda (x . y) 
-      (glgui-set! world 'yofs 0) 
-      (set! menu-mode 'DEMO)))
 ))
+
+(define (update-splash)
+  (if (eq? menu-mode 'MENU) 
+    (let ((hidescore (not lastscore)))
+      (glgui-widget-set! splash splash-banner 'hidden hidescore)
+      (glgui-widget-set! splash splash-scorelabel 'hidden hidescore)
+      (glgui-widget-set! splash splash-hiscorelabel 'hidden hidescore)
+      (glgui-widget-set! splash splash-logo 'hidden (not hidescore))
+      (if (and lastscore hiscore (= lastscore hiscore))
+        (glgui-widget-set! splash splash-scorelabel 'color (colorflutter scoreflutter)))
+    )))
+
+;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;; gameover
+
+(define gameover #f)
+(define gameover-scorelabel #f)
+(define gameover-bonuslabel #f)
+(define gameover-lastupdate 0.)
+(define gameover-stage 0)
+
+(define bonus 0)
+(define basescore 0)
+(define bonusscore 0)
+(define score 0)
+(define lastscore #f)
+
+(define hiscorefile (string-append (system-directory) (system-pathseparator) "hiscore"))
+(define hiscore (if (file-exists? hiscorefile) (with-input-from-file hiscorefile read) #f))
+
+(define scoreflutter (make-colorflutter Yellow White .5))
+
+(define (make-gameover w h)
+  (set! gameover (make-glgui))
+  (let ((banx 0)
+        (bany (/ h 1.7))
+        (banw w)
+        (banh (/ h 3.)))
+    (glgui-image gameover banx bany banw banh banner.img (color-fade White 0.5))
+    (set! gameover-scorelabel (glgui-label gameover banx (+ bany banh -110) banw 50 "" score_48.fnt Yellow))
+    (set! gameover-bonuslabel (glgui-label gameover banx (+ bany 90) banw 50 "Bonus" score_48.fnt Yellow))
+  )
+  (glgui-widget-set! gameover gameover-scorelabel 'align GUI_ALIGNCENTER)
+  (glgui-widget-set! gameover gameover-bonuslabel 'align GUI_ALIGNCENTER)
+  (glgui-image gameover 0 (* 0.15 h) w (* 0.45 h) trophy.img White)
+)
+
+(define (update-gameover n)
+  (if (and (eq? menu-mode 'GAMEOVER) (= score bonusscore)) 
+    (glgui-widget-set! gameover gameover-scorelabel 'color (colorflutter scoreflutter)))
+  (if (and (eq? menu-mode 'GAMEOVER) (>= (fl- n gameover-lastupdate) .1)) (begin 
+    (set! gameover-stage (+ gameover-stage 1))
+    (if (> gameover-stage 60)
+      (let* ((deltascore (/ (* bonus basescore) 20.))
+              (newscore (+ score deltascore))
+              (fnlscore (if (> newscore bonusscore) bonusscore newscore)))
+        (set! score fnlscore)
+        (glgui-widget-set! gameover gameover-scorelabel 'label (string-append (number->string (fix score)) "m"))
+        (set! gameover-lastupdate n))
+      (if (> gameover-stage 40) (begin
+        (glgui-widget-set! gameover gameover-bonuslabel 'color Yellow)
+        (glgui-widget-set! gameover gameover-bonuslabel 'label (string-append "Bonus " (number->string (fix (* bonus 100.))) "%"))
+        ))))))
+
+(define (prep-gameover)
+  ;; FIXME convert to RSA reading here
+  (let ((bn (+ 0.1 (/ (random-real) 2.))))
+    (set! gameover-stage 0)
+    (glgui-widget-set! gameover gameover-scorelabel 'color Yellow)
+    (glgui-widget-set! gameover gameover-bonuslabel 'color Yellow)
+    (glgui-widget-set! gameover gameover-bonuslabel 'label "Score")
+    (glgui-widget-set! gameover gameover-scorelabel 'label (string-append (number->string (fix score)) "m"))
+    (set! bonus bn)
+    (set! basescore score)
+    (set! bonusscore (* score (+ 1 bonus)))
+    (set! lastscore bonusscore) 
+    (if (or (not hiscore) (> lastscore hiscore)) (begin
+      (set! hiscore lastscore)
+      (with-output-to-file hiscorefile (lambda () (write hiscore)))))
+    (if lastscore (glgui-widget-set! splash splash-scorelabel 'label (string-append (number->string (fix lastscore)) "m")))
+    (if hiscore (glgui-widget-set! splash splash-hiscorelabel 'label (string-append "*" (number->string (fix hiscore)) "m*")))
+    (set! menu-mode 'GAMEOVER)
+   ))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; height
@@ -476,7 +562,6 @@ end-of-c-declare
 
 (define (make-height w h)
   (set! height (make-glgui))
-  ;;(set! height-label (glgui-label height 0 0 w 64 "1m" height_64.fnt Black))
   (set! height-label (glgui-label height 0 32 w 64 "1m" height_64.fnt Black))
   (glgui-widget-set! height height-label 'align GUI_ALIGNCENTER)
 )
@@ -485,9 +570,11 @@ end-of-c-declare
   (let* ((y (glgui-get world 'yofs))
          (idx (/ y (- world-ofs-max)))
          (hf (exp (* idx 13.815510557964275)))
-         (hstr (number->string (if (< hf 100.) (/ (fix (* 10. hf)) 10.) (fix hf))))
+         (hf2 (if (< hf 100.) (/ (fix (* 10. hf)) 10.) (fix hf)))
+         (hstr (number->string hf2))
          (hlen (string-length hstr))
          (fnlstr (string-append hstr (if (string=? (substring hstr (- hlen 1) hlen) ".") "0m" "m"))))
+    (if (eq? menu-mode 'FEEDBACK) (set! score hf2))
     (glgui-widget-set! height height-label 'label fnlstr))) 
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -597,7 +684,6 @@ end-of-c-declare
            ((fx= dynstate BREATH_IN) 'IN)
            ((fx= dynstate BREATH_HOLD) 'HOLD)
            ((fx= dynstate BREATH_OUT) 'OUT)
-         ;;   ((fx= dynstate BREATH_PAUSE) 'PAUSE)
            )))
      (if (not (eq? prvstate curstate)) (begin
        (case prvstate ((OUT) (return-bubbles)) ((HOLD) (reset-bubbles)))
@@ -638,7 +724,6 @@ end-of-c-declare
 ;; instructions
 
 (define instructions #f)
-;;(define instructions-label #f)
 (define instructions-breathe #f)
 (define instructions-breathe-fader 0.)
 (define instructions-hold #f)
@@ -648,8 +733,6 @@ end-of-c-declare
 
 (define (make-instructions w h)
   (set! instructions (make-glgui))
- ;; (set! instructions-label (glgui-label instructions 0 (* 0.8 h) w 64 "" height_64.fnt Black))
- ;; (glgui-widget-set! instructions instructions-label 'align GUI_ALIGNCENTER)
   (set! instructions-breathe (glgui-label instructions 0 (* 0.8 h) w 64 "Breathe-2-3" height_64.fnt (color-fade Black 1.)))
   (set! instructions-hold (glgui-label instructions 0 (* 0.8 h) w 64 "Hold-2-3" height_64.fnt (color-fade Black 1.)))
   (set! instructions-blow (glgui-label instructions 0 (* 0.8 h) w 64 "Blow-2-3" height_64.fnt (color-fade Black 1.)))
@@ -670,16 +753,6 @@ end-of-c-declare
     (glgui-widget-set! instructions instructions-hold 'color (color-fade Black instructions-hold-fader))
     (glgui-widget-set! instructions instructions-blow 'color (color-fade Black instructions-blow-fader))
   ))
-
-#|
-  (glgui-widget-set! instructions instructions-label 'label
-    (case breath-state
-      ((IN) "Breathe-2-3")
-      ((HOLD) "Hold-2-3")
-      ((OUT) "Blow-2-3")
-     ;; ((PAUSE) "")
-    ))
-|#
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; touch element
@@ -730,7 +803,7 @@ end-of-c-declare
     (glgui-widget-set! time-gui time-bar 'w (* r time-w))
     (if (and (= r 1.) time-active) (begin
       (stop-recording)
-      (set! menu-mode 'MENU)
+      (if (and score (> score 0)) (prep-gameover) (set! menu-mode 'MENU))
       (glgui-set! world 'yofs 0)
       (set! state GOING_UP)
       (set! time-active #f)
@@ -832,6 +905,7 @@ end-of-c-declare
      (make-time-gui w h)
      (make-clock-gui w h)
      (make-status-gui w h)
+     (make-gameover w h)
    )
    (let ((logdir (string-append (system-directory) "/log")))
      (if (not (file-exists? logdir)) (create-directory logdir)))
@@ -854,6 +928,8 @@ end-of-c-declare
      (update-time now)
      (update-clock now)
      (update-status now)
+     (update-gameover now)
+     (update-splash)
      (if (eq? menu-mode 'TEACH) (update-instructions))
      (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYESCAPE)) (terminate))
      (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYUP)) (set! state GOING_UP))
@@ -877,7 +953,9 @@ end-of-c-declare
           ((TEACH) (list world gui instructions time-gui status-gui touch-gui))
           ((DEMO) (list world gui clouds touch-gui))
           ((FEEDBACK) (list world gui clouds height measure time-gui status-gui touch-gui))
-          ((MEASURE) (list time-gui status-gui touch-gui))) t x y)
+          ((MEASURE) (list time-gui status-gui touch-gui))
+          ((GAMEOVER) (list world gameover touch-gui))
+        ) t x y)
   ))
  (lambda () #t)
  (lambda () (glgui-suspend) (stop-recording) (terminate))
