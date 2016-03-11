@@ -37,9 +37,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 |#
 
 ;; Module for measuring and confirming respiratory rate
-;; Christian Leth Petersen 2012, Dustin Dunsmuir 2015, Matthias Görges 2015
+;; Christian Leth Petersen 2012, Dustin Dunsmuir 2016, Matthias Görges 2015
 (define rrate:no-settings? #f)
+(define (rrate-use-settings use?) (set! rrate:no-settings? (not use?)))
 (define rrate:no-language? #f)
+(define (rrate-use-language-settings use?) (set! rrate:no-language? (not use?)))
 
 ;; Standard fonts, to switch back to if switching languages
 (define rrate:stfnt_12.fnt text_12.fnt)
@@ -89,7 +91,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (rrate:setting-init x y w h)
   (set! rrate:settings:bg (glgui-container rrate:gui x y w h))
-  (glgui-pixmap rrate:settings:bg 0 43 settings_bg.img)
+  ;; Black background behind everything
+  (glgui-box rrate:settings:bg 0 0 w h Black)
+  (glgui-pixmap rrate:settings:bg 0 43 settings_bg.img w (- h 43))
   
   ;; Only show option for vibrating the phone with sound if on Android
   (set! rrate:settings:show_vibrate (string=? (system-platform) "android"))
@@ -108,10 +112,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   
   ;; The first page of settings, the language
   (set! rrate:settings:language (glgui-container rrate:gui x y w h))
-  (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language (+ x 10) (+ y (- h 285)) (- w 20) 275 (color:shuffle #xd7eaefff)) 'rounded #t)
-  (glgui-label rrate:settings:language (+ x 30) (+ y (- h 50)) (- w 60) 23 "Select language" text_20.fnt Black)
+  (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 (- h 285) (- w 20) 275 (color:shuffle #xd7eaefff)) 'rounded #t)
+  (glgui-label rrate:settings:language 30 (- h 50) (- w 60) 23 "Select language" text_20.fnt Black)
   (rrate-setup-language-choices)
-  (set! rrate:settings:languagelist (glgui-list rrate:settings:language (+ x 50) (+ y (- h 285)) 165 230 46
+  (set! rrate:settings:languagelist (glgui-list rrate:settings:language 50 (- h 285) 165 230 46
     (map (lambda (lan)
            (lambda (g wgt bx by bw bh selected?)
              (glgui:draw-pixmap-center (+ bx 5) (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
@@ -133,9 +137,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (set! rrate:settings:taps (glgui-container rrate:gui x y w h))
 
   ;; Setting for how many taps are needed
-  (glgui-widget-set! rrate:settings:taps (glgui-box rrate:settings:taps (+ x 10) (+ y 53) 300 (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
-  (glgui-label-local rrate:settings:taps (+ x 25) (+ y (- h 150)) (- w 50) 110 "CONSISTENCY_NUM_TAPS" text_20.fnt Black)
-  (set! rrate:settings:tapslist (glgui-list rrate:settings:taps (+ x 20) (+ y (- h 360)) (- w 40) 200 50 
+  (glgui-widget-set! rrate:settings:taps (glgui-box rrate:settings:taps 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
+  (glgui-label-local rrate:settings:taps 25 (- h 150) (- w 50) 110 "CONSISTENCY_NUM_TAPS" text_20.fnt Black)
+  (set! rrate:settings:tapslist (glgui-list rrate:settings:taps 20 (- h 360) (- w 40) 200 50
     (map (lambda (n) (lambda (g wgt bx by bw bh selected?)
       (let ((cx (+ bx (- (/ bw 2) 50))))
         (glgui:draw-pixmap-center cx (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
@@ -156,19 +160,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'current 2)
   
   ;; The third page of settings, consistency threshold
-  (set! rrate:settings:consistency (glgui-container rrate:gui x y w h))
-  (glgui-widget-set! rrate:settings:consistency (glgui-box rrate:settings:consistency (+ x 10) (+ y 53) 300 (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
-  (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 80)) (- w 10) 60 "CONSISTENCY_THRESH" text_20.fnt Black)
-  (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 100)) (- w 10) 20 "M_MEDIAN" text_14.fnt Black)
-  (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 120)) (- w 10) 20 "C_CONSISTENCY" text_14.fnt Black)
-  (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 155)) 55 20 "M_pC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-  (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 170)) 55 20 "M" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-  (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency (+ x 20) (+ y (- h 185)) 55 20 "M_mC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-  (glgui-pixmap rrate:settings:consistency (+ x 78) (+ y (- h 190)) diagram.img)
-  (glgui-label-local rrate:settings:consistency (+ x 123) (+ y (- h 150)) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
-  (glgui-label-local rrate:settings:consistency (+ x 126) (+ y (- h 170)) (- w 10) 20 "CONSISTENTD" text_14.fnt Black)
-  (glgui-label-local rrate:settings:consistency (+ x 123) (+ y (- h 190)) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
-  (set! rrate:settings:percentlist (glgui-list rrate:settings:consistency (+ x 20) (+ y (- h 390)) (- w 40) 180 35 
+  (let ((leftx (+ (- w 320) 20)))
+    (set! rrate:settings:consistency (glgui-container rrate:gui x y w h))
+    (glgui-widget-set! rrate:settings:consistency (glgui-box rrate:settings:consistency 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
+    (glgui-label-local rrate:settings:consistency 20 (- h 80) (- w 10) 60 "CONSISTENCY_THRESH" text_20.fnt Black)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency 10 (- h 100) (- w 20) 20 "M_MEDIAN" text_14.fnt Black) 'align GUI_ALIGNCENTER)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency 10 (- h 120) (- w 20) 20 "C_CONSISTENCY" text_14.fnt Black) 'align GUI_ALIGNCENTER)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 155) 55 20 "M_pC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 170) 55 20 "M" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 185) 55 20 "M_mC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+    (glgui-pixmap rrate:settings:consistency (+ leftx 58) (- h 190) diagram.img)
+    (glgui-label-local rrate:settings:consistency (+ leftx 103) (- h 150) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
+    (glgui-label-local rrate:settings:consistency (+ leftx 106) (- h 170) (- w 10) 20 "CONSISTENTD" text_14.fnt Black)
+    (glgui-label-local rrate:settings:consistency (+ leftx 103) (- h 190) (- w 10) 20 "INCONSISTENT" text_14.fnt Black))
+  (set! rrate:settings:percentlist (glgui-list rrate:settings:consistency 20 (- h 390) (- w 40) 180 35
     (map (lambda (p) (lambda (g wgt bx by bw bh selected?)
       (let ((cx (+ bx (- (/ bw 2) 50))))
         (glgui:draw-pixmap-center cx (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
@@ -191,13 +196,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Show vibrate option on first page under language options
   (if rrate:settings:show_vibrate
     ;; Show checkbox for turning on and off vibration with sound (only Android)
-    (let ((vbottom (+ y 53))
+    (let ((vbottom 53)
           ;; Put below language options
           (vh (- h 348)))
-      (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language (+ x 10) vbottom (- w 20) vh (color:shuffle #xd7eaefff)) 'rounded #t)
-      (glgui-label rrate:settings:language (+ x 95) (+ vbottom (- (/ vh 2) 15)) (- w 105) 25 (local-get-text "VIBRATE_SOUND") text_20.fnt Black)
-      (set! rrate:settings:vibrate_box (glgui-pixmap rrate:settings:language (+ x 55) (+ vbottom (- (/ vh 2) 15)) checkedbox.img))
-      (set! rrate:settings:vibrate_trigger (glgui-box rrate:settings:language (+ x 42) (+ vbottom (- (/ vh 2) 25)) (- w 52) 50 (color-fade White 0)))
+      (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 vbottom (- w 20) vh (color:shuffle #xd7eaefff)) 'rounded #t)
+      (glgui-label rrate:settings:language 95 (+ vbottom (- (/ vh 2) 15)) (- w 105) 25 (local-get-text "VIBRATE_SOUND") text_20.fnt Black)
+      (set! rrate:settings:vibrate_box (glgui-pixmap rrate:settings:language 55 (+ vbottom (- (/ vh 2) 15)) checkedbox.img))
+      (set! rrate:settings:vibrate_trigger (glgui-box rrate:settings:language 42 (+ vbottom (- (/ vh 2) 25)) (- w 52) 50 (color-fade White 0)))
       (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_trigger 'callback
           (lambda (g . x)
              (if (settings-ref "VibrateSound")
@@ -209,7 +214,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                  (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image checkedbox.img)))))))
   
   ;; Go to the next page or finish settings
-  (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg 213 6 100 32 right_arrow.img
+  (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg (- w 107) 6 100 32 right_arrow.img
     (lambda (g . x)
       (if (fx= rrate:settings:page 2)
         ;; Leave the settings page
@@ -240,6 +245,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:gui #f)
 (define rrate:cont #f)
 (define rrate:tapbg #f)
+(define rrate:animationbg #f)
 (define rrate:cancelbutton #f)
 (define rrate:settingsbutton #f)
 (define rrate:nobutton #f)
@@ -250,8 +256,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:value #f)
 (define rrate:toplayer #f)
 (define rrate:toplayer_rrate #f)
-(define rrate:toplayer_unit #f)
-(define rrate:extratop #f)
 (define rrate:tapicons #f)
 (define rrate:qualitybg #f)
 (define rrate:qualitybg_high #f)
@@ -283,18 +287,30 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:store #f)
 
 ;; Defines position of baby body parts
-(define rrate:position:larmx 70)
+(define rrate:position:larmx_def 105)
+(define rrate:position:larmx 105)
+(define rrate:position:larmy_def 77)
 (define rrate:position:larmy 77)
-(define rrate:position:rarmx 70)
+(define rrate:position:rarmx_def 105)
+(define rrate:position:rarmx 105)
+(define rrate:position:rarmy_def 74)
 (define rrate:position:rarmy 74)
-(define rrate:position:mouthx 149)
+(define rrate:position:mouthx_def 184)
+(define rrate:position:mouthx 184)
+(define rrate:position:mouthy_def 264)
 (define rrate:position:mouthy 264)
-(define rrate:position:bodyx 70)
+(define rrate:position:bodyx_def 105)
+(define rrate:position:bodyx 105)
+(define rrate:position:bodyy_def 74)
 (define rrate:position:bodyy 74)
 
 (define rrate:times '())
 (define rrate:rate 0.)
 (define rrate:animateoffset 0.0)
+
+;; Offset in x and y for baby animation to center in available space
+(define rrate:xoffset 0)
+(define rrate:yoffset 0)
 
 ;; Start of 1 minute timer
 (define rrate:starttime #f)
@@ -451,7 +467,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
              
               ;; Set rate to be this median rate
               (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
-              (glgui-widget-set! rrate:cont rrate:value 'x (if (fx= (string-length valstr) 3) 0 9))
+              (glgui-widget-set! rrate:cont rrate:value 'x (+ (if (fx= (string-length valstr) 3) 35 44) rrate:xoffset))
               (set! rrate:rate medrate)
 
               ;; Set animate offset
@@ -486,7 +502,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                      (set! rrate:rate (/ 60. rrate:calc:medinterval))
                      (let ((valstr (number->string (fix (round rrate:rate)))))
                        (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
-                       (glgui-widget-set! rrate:cont rrate:value 'x (if (fx= (string-length valstr) 3) 0 9)))
+                       (glgui-widget-set! rrate:cont rrate:value 'x (+ (if (fx= (string-length valstr) 3) 35 44) rrate:xoffset)))
                      
                      ;; Show message about error with taps and change number to red
                      (glgui-widget-set! rrate:cont rrate:value 'color Grey)
@@ -555,10 +571,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! rrate:cont rrate:qualitybg_low 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:value 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:toplayer 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:toplayer_rrate 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:toplayer_unit 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:extratop 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:tapbg 'image (if stage2 stage2_bg.img stage1_bg.img))
+    (glgui-widget-set! rrate:cont rrate:tapbg 'hidden stage2)
+    (glgui-widget-set! rrate:cont rrate:animationbg 'hidden (not stage2))
 
     ;; Reset skipping breath sound if going back to stage 1
     (if (not stage2)
@@ -599,10 +613,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (if ignore?
      (begin
         (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'hidden #f)
-        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x 17))
+        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x (+ 52 rrate:xoffset)))
      (begin
         (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'hidden #t)
-        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x 90)))
+        (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x (+ 125 rrate:xoffset))))
   
   ;; Hide the cancel button
   (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden #t)
@@ -730,7 +744,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (set! text_40.fnt textEng_40.fnt)))
   
    ;; Initialize the settings page and set the settings
-   (rrate:setting-init 0 0 w h)
+   (rrate:setting-init x y w h)
    (let* ((taps (settings-ref "Taps" 5))
           (tindex (list-pos rrate:settings:tapchoices (number->string taps)))
           (consistency (settings-ref "Consistency" 13))
@@ -748,7 +762,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! beep (audiofile-load "beep"))
    (set! chimes (audiofile-load "chimes"))
     
-   (set! rrate:tapbg (glgui-pixmap rrate:cont 0 43 stage1_bg.img))
+   ;; Black background behind everything
+   (glgui-box rrate:cont 0 0 w h Black)
+
+   (set! rrate:tapbg (glgui-pixmap rrate:cont 0 43 stage1_bg.img w (cadr stage1_bg.img)))
  
    (set! rrate:cancelbutton (glgui-button-local rrate:cont 12 6 145 32 "CANCEL" text_20.fnt
      (lambda (g . x)
@@ -769,7 +786,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden (not rrate:cancelproc))
      
    ;; Go to the settings page after cancelling the current tapping
-   (set! rrate:settingsbutton (glgui-button rrate:cont 213 6 100 32 icon_setup.img
+   (set! rrate:settingsbutton (glgui-button rrate:cont (- w 107) 6 100 32 icon_setup.img
      (lambda (g . x)
        ;; Clear interval and scale values
        (set! rrate:calc:medinterval #f)
@@ -811,12 +828,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #t)
      
    ;; Confirmation question about animation
-   (set! rrate:confirm (glgui-label-local rrate:cont 79 2 (- (glgui-width-get) 75 72) 36
+   (set! rrate:confirm (glgui-label-local rrate:cont 79 2 (- w 75 72) 36
      "RR_MATCH" text_14.fnt White))
    (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
      
    ;; Remove the confirm question and show the other buttons instead, run done procedure
-   (set! rrate:yesbutton (glgui-button-local rrate:cont (- (glgui-width-get) 65 6) 6 65 32 "YES" text_20.fnt
+   (set! rrate:yesbutton (glgui-button-local rrate:cont (- w 65 6) 6 65 32 "YES" text_20.fnt
      (lambda (g . x)
        ;; Save the RR to the store
        (if rrate:store (store-set! rrate:store "RR" (glgui-widget-get rrate:cont rrate:value 'label)))
@@ -832,7 +849,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:yesbutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
      
-   (set! rrate:exitbutton (glgui-button-local rrate:cont (- (glgui-width-get) 140 6) 6 140 32 "EXIT" text_20.fnt
+   (set! rrate:exitbutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "EXIT" text_20.fnt
      (lambda (g . x)
        ;; Prepare for next time
        (rrate-reset)   
@@ -846,16 +863,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:exitbutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #t)
 
-   ;; Animated parts of the baby with ghosted parts on top
-   (set! rrate:rarm (glgui-sprite rrate:cont 'x rrate:position:rarmx  'y rrate:position:rarmy  'image right_arm.img 'rendercallback rrate:animate-right-arm))
-   (glgui-widget-set! rrate:cont rrate:rarm 'hidden #t)
-   (set! rrate:body (glgui-sprite rrate:cont 'x rrate:position:bodyx  'y rrate:position:bodyy  'image body.img 'rendercallback rrate:animate-body))
-   (glgui-widget-set! rrate:cont rrate:body 'hidden #t)
-   (set! rrate:dbody (glgui-pixmap rrate:cont rrate:position:bodyx (- rrate:position:bodyy 1) dotted_body.img))
-   (glgui-widget-set! rrate:cont rrate:dbody 'hidden #t)
-   (set! rrate:larm (glgui-sprite rrate:cont 'x rrate:position:larmx 'y rrate:position:larmy 'image left_arm.img 'rendercallback rrate:animate-left-arm))
-   (glgui-widget-set! rrate:cont rrate:larm 'hidden #t)
-
    ;; Dots that show how many taps have been done so far
    (let ((tw (/ (- w 20 (car dot_light.img)) 11))
          (ty 73))
@@ -863,24 +870,52 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (if (fx< (length icons) 12)
          (dloop (+ tx tw) (append icons (list (glgui-pixmap rrate:cont tx ty dot_light.img))))
          (set! rrate:tapicons icons))))
-
-   ;; Circle, head and bubble
-   (set! rrate:toplayer (glgui-pixmap rrate:cont x (+ y 43) top_layer.img))
-   (set! rrate:toplayer_rrate (glgui-label-local rrate:cont (+ x 5) (+ y 362) 100 40 "RRATE" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNTOP))
-   (set! rrate:toplayer_unit (glgui-label-local rrate:cont (+ x 5) (+ y 295) 105 40 "RRATE_UNIT" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNBOTTOM))
-   (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #t))
-     (list rrate:toplayer rrate:toplayer_rrate rrate:toplayer_unit))
   
-   ;; Extra space above the top layer
-   (let ((ey (+ y 43 (cadr top_layer.img))))
-     (set! rrate:extratop (glgui-box rrate:cont x ey w (- h ey) rrate:sidecolor))
-     (glgui-widget-set! rrate:cont rrate:extratop 'hidden #t))
+   ;; Animated parts of the baby with ghosted parts on top
+  (let* ((wspace (/ (- w (car top_layer.img)) 2))
+         (hspace (/ (- h (cadr top_layer.img) 92) 2))
+         (yimage (+ hspace 92))
+         (yabove (floor (+ yimage (cadr top_layer.img)))))
+     (set! rrate:xoffset wspace)
+     (set! rrate:yoffset (+ hspace 1))
+     (set! rrate:animationbg (glgui-pixmap rrate:cont (+ rrate:xoffset 35) (+ 43 rrate:yoffset) stage2_bg.img w (cadr stage2_bg.img)))
+     (glgui-widget-set! rrate:cont rrate:animationbg 'hidden #t)
+     (set! rrate:position:rarmx (+ rrate:position:rarmx_def rrate:xoffset))
+     (set! rrate:position:rarmy (+ rrate:position:rarmy_def rrate:yoffset))
+     (set! rrate:rarm (glgui-sprite rrate:cont 'x rrate:position:rarmx  'y rrate:position:rarmy  'image right_arm.img 'rendercallback rrate:animate-right-arm))
+     (glgui-widget-set! rrate:cont rrate:rarm 'hidden #t)
+     (set! rrate:position:bodyx (+ rrate:position:bodyx_def rrate:xoffset))
+     (set! rrate:position:bodyy (+ rrate:position:bodyy_def rrate:yoffset))
+     (set! rrate:body (glgui-sprite rrate:cont 'x rrate:position:bodyx  'y rrate:position:bodyy  'image body.img 'rendercallback rrate:animate-body))
+     (glgui-widget-set! rrate:cont rrate:body 'hidden #t)
+     (set! rrate:dbody (glgui-pixmap rrate:cont rrate:position:bodyx (- rrate:position:bodyy 1) dotted_body.img))
+     (glgui-widget-set! rrate:cont rrate:dbody 'hidden #t)
+     (set! rrate:position:larmx (+ rrate:position:larmx_def rrate:xoffset))
+     (set! rrate:position:larmy (+ rrate:position:larmy_def rrate:yoffset))
+     (set! rrate:larm (glgui-sprite rrate:cont 'x rrate:position:larmx 'y rrate:position:larmy 'image left_arm.img 'rendercallback rrate:animate-left-arm))
+     (glgui-widget-set! rrate:cont rrate:larm 'hidden #t)
+
+     ;; Circle, head and bubble
+     (set! rrate:toplayer (glgui-container rrate:cont 0 0 w h))
+     ;; Put circle in center vertically
+     (glgui-pixmap rrate:toplayer rrate:xoffset yimage top_layer.img)
+     (glgui-box rrate:toplayer 0 43 w (- yimage 43) rrate:sidecolor)
+     (glgui-box rrate:toplayer 0 yabove w hspace rrate:sidecolor)
+     (if (> rrate:xoffset 0)
+       (begin
+         (glgui-box rrate:toplayer 0 43 rrate:xoffset (- h 43) rrate:sidecolor)
+         (glgui-box rrate:toplayer (- w rrate:xoffset) 43 rrate:xoffset (- h 43) rrate:sidecolor)))
+     (set! rrate:toplayer_rrate (glgui-label-local rrate:toplayer (+ 40 rrate:xoffset) (+ 362 rrate:yoffset) 100 40 "RRATE" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNTOP))
+     (glgui-label-local rrate:toplayer (+ 40 rrate:xoffset) (+ 295 rrate:yoffset) 105 40 "RRATE_UNIT" text_14.fnt DarkBlue GUI_ALIGNLEFT GUI_ALIGNBOTTOM)
+     (glgui-widget-set! rrate:cont rrate:toplayer 'hidden #t))
 
    ;; Animated mouth
-   (set! rrate:mouth (glgui-sprite rrate:cont 'x 149 'y 254 'image mouth.img 'rendercallback rrate:animate-mouth))
+   (set! rrate:position:mouthx (+ rrate:position:mouthx_def rrate:xoffset))
+   (set! rrate:position:mouthy (+ rrate:position:mouthy_def rrate:yoffset))
+   (set! rrate:mouth (glgui-sprite rrate:cont 'x rrate:position:mouthx 'y rrate:position:mouthy 'image mouth.img 'rendercallback rrate:animate-mouth))
    (glgui-widget-set! rrate:cont rrate:mouth 'hidden #t)
 
-   (set! rrate:value (glgui-label rrate:cont 9 (- (glgui-widget-get rrate:cont rrate:toplayer_rrate 'y) 60) 150 55 "" numbers_56.fnt rrate:textcolor))
+   (set! rrate:value (glgui-label rrate:cont (+ 44 rrate:xoffset) (- (glgui-widget-get rrate:toplayer rrate:toplayer_rrate 'y) 60) 150 55 "" numbers_56.fnt rrate:textcolor))
    (glgui-widget-set! rrate:cont rrate:value 'hidden #t)
 
    ;; Message about synchronizing the animation
@@ -889,13 +924,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;   (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden #t)
 
    ;; Make quality lines
-   (set! rrate:qualitybg (glgui-pixmap rrate:cont 0 53 quality_lines.img))
+   (set! rrate:qualitybg (glgui-pixmap rrate:cont 0 53 quality_lines.img w (cadr quality_lines.img)))
    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden #t)
    (let ((x (- (glgui-width-get) 128)) (w 125) (h 20))
      (set! rrate:qualitybg_high (glgui-label-local rrate:cont x 87 w h "FAST" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
      (set! rrate:qualitybg_consistent (glgui-label-local rrate:cont x 69 w h "CONSISTENT" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
-     (set! rrate:qualitybg_low (glgui-label-local rrate:cont x 50 w h "SLOW" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
-   )
+     (set! rrate:qualitybg_low (glgui-label-local rrate:cont x 50 w h "SLOW" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER)))
    (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #t))
      (list rrate:qualitybg_high rrate:qualitybg_consistent rrate:qualitybg_low))
  
@@ -926,22 +960,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:tapbutton 'button-selected-color (color-rgb 42 54 146))
      
    ;; Create popup background and message
-   (set! rrate:popup:cont (glgui-container rrate:gui 0 0 w h))
+   (set! rrate:popup:cont (glgui-container rrate:gui x y w h))
    (glgui-widget-set! rrate:gui rrate:popup:cont 'modal #t)
-   (set! rrate:popup:bg (glgui-box rrate:popup:cont 10 113 300 110 (color-fade Black 0.8)))
+   (set! rrate:popup:bg (glgui-box rrate:popup:cont (+ 45 rrate:xoffset) (+ 113 rrate:yoffset) 300 110 (color-fade Black 0.8)))
    (glgui-widget-set! rrate:popup:cont rrate:popup:bg 'rounded #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:bg 'modal #t)
 
    ;; Error messages about respiratory rate
-   (set! rrate:popup:inconsistent (glgui-label-local rrate:popup:cont 40 166 240 50
+   (set! rrate:popup:inconsistent (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 50
      "TAPS_INCONSISTENT" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'modal #t)
-   (set! rrate:popup:notenough (glgui-label-local rrate:popup:cont 40 166 240 50
+   (set! rrate:popup:notenough (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 50
       "NOT_ENOUGH_TAPS" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'modal #t)
-   (set! rrate:popup:toofast (glgui-label-local rrate:popup:cont 40 166 240 50
+   (set! rrate:popup:toofast (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 50
      "TAPS_TOO_FAST" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
@@ -949,7 +983,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Popup buttons
 
    ;; Make retry button with the same callback as the no button
-   (set! rrate:popup:retrybutton (glgui-button-local rrate:popup:cont 17 125 139 32 "RETRY" text_20.fnt
+   (set! rrate:popup:retrybutton (glgui-button-local rrate:popup:cont (+ 52 rrate:xoffset) (+ 125 rrate:yoffset) 139 32 "RETRY" text_20.fnt
      (lambda (g wgt . x) 
        (rrate:hide-popup)
        ;; Reset trend text colour
@@ -966,7 +1000,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'modal #t)
      
    ;; Make Ignore button for rejecting retry, use same callback as Yes button for matching animation
-   (set! rrate:popup:ignorebutton (glgui-button-local rrate:popup:cont 163 125 139 32 "IGNORE" text_20.fnt
+   (set! rrate:popup:ignorebutton (glgui-button-local rrate:popup:cont (+ 198 rrate:xoffset) (+ 125 rrate:yoffset) 139 32 "IGNORE" text_20.fnt
      (lambda (g wgt . x)
        ;; Exit modal mode and go to animation
        (rrate:hide-popup)
@@ -1007,7 +1041,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
              (let* ((medrate (/ 60. rrate:calc:medinterval))
                     (valstr (number->string (fix (round medrate)))))
                (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
-               (glgui-widget-set! rrate:cont rrate:value 'x (if (fx= (string-length valstr) 3) 2 9))
+               (glgui-widget-set! rrate:cont rrate:value 'x (+ (if (fx= (string-length valstr) 3) 35 44) rrate:xoffset))
                (set! rrate:rate medrate)
                ;; Show popup, and change RR colour to red for if we go to the animation page
                (glgui-widget-set! rrate:cont rrate:value 'color Grey)
