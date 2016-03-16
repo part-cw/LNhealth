@@ -711,6 +711,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (rrate:go-to-stage 1)
 ) 
 
+;; Clears the RRate related values from the store
+(define (rrate-store-clear)
+  (store-clear! rrate:store "RR")
+)
+
 ;M @deffn {procedure} rrate-init x y w h store cancelproc doneproc
 ;M Initializes the Respiratory Rate module graphics.
 ;M Display the rrate:cont to see the module graphics.
