@@ -1,6 +1,6 @@
 (unit-test "s5parser-waveforms" "Test S5 Waveform package disassembly"
   (lambda ()
-    (let ((data (u8vector->u8data (u8vector 
+    (let ((data (u8vector->u8data (u8vector
 #x88 #x02 #xe3 #x08 #xd1 #x8a #x58 #x9b #x9f #x4a #x01 #x00 #x00 #x00 #x01 #x00
 #x00 #x00 #x01 #x7e #x00 #x02 #xfc #x00 #x03 #x7a #x01 #x04 #xa8 #x01 #x05 #xd6
 #x01 #x06 #x04 #x02 #x07 #x32 #x02 #x08 #x3c #x00 #x92 #x2c #x02 #x00 #x4f #xff
@@ -56,7 +56,7 @@
 
 (unit-test "s5parser-trends" "Test S5 Trend package disassembly"
   (lambda ()
-    (let ((data (u8vector->u8data (u8vector 
+    (let ((data (u8vector->u8data (u8vector
  #x80 #x04 #x11 #x08 #x04 #x8b #xc3 #x9a #x9f #x4a #x02 #x00 #x00 #x00 #x00 #x00
  #x00 #x00 #x01 #x16 #x01 #x01 #x2c #x02 #x01 #x42 #x03 #x01 #x58 #x04 #xff #x04
  #x00 #xff #xd0 #x9a #xa8 #x00 #x04 #x00 #xc3 #x9a #x9f #x4a #x4b #x02 #x00 #x00
@@ -133,12 +133,12 @@
          (store (make-store "test")))
       (s5parser store data)
       (and (fx= (store-ref store "plug_id" 0) 35588)
-           (fx= (store-ref store "hr" -1) 0)
+           (fl= (store-ref store "hr" -1.) 0.)
            (fl= (store-ref store "p1_sys" -1.) 9.)
            (string=? (store-ref store "p1_name" "") "ART")
            (fl= (store-ref store "o2_fi" -1.) 29.43)
            (fl= (store-ref store "bis_sqi" -1.) 92.)
-           (fx= (store-ref store "timestamp" -1) 1251973827) 
+           (fx= (store-ref store "timestamp" -1) 1251973827)
            (fx= (store-ref store "marker" -1) 2)
            (string=? (store-ref store "ecg1_label" "") "II")
       )
