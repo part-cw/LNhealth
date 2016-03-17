@@ -238,12 +238,12 @@
       ((string=? (system-platform) "linux") (detect-usb-serial))
       ((string=? (system-platform) "macosx") (detect-usb-serial))
       ((string=? (system-platform) "win32") "COM1")
-      (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
+      (else "/dev/tty.iap"))) '("Waveforms" ("ECG1" "PLETH" "CO2" "ENT")) '("Debug" #f))
     ;; Initialize the CardioQ monitor plugin
     (if cardioq? (make-instance store "cardioq" "monitor" `("Port" ,(cond
       ((string=? (system-platform) "linux") "/dev/ttyUSB1")
       ((string=? (system-platform) "win32") "COM2")
-      (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f)))
+      (else "/dev/tty.iap"))) '("Waveforms" ("ECG1" "PLETH" "CO2" "ENT")) '("Debug" #f)))
     ;; Initialize a Neurosense monitor plugin
     (if neurosense? (make-instance store "Neurosense" "neurosense"
        '("IP" "195.14.195.100") '("Port" 5001)))
@@ -252,6 +252,7 @@
     (make-instance store "WAVEECG" "waveoutput" '("Source" "ECG1"))
     (make-instance store "WAVEPLETH" "waveoutput" '("Source" "PLETH"))
     (make-instance store "WAVECO2" "waveoutput" '("Source" "CO2"))
+    (make-instance store "WAVEEEG" "waveoutput" '("Source" "ENT"))
     (make-instance store "TREND" "trendoutput" `("Trends"
       ,(append (list "time_str") s5parser:physdatavalues_basic
                s5parser:physdatavalues_ext1 s5parser:physdatavalues_ext2
