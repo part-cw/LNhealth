@@ -36,7 +36,6 @@ OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 |#
 
-(include "embed.scm")
 (include "download.scm")
 
 (define app:debuglevel 0)
@@ -66,7 +65,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (app:log 2 "sxrun " name " " args)
   (let ((sxtable (glgui-widget-get gui uiform 'uiform)))
     (if (table? sxtable)
-      (apply (car (table-ref sxtable name '(#f))) args) 
+      (apply (car (table-ref sxtable name '(#f))) args)
       #f)))
 
 ;; -------------
@@ -83,10 +82,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (sandbox-destroy)
   (app:log 2 "sandbox-destroy")
   (let* ((files (if (file-exists? sandbox) (directory-files sandbox) #f)))
-    (if files (begin 
+    (if files (begin
        (for-each (lambda (f) (delete-file (string-append sandbox (system-pathseparator) f))) files)
        (delete-directory sandbox)))))
-      
+
 (define (sandbox-create)
   (app:log 2 "sandbox-create")
   (if (not (file-exists? sandbox)) (create-directory sandbox)))
@@ -100,10 +99,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (app:log 2 "sxz-list")
   (let ((files (directory-files (system-directory))))
     (let loop ((fs files)(res '()))
-       (if (fx= (length fs) 0) res 
-         (loop (cdr fs) (append res 
-            (if (pregexp-match ".[sS][xX][zZ]$" (car fs))  
-            (list (list (car fs) (modtime (string-append (system-directory) 
+       (if (fx= (length fs) 0) res
+         (loop (cdr fs) (append res
+            (if (pregexp-match ".[sS][xX][zZ]$" (car fs))
+            (list (list (car fs) (modtime (string-append (system-directory)
               (system-pathseparator) (car fs))))) '())))))))
 
 (define (sxz->sandbox sxzfile)
@@ -121,7 +120,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (loop (cdr fs)))))))
 
 ;; -------------
-;; update background color + pixmap 
+;; update background color + pixmap
 
 ;;(define default:background (list 4 4 (glCoreTextureCreate 4 4 (make-u8vector 16 #xff)) 0.1 0.1 .9 .9))
 (define default:background background.img)
@@ -148,16 +147,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (mtime (modtime filename)))
     (if (and lastmodtime mtime (> mtime lastmodtime)) (begin
       (sandbox-load #f)
-      (set! lastmodtime mtime) 
+      (set! lastmodtime mtime)
  ))))
 
 ;; -------------
 
 (define uiform:error (list->table `(
   (background-color ,Red)
-  (main 
+  (main
     "ERROR"
-    #f 
+    #f
     #f
     (spacer height 200)
     (label text "Expression Error:")
@@ -169,7 +168,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define uiform:fallback (list->table `(
   (background-color ,Red)
-  (main 
+  (main
     "ERROR"
     #f
     #f
@@ -184,12 +183,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (main
      "Package Menu"
      #f
-     ("Start" ,(lambda () 
+     ("Start" ,(lambda ()
         (let ((sxz (uiget 'sxzsrc #f)))
           (if (and sxz (> (length sxz) 0)) (begin
             (if (not (string=? (car sxz) "Do not reload"))
               (sxz->sandbox (car sxz)))
-            (sandbox-load #f) 
+            (sandbox-load #f)
             #f) '("Please select a package" ("OK" #f))))))
      (spacer)
      ,(lambda () (if (uiget 'web-sxz #f)
@@ -225,17 +224,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (spacer)
      (label text "Select Package:" align center)
      (spacer)
-     ,(lambda () 
+     ,(lambda ()
          (let ((entries (append (map car (sxz-list)) (list "Do not reload"))))
            (if (> (length entries) 0)
            `(checklist id sxzsrc location ui default ,entries radio #t)
            '(label text "No packages found" align center))))
      (spacer)
      (spacer)
-     (button text "Delete Package" action ,(lambda () 
+     (button text "Delete Package" action ,(lambda ()
        (let* ((sxz (uiget 'sxzsrc #f))
               (file (if (and sxz (> (length sxz) 0)) (string-append (system-directory) (system-pathseparator) (car sxz)) #f)))
-         (if file `(,(string-append "Delete " (car sxz) "?") ("OK" ,(lambda () 
+         (if file `(,(string-append "Delete " (car sxz) "?") ("OK" ,(lambda ()
              (uiset 'sxzsrc '()) (delete-file file) #f)) ("Cancel" #f))
            '("Please select a package" ("OK" #f))))))
      (spacer)
@@ -262,13 +261,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (sandbox-load deftable)
   (app:log 2 "sandbox-load " deftable)
   (let* ((oldsxtable (glgui-widget-get gui uiform 'uiform))
-         (key (if (not deftable) (string->key24 (with-input-from-file 
+         (key (if (not deftable) (string->key24 (with-input-from-file
            (string-append (system-directory) (system-pathseparator) "CURRENT")
            (lambda () (read-line)))) #f))
          (sxfile (string-append sandbox (system-pathseparator) "main.sx"))
          (sxbfile (string-append sandbox (system-pathseparator) "main.sxb"))
-         (sxtable (if deftable deftable 
-           (if (file-exists? sxfile) 
+         (sxtable (if deftable deftable
+           (if (file-exists? sxfile)
              (let ((t (list->table (eval (with-input-from-file sxfile (lambda () (read)))))))
                 (table->cdb t sxbfile key) (cdb->table sxbfile key))
              (if (file-exists? sxbfile) (cdb->table sxbfile key) uiform:fallback)))))
@@ -276,7 +275,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! gui uiform 'fnt uiformfont_18.fnt)
     (glgui-widget-set! gui uiform 'smlfnt uiformfont_14.fnt)
     (glgui-widget-set! gui uiform 'bigfnt uiformfont_40.fnt)
-   
+
     (let ((db (glgui-widget-get gui uiform 'database)))
       (if (not (table? db)) (glgui-widget-set! gui uiform 'database (make-table))))
 
@@ -285,7 +284,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! gui uiform 'sandbox sandbox)
 
     (background-update)
-    
+
     (if (not store) (begin
       (set! store (make-store "main"))
       (glgui-widget-set! gui uiform 'store store)
@@ -301,7 +300,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (set! hook:onscheduler (car (table-ref sxtable 'onscheduler '(#f))))
 
     (if hook:oncreate (hook:oncreate))
-)) 
+))
 
 (main
 ;; initialization
@@ -332,14 +331,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (audiofile-init)
   ))
 ;; events
-  (lambda (t x y) 
+  (lambda (t x y)
      (orientation-event t x y GUI_PORTRAIT GUI_UPSIDEDOWN)
     (if hook:onevent (hook:onevent))
     (if (= t EVENT_BATTERY) (store-set! store "BATTERY" x))
     (scheduler-iterate (lambda ()
       (if devplatform? (autoload))
       (if hook:onscheduler (hook:onscheduler))))
-    (if (= t EVENT_KEYPRESS) (begin 
+    (if (= t EVENT_KEYPRESS) (begin
       (if (= x EVENT_KEYESCAPE) (terminate))))
     (glgui-event gui t x y))
 ;; termination

@@ -42,7 +42,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define gui:lang #f)
 (define gui:langlist #f)
 (define language? #f)
-(include "embed.scm") ;; currently here until MODULES support their own embed files
 
 ;; main loop
 (main
