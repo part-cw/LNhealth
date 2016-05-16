@@ -42,6 +42,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (rrate-use-settings use?) (set! rrate:no-settings? (not use?)))
 (define rrate:no-language? #f)
 (define (rrate-use-language-settings use?) (set! rrate:no-language? (not use?)))
+(define rrate:muteheadset #f)
+(define (rrate-set-mute-headset mute?) (set! rrate:muteheadset mute?))
+(define (rrate-is-muted-headset) (and rrate:muteheadset (audioaux-headphonepresent)))
 
 ;; Standard fonts, to switch back to if switching languages
 (define rrate:stfnt_12.fnt text_12.fnt)
@@ -637,7 +640,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Give feedback that a breath has been tapped or during the animation
 ;; give feedback of the rate by regularly playing a sound or vibrating
 (define (rrate:breath-feedback)
-  (if (= (audiofile-getvolume) 0.)
+  (if (or (= (audiofile-getvolume) 0.) (rrate-is-muted-headset))
     (begin
       (if rrate:sound_on
         (begin
@@ -657,7 +660,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Give feedback that the RRate has been successfully measured by playing a sound or lack of vibrating
 (define (rrate:success-feedback)
-  (if (> (audiofile-getvolume) 0.)
+  (if (and (> (audiofile-getvolume) 0.) (not (rrate-is-muted-headset)))
     (begin
       (if (not rrate:sound_on)
         (begin
@@ -668,7 +671,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Give feedback that the RRate has not been successfully measured by playing a sound or lack of vibrating
 (define (rrate:fail-feedback)
-  (if (> (audiofile-getvolume) 0.)
+  (if (and (> (audiofile-getvolume) 0.) (not (rrate-is-muted-headset)))
     (begin
       (if (not rrate:sound_on)
         (begin
