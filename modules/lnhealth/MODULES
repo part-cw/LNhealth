@@ -1,0 +1,1 @@
+config eventloop ln_core ln_glgui ln_store orientation uiform png scheduler serial sanestring mqtt-store csv uuid gd camera dmtx zip gyro gps accelerometer redcap audio
