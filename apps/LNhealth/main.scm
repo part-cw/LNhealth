@@ -1,6 +1,6 @@
 #|
 lnHealth - Health related apps using the LambdaNative framework
-Copyright (c) 2009-2015, University of British Columbia
+Copyright (c) 2009-2016, University of British Columbia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -38,35 +38,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (include "download.scm")
 
-(define app:debuglevel 0)
-(define (app:log level . x)
-   (if (>= app:debuglevel level) (apply log-system (append (list "app: ") x))))
-
 (define devplatform? (or
   (string=? (system-platform) "macosx")
   (string=? (system-platform) "linux")
   (string=? (system-platform) "win32")))
-
-(define gui #f)
-(define background #f)
-(define uiform #f)
-(define store #f)
-
-(define hook:onresume #f)
-(define hook:onsuspend #f)
-(define hook:ondestroy #f)
-(define hook:onevent #f)
-(define hook:onscheduler #f)
-
-;; -------------
-;; functions
-
-(define (sxrun name . args)
-  (app:log 2 "sxrun " name " " args)
-  (let ((sxtable (glgui-widget-get gui uiform 'uiform)))
-    (if (table? sxtable)
-      (apply (car (table-ref sxtable name '(#f))) args)
-      #f)))
 
 ;; -------------
 ;; sandbox management
@@ -120,24 +95,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (loop (cdr fs)))))))
 
 ;; -------------
-;; update background color + pixmap
-
-;;(define default:background (list 4 4 (glCoreTextureCreate 4 4 (make-u8vector 16 #xff)) 0.1 0.1 .9 .9))
-(define default:background background.img)
-
-(define (background-update)
-  (let* ((uiformtable (glgui-widget-get gui uiform 'uiform))
-         (sandbox (glgui-widget-get gui uiform 'sandbox))
-         (bgcol (car (table-ref uiformtable 'background-color `(,DimGray))))
-         (bgimgentry (car (table-ref uiformtable 'background-image '(#f))))
-         (imgfile (if bgimgentry (string-append sandbox (system-pathseparator) bgimgentry) #f))
-         (imgload (if (and imgfile (file-exists? imgfile)) (png->img imgfile) #f))
-         (img (if imgload imgload default:background)))
-    (glgui-widget-set! gui background 'color bgcol)
-    (glgui-widget-set! gui background 'image img)
-  ))
-
-;; -------------
 ;; automatic reload of uiform
 
 (define lastmodtime #f)
@@ -151,33 +108,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ))))
 
 ;; -------------
-
-(define uiform:error (list->table `(
-  (background-color ,Red)
-  (main
-    "ERROR"
-    #f
-    #f
-    (spacer height 200)
-    (label text "Expression Error:")
-    (spacer height 20)
-    (label align left wrap #t text ,(lambda () (uiget 'loaderr "??")))
-    (spacer)
-  )
- )))
-
-(define uiform:fallback (list->table `(
-  (background-color ,Red)
-  (main
-    "ERROR"
-    #f
-    #f
-    (spacer)
-    (label text "Failed to access payload")
-    (spacer)
-  )
- )))
-
 (define uiform:menu (list->table `(
    (background-color ,Orange)
    (main
@@ -260,7 +190,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (sandbox-load deftable)
   (app:log 2 "sandbox-load " deftable)
-  (let* ((oldsxtable (glgui-widget-get gui uiform 'uiform))
+  (let* ((oldsxtable (glgui-widget-get lnhealth:gui lnhealth:uiform 'uiform))
          (key (if (not deftable) (string->key24 (with-input-from-file
            (string-append (system-directory) (system-pathseparator) "CURRENT")
            (lambda () (read-line)))) #f))
@@ -270,24 +200,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            (if (file-exists? sxfile)
              (let ((t (list->table (eval (with-input-from-file sxfile (lambda () (read)))))))
                 (table->cdb t sxbfile key) (cdb->table sxbfile key))
-             (if (file-exists? sxbfile) (cdb->table sxbfile key) uiform:fallback)))))
+             (if (file-exists? sxbfile) (cdb->table sxbfile key) lnhealth:uiform-fallback)))))
 
-    (glgui-widget-set! gui uiform 'fnt uiformfont_18.fnt)
-    (glgui-widget-set! gui uiform 'smlfnt uiformfont_14.fnt)
-    (glgui-widget-set! gui uiform 'bigfnt uiformfont_40.fnt)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'fnt uiformfont_18.fnt)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'hdfnt uiformfont_24.fnt)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'smlfnt uiformfont_14.fnt)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'bigfnt uiformfont_40.fnt)
 
-    (let ((db (glgui-widget-get gui uiform 'database)))
-      (if (not (table? db)) (glgui-widget-set! gui uiform 'database (make-table))))
+    (let ((db (glgui-widget-get lnhealth:gui lnhealth:uiform 'database)))
+      (if (not (table? db)) (glgui-widget-set! lnhealth:gui lnhealth:uiform 'database (make-table))))
 
-    (glgui-widget-set! gui uiform 'uiform sxtable)
-    (glgui-widget-set! gui uiform 'uuid (system-uuid))
-    (glgui-widget-set! gui uiform 'sandbox sandbox)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'uiform sxtable)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'uuid (system-uuid))
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'sandbox sandbox)
+    (lnhealth:background-update)
 
-    (background-update)
-
-    (if (not store) (begin
-      (set! store (make-store "main"))
-      (glgui-widget-set! gui uiform 'store store)
+    (if (not lnhealth:store) (begin
+      (set! lnhealth:store (make-store "main"))
+      (glgui-widget-set! lnhealth:gui lnhealth:uiform 'store lnhealth:store)
     ))
 
     (if (and oldsxtable hook:ondestroy) (hook:ondestroy))
@@ -306,47 +236,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; initialization
   (lambda (w h)
     (set! lastmodtime (time->seconds (current-time)))
-    (make-window 480 800)
-    (glgui-orientation-set! GUI_PORTRAIT)
-    (set! gui (make-glgui))
-
-    ;; create a log directory if needed
-      (let* ((dir (system-directory))
-             (logdir (string-append dir "/log")))
-        (if (not (file-exists? dir)) (create-directory dir))
-        (if (not (file-exists? logdir)) (create-directory logdir)))
-
-    (let* ((w (glgui-width-get))
-           (h (glgui-height-get)))
-
-      (set! background (glgui-pixmap gui 0 0 default:background w h))
-      (set! uiform (glgui-uiform gui 0 0 w h))
-
-      (let* ((t0 (sandbox-modtime))
-             (t1 (apply max (map cadr (sxz-list)))))
-        (sandbox-load (if (or (= t0 0) (> t1 t0)) uiform:menu #f))
-      )
-
-      (scheduler-init)
-      (audiofile-init)
-  ))
+    (let* ((t0 (sandbox-modtime))
+           (t1 (apply max (map cadr (sxz-list))))
+           (customloader (lambda () (sandbox-load (if (or (= t0 0) (> t1 t0)) uiform:menu #f)))))
+      (lnhealth-init w h customloader)
+    )
+  )
 ;; events
-  (lambda (t x y)
-     (orientation-event t x y GUI_PORTRAIT GUI_UPSIDEDOWN)
-    (if hook:onevent (hook:onevent))
-    (if (= t EVENT_BATTERY) (store-set! store "BATTERY" x))
-    (scheduler-iterate (lambda ()
-      (if devplatform? (autoload))
-      (if hook:onscheduler (hook:onscheduler))))
-    (if (= t EVENT_KEYPRESS) (begin
-      (if (= x EVENT_KEYESCAPE) (terminate))))
-    (glgui-event gui t x y))
+  (lambda (t x y) (lnhealth-events t x y (lambda () (if devplatform? (autoload)))))
 ;; termination
-  (lambda () (scheduler-cleanup) (if hook:ondestroy (hook:ondestroy)))
+  (lambda () (lnhealth-terminate))
 ;; suspend
-  (lambda () (if hook:onsuspend (hook:onsuspend)) (glgui-suspend))
+  (lambda () (lnhealth-suspend))
 ;; resume
-  (lambda () (glgui-resume) (if hook:onresume (hook:onresume)))
+  (lambda () (lnhealth-resume))
 )
 
 ;; eof
