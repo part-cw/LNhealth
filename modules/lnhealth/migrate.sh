@@ -10,6 +10,8 @@ git add sandbox/
 
 # fix some variable names in main.sx
 sed -i '' 's/store/lnhealth:store/g' sandbox/main.sx
+sed -i '' 's/sxrun/lnhealth:sxrun/g' sandbox/main.sx
+sed -i '' 's/ gui/ lnhealth:gui/g' sandbox/main.sx
 git add sandbox/main.sx
 
 # Create embed file
