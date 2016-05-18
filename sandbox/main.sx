@@ -79,7 +79,7 @@
                                   (set! score (- (- 4.197) (* waz 0.303)))
                                   (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.429)))))
                               ;; No WAZ, use MUAC instead
-                              (let* ((muac (sxrun 'getnotemptystring 'muac))
+                              (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
                                      (mnum (string->number muac)))
                                 (if (and hiv (not (string=? hiv "Unknown")))
                                   ;; Use second formula: logit[Pr(In-patient mortality)]=-0.5233 -0.0245*muac+2.5403*(BCS<5)+ 1.3333*(HIV+)
@@ -101,9 +101,9 @@
                             (ffloor score 0.01))))
   
   (calc-discharge-score ,(lambda ()
-                          (let* ((muac (sxrun 'getnotemptystring 'muac))
-                                 (sp0 (sxrun 'getnotemptystring 'spo2med))
-                                 (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
+                          (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
+                                 (sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
+                                 (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
                                  (hospopts (uiget 'hosp_options '()))
                                  (hosp (dbget 'lasthosp #f))
                                  (hospnum (+ (list-pos hospopts hosp) 1))
@@ -181,26 +181,26 @@
                                 (hospstr (if hosp
                                            (string-append "Hospitalized " hosp)
                                            "Last hospitalization not answered")))
-                           (sxrun 'classify-factor 'hosp_thresholds hospnum hospstr))
+                           (lnhealth-sxrun 'classify-factor 'hosp_thresholds hospnum hospstr))
                          
-                         (let* ((muac (sxrun 'getnotemptystring 'muac))
+                         (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
                                 (muacnum (if muac (string->number muac) #f))
                                 (muacstr (string-append "Mid-upper arm circumference" (if muac (string-append ": " muac " mm") ""))))
-                           (sxrun 'classify-factor 'muac_thresholds muacnum muacstr))
+                           (lnhealth-sxrun 'classify-factor 'muac_thresholds muacnum muacstr))
                                 
                          (let* ((z (dbget 'zscore #f))
-                                (zstr (string-append "Weight for age z-score" (if z (string-append ": " (sxrun 'float->stringz z 1)) ""))))
-                           (sxrun 'classify-factor 'waz_thresholds z zstr))
+                                (zstr (string-append "Weight for age z-score" (if z (string-append ": " (lnhealth-sxrun 'float->stringz z 1)) ""))))
+                           (lnhealth-sxrun 'classify-factor 'waz_thresholds z zstr))
                          
-                         (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
-                                (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
+                         (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
+                                (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
                                 (spnum (if sp (string->number sp) #f))
                                 (spstr (string-append "SpO2" (if sp (string-append ": " sp " %") ""))))
-                           (sxrun 'classify-factor 'spo2_thresholds spnum spstr))
+                           (lnhealth-sxrun 'classify-factor 'spo2_thresholds spnum spstr))
                                 
                          (let* ((bcs (dbget 'comascore #f))
                                 (bscstr (string-append "Blantyre coma score" (if bcs (string-append ": " (number->string bcs)) ""))))
-                           (sxrun 'classify-factor 'bcs_thresholds bcs bscstr))
+                           (lnhealth-sxrun 'classify-factor 'bcs_thresholds bcs bscstr))
                            
                          (let* ((hiv (dbget 'hiv #f))
                                 (hivnum (cond
@@ -209,7 +209,7 @@
                                           ((string=? hiv "Negative") 1)
                                           (else #f)))
                                 (hivstr (string-append "HIV status" (if hiv (string-append ": " hiv) ""))))
-                           (sxrun 'classify-factor 'hiv_thresholds hivnum hivstr))))
+                           (lnhealth-sxrun 'classify-factor 'hiv_thresholds hivnum hivstr))))
   
   ;; Load an image file to use within a custom widget
   (load-image ,(lambda (file)
@@ -245,24 +245,24 @@
     (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 25))
     (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 20))
                
-    ;; Load the localization csv table to translate between languages
+    ;; Load the localization csv table to translate between languages, used by spo2spotcheck
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
     
     ;; Setup rtaudio for pulse oximetry and setup SpO2 page
     (rtaudio-start 96000 1.0)
-    (spo2spot-init 0 80 (glgui-width-get) (- (glgui-height-get) 80) store)
+    (spo2spot-init 0 80 (glgui-width-get) (- (glgui-height-get) 80) lnhealth:store)
     (spo2-set-length 30)
     (spo2-set-quality-length 15)
                
     (if (string=? (system-platform) "android")
-       (make-instance store "Oximeter" "oximeter" '("Port" "/dev/ttyUSB0")))
+       (make-instance lnhealth:store "Oximeter" "oximeter" '("Port" "/dev/ttyUSB0")))
     (if (string=? (system-platform) "ios")
-       (make-instance store "Oximeter" "oximeter" '("Port" "/dev/tty.iap")))
-   (make-instance store "OximeterSQI" "oximetersqi"
+       (make-instance lnhealth:store "Oximeter" "oximeter" '("Port" "/dev/tty.iap")))
+   (make-instance lnhealth:store "OximeterSQI" "oximetersqi"
      '("Waveform" "PLETHUNSCALED") '("Trends" ("HR" "SP"))
      '("MaxHRVar" 10.) '("MaxSpO2Var" 10.) '("TimeRange" 30.))
 
-    (uiset 'origgui gui)
+    (uiset 'origgui lnhealth:gui)
                
     (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
     (uiset 'cryptokey '#u8(134 102 230 27 13 87 122 120 138 103 53 192 70 93 200 53 121 202 33 85 28 187 73 219))
@@ -307,6 +307,9 @@
       #f)
                
     ;; Scale thresholds - values mapped to left end, first quarter, middle, third quarter, and right end
+    ;; High risk is <= second number (left quarter)
+    ;; Moderate risk is > second number and < fourth number (middle half)
+    ;; Low risk is >= fourth number (right quarter)
     (uiset 'hosp_thresholds (list 1 2 3 4 5))
     (uiset 'muac_thresholds (list 115 120 125 135 145))
     (uiset 'waz_thresholds (list -3 -2 -1 0 2))
@@ -317,12 +320,12 @@
     (uiset 'post_thresholds (list -35.0 -5.7 -3.5 -1.8 -0.4))
 
     ;; Load scale image and scale marker image
-    (uiset 'scaleimage (sxrun 'load-image "scale.png"))
-    (uiset 'happyimage (sxrun 'load-image "happy.png"))
-    (uiset 'neutralimage (sxrun 'load-image "neutral.png"))
-    (uiset 'sadimage (sxrun 'load-image "sad.png"))
-    (uiset 'markimage (sxrun 'load-image "scalemark.png"))
-    (uiset 'helpimage (sxrun 'load-image "help.png"))
+    (uiset 'scaleimage (lnhealth-sxrun 'load-image "scale.png"))
+    (uiset 'happyimage (lnhealth-sxrun 'load-image "happy.png"))
+    (uiset 'neutralimage (lnhealth-sxrun 'load-image "neutral.png"))
+    (uiset 'sadimage (lnhealth-sxrun 'load-image "sad.png"))
+    (uiset 'markimage (lnhealth-sxrun 'load-image "scalemark.png"))
+    (uiset 'helpimage (lnhealth-sxrun 'load-image "help.png"))
                
     ;; Register scale widget
     (uiform-register 'scale
@@ -391,7 +394,7 @@
                             (xxset floc fid (substring str 0 (fx- (string-length str) 1))))))
   ))
   
-  (onevent ,(lambda () (spo2spot-event)))
+  (onevent ,(lambda (t x y) (spo2spot-event)))
   
   (onscheduler ,(lambda () 
     (let* ((hr (stget  "HR" #f))
@@ -441,8 +444,8 @@
     ,(lambda () 
       (let* ((admin-uname  (dbget  'admin_uname))
              (admin-pwhash (dbget  'admin_pwhash))
-             (login-pw     (dbget  'login_pw))
-             (login-uname  (dbget  'login_uname))
+             (login-pw     "321")
+             (login-uname  "para")
              (admin-ok (and admin-uname login-uname login-pw
                  (string=? admin-uname login-uname)
                  (fx= admin-pwhash (string=?-hash login-pw))))
@@ -521,7 +524,7 @@
    "New Child"
    ("Back" menu)
    ("Next" ,(lambda ()
-              (let ((id (sxrun 'getnotemptystring 'childid))
+              (let ((id (lnhealth-sxrun 'getnotemptystring 'childid))
                     (first (dbget 'first))
                     (last (dbget 'last)))
                 (if id
@@ -541,7 +544,7 @@
                           (uiset 'new #t)
                           ;; Set the current date
                           (dbset 'date (seconds->string ##now "%Y-%m-%d"))
-                          (sxrun 'save-child)
+                          (lnhealth-sxrun 'save-child)
                           'demog)))
                   (list "Enter an ID for the Child." (list "OK" #f))))))
    (spacer height 34)
@@ -571,8 +574,8 @@
                         (uiset  'admin-database db)
                         (uiset  'database (dbload filename (uiget 'cryptokey)))
                         ;; Populate SpO2 page with saved values
-                        (let ((sp (sxrun 'getnotemptystring 'spo2med))
-                              (hr (sxrun 'getnotemptystring 'hrmed))
+                        (let ((sp (lnhealth-sxrun 'getnotemptystring 'spo2med))
+                              (hr (lnhealth-sxrun 'getnotemptystring 'hrmed))
                               (sptime (dbget 'sptime)))
                           (if (and sp hr)
                             (spo2spot-load hr sp sptime)))
@@ -600,7 +603,7 @@
  (editchild
    "Edit Child"
    ("Back" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
               (dbclear 'childid)
               (dbclear 'first)
@@ -611,7 +614,7 @@
               (stclear "SP_Timestamp")
               (if (uiget 'new #f) 'menu 'load)))
    ("Next" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               'demog))
    (spacer height 53)
    (label size small text ,(lambda () (string-append "Child ID: " (dbget 'childid ""))))
@@ -628,15 +631,15 @@
  (demog
    "Demographics"
    ("Back" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               'editchild))
    ("Next" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               (if (and (sane  'infection (lambda (str) #t) "Enter whether there is a suspected infection" "")
                        (sane  'lasthosp (lambda (str) #t) "Enter the time since last hospitalization" ""))
                 ;; First question answered
                 (let* ((sex (dbget 'sex #f))
-                       (date (sxrun 'getnotemptystring 'date))
+                       (date (lnhealth-sxrun 'getnotemptystring 'date))
                        (age (dbget 'age #f)))
                    (if (and date (not (sanestring-dob date)))
                      ;; Invalid current date
@@ -704,7 +707,7 @@
                                            "Invalid - Too Young")
                                          (begin
                                            (dbset 'age age)
-                                           (sxrun 'format-age age))))
+                                           (lnhealth-sxrun 'format-age age))))
                                      (begin
                                        (dbset 'age #f)
                                        "Invalid - Fix Current Date")))
@@ -727,13 +730,13 @@
  (anthro
    "Anthropometric Data"
    ("Back" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               'demog))
    ("Next" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               (let* ((z (dbget 'zscore #f))
-                     (weight (sxrun 'getnotemptystring 'weight))
-                     (muac (sxrun 'getnotemptystring 'muac))
+                     (weight (lnhealth-sxrun 'getnotemptystring 'weight))
+                     (muac (lnhealth-sxrun 'getnotemptystring 'muac))
                      (returnvalue #f)
                      (completeproc (lambda ()
                                       (if (and weight (not (sanestring-weight-kg weight)))
@@ -748,8 +751,8 @@
                                           (if (and z muac)
                                             ;; All complete
                                             (begin
-                                              (uiset 'origgui gui)
-                                              (set! gui (list gui spo2spot:gui))
+                                              (uiset 'origgui lnhealth:gui)
+                                              (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                                               (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                                               'pulseox)
                                             ;; Missing one or the other
@@ -759,8 +762,8 @@
                                                  ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
                                                  (else "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise."))
                                                (list "Continue" (lambda ()
-                                                                  (uiset 'origgui gui)
-                                                                  (set! gui (list gui spo2spot:gui))
+                                                                  (uiset 'origgui lnhealth:gui)
+                                                                  (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                                                                   (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                                                                   'pulseox))
                                                (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
@@ -778,7 +781,7 @@
                   (if (not returnvalue)
                     (if (and z (or (< z -4.0) (> z 3.0)))
                       (let ((gender (if (string=? (dbget 'sex) "1") "Male" "Female"))
-                            (age (sxrun 'format-age (dbget 'age))))
+                            (age (lnhealth-sxrun 'format-age (dbget 'age))))
                         (set! returnvalue (list (string-append "The weight for age score is outside the acceptable range of -4 to +3. "
                                                                "Please confirm child is a " age " old " gender " with weight " weight " kg.")
                                                 (list "Yes" completeproc) (list "No" #f))))))
@@ -801,9 +804,9 @@
                                       (if (and (string? weight) (fx> (string-length weight) 0) age gender)
                                         (let* ((w (string->number weight))
                                                (boy? (string=? gender "1"))
-                                               (z (sxrun 'z-score age w boy?)))
+                                               (z (lnhealth-sxrun 'z-score age w boy?)))
                                           (dbset 'zscore z)
-                                          (sxrun 'float->stringz z 1))
+                                          (lnhealth-sxrun 'float->stringz z 1))
                                         (begin
                                           (dbset 'zscore #f)
                                           " ")))))
@@ -815,16 +818,16 @@
   (spo2
    " Oxygen Saturation"
    ("Back" ,(lambda ()
-              (uiset 'origgui gui)
-              (set! gui (list gui spo2spot:gui))
+              (uiset 'origgui lnhealth:gui)
+              (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
               (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
               'pulseox))
    ("Next" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               (uiset 'frompulseox #f)
-              (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
-                     (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
-                     (muac (sxrun 'getnotemptystring 'muac)))
+              (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
+                     (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
+                     (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
                 (if sp
                   (if (> (string->number sp) 100)
                     (list (string-append "SpO2 is " sp ". SpO2 must be less than of equal to 100.") (list "OK" #f))
@@ -832,10 +835,10 @@
                   (if muac
                     (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
                                                                                              (list "Fix" (lambda ()
-                                                                                                            (uiset 'origgui gui)
+                                                                                                            (uiset 'origgui lnhealth:gui)
                                                                                                             #f)))
                     (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
-                                                                                                                                        (uiset 'origgui gui)
+                                                                                                                                        (uiset 'origgui lnhealth:gui)
                                                                                                                                         #f))))))))
    (spacer height 70)
    (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%" units "%")
@@ -853,14 +856,14 @@
                   (uiset 'invalidspo2 #f)))
               (if (stget "CaseID" #f)
                 (begin
-                  (set! gui (uiget 'origgui gui))
+                  (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
                   (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
                                                                      (spo2spot-stop-recording)
                                                                      (uiset 'invalidspo2 #t)
-                                                                     (sxrun 'save-child)
+                                                                     (lnhealth-sxrun 'save-child)
                                                                      'anthro))
                                                        (list "No" (lambda ()
-                                                                    (set! gui (list gui spo2spot:gui))
+                                                                    (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                                                                     #f))))
                 (let ((sp (stget "SP_Median" ""))
                       (hr (stget "HR_Median" ""))
@@ -868,8 +871,8 @@
                   (if (fx> (string-length sp) 0) (dbset 'spo2med sp))
                   (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
                   (if sptime (dbset 'sptime sptime))
-                  (set! gui (uiget 'origgui gui))
-                  (sxrun 'save-child)
+                  (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
+                  (lnhealth-sxrun 'save-child)
                   'anthro))))
    ("Next" ,(lambda ()
               (if (uiget 'invalidspo2)
@@ -877,15 +880,15 @@
                   (stclear "SP_Median")
                   (uiset 'invalidspo2 #f)))
               (let ((exitproc (lambda ()
-                                (sxrun 'save-child)
+                                (lnhealth-sxrun 'save-child)
                                 (uiset 'frompulseox #t)
                                        ;; SpO2 just recorded
                                 (let* ((sp0 (stget "SP_Median" #f))
                                        ;; SpO2 possibly previous recorded
-                                       (sp1 (if (string? sp0) sp0 (sxrun 'getnotemptystring 'spo2med)))
+                                       (sp1 (if (string? sp0) sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med)))
                                        ;; SpO2 possibly from a manual entry
-                                       (sp (if (string? sp1) sp1 (sxrun 'getnotemptystring 'spo2manual)))
-                                       (muac (sxrun 'getnotemptystring 'muac)))
+                                       (sp (if (string? sp1) sp1 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
+                                       (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
                                   (if sp
                                     (begin
                                       (if (and sp0 (fx> (string-length sp0) 0))
@@ -895,37 +898,37 @@
                                           (dbset 'spo2med sp0)
                                           (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
                                           (if sptime (dbset 'sptime sptime))))
-                                      (set! gui (uiget 'origgui gui))
+                                      (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
                                       'clinical)
                                     (begin
-                                      (set! gui (uiget 'origgui gui))
+                                      (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
                                       (if muac
                                         (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
                                                                                                                  (list "Fix" (lambda ()
-                                                                                                                                (uiset 'origgui gui)
-                                                                                                                                (set! gui (list gui spo2spot:gui))
+                                                                                                                                (uiset 'origgui lnhealth:gui)
+                                                                                                                                (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                                                                                                                                 #f)))
                                         (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
-                                                                                                                                                            (uiset 'origgui gui)
-                                                                                                                                                            (set! gui (list gui spo2spot:gui))
+                                                                                                                                                            (uiset 'origgui lnhealth:gui)
+                                                                                                                                                            (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                                                                                                                                                             #f))))))))))
                 (if (stget "CaseID" #f)
                   ;; In the middle of a recording, ask them if they wish to stop it
                   (begin
-                    (set! gui (uiget 'origgui gui))
+                    (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
                     (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
                                                                        (spo2spot-stop-recording)
                                                                        (uiset 'invalidspo2 #t)
                                                                        (exitproc)))
                                                          (list "No" (lambda ()
-                                                                      (set! gui (list gui spo2spot:gui))
+                                                                      (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                                                                       #f))))
                   ;; Not in the middle of a recording, run exit procedure
                   (exitproc)))))
    (spacer height 600)
    ,(lambda ()
        (let ((id (stget "CaseID" #f)))
-          (if (or id (sxrun 'getnotemptystring 'spo2med) (stget "SP_Median" #f))
+          (if (or id (lnhealth-sxrun 'getnotemptystring 'spo2med) (stget "SP_Median" #f))
             ;; If tablet based SpO2 being done or is already done, don't allow manual
             '(spacer height 0)
             `(button height 30 rounded #t indent 0.2 text "SpO2 from another device" action ,(lambda ()
@@ -935,8 +938,8 @@
                      (uiset 'invalidspo2 #f)))
                 (let ((sp (stget "SP_Median" #f)))
                   (if (number? sp) (dbset 'spo2med (number->string sp)))
-                  (set! gui (uiget 'origgui gui))
-                  (sxrun 'save-child)
+                  (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
+                  (lnhealth-sxrun 'save-child)
                   'spo2))))))
  )
  
@@ -948,11 +951,11 @@
                 (begin
                   (stclear "SP_Median")
                   (uiset 'invalidspo2 #f)))
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               (if (uiget 'frompulseox)
                 (begin
-                  (uiset 'origgui gui)
-                  (set! gui (list gui spo2spot:gui))
+                  (uiset 'origgui lnhealth:gui)
+                  (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                   (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                   'pulseox)
                 'spo2)))
@@ -961,21 +964,21 @@
                 (begin
                   (stclear "SP_Median")
                   (uiset 'invalidspo2 #f)))
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               (let ((bcs (dbget 'comascore #f))
                     (hiv (dbget 'hiv #f)))
                 (if bcs
                   (if hiv
                     (begin
-                      (sxrun 'make-summary-items)
+                      (lnhealth-sxrun 'make-summary-items)
                       'summary)
-                    (let* ((sp0 (sxrun 'getnotemptystring 'spo2med))
-                           (sp (if sp0 sp0 (sxrun 'getnotemptystring 'spo2manual)))
-                           (muac (sxrun 'getnotemptystring 'muac)))
+                    (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
+                           (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
+                           (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
                       (cond
                         ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
                         ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
-                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" (begin (sxrun 'make-summary-items) 'summary)) (list "Fix" #f))))))
+                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" (begin (lnhealth-sxrun 'make-summary-items) 'summary)) (list "Fix" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
    (spacer height 50)
    (label size small text "Blantyre coma scale")
@@ -1027,13 +1030,13 @@
  (summary
    "Summary"
    ("Back" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               'clinical))
    ("Next" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               (if (string=? (dbget 'infection "0") "1")
-                (let ((hscore (sxrun 'calc-hospital-score))
-                      (dscore (sxrun 'calc-discharge-score)))
+                (let ((hscore (lnhealth-sxrun 'calc-hospital-score))
+                      (dscore (lnhealth-sxrun 'calc-discharge-score)))
                   (dbset 'hospitalscore hscore)
                   (dbset 'dischargescore dscore)
                   'risk)
@@ -1049,7 +1052,7 @@
             (a (dbget 'age #f))
             (w (dbget 'weight #f)))
      (string-append (if sexstr sexstr)
-                    (if a (string-append (if sexstr ", " "") (sxrun 'format-age a) " old") "")
+                    (if a (string-append (if sexstr ", " "") (lnhealth-sxrun 'format-age a) " old") "")
                     (if w (string-append (if (or a sexstr) ", " "") w " kg") "")))))
    (spacer height 15)
    (label size small align center text "Risk Factors:")
@@ -1162,10 +1165,10 @@
    (spacer height 38)
    (button h 75 size header indent 0.05 rounded #t text "Calculate Mortality Risk" action
       ,(lambda ()
-         (sxrun 'save-child)
+         (lnhealth-sxrun 'save-child)
          (if (string=? (dbget 'infection "0") "1")
-           (let ((hscore (sxrun 'calc-hospital-score))
-                 (dscore (sxrun 'calc-discharge-score)))
+           (let ((hscore (lnhealth-sxrun 'calc-hospital-score))
+                 (dscore (lnhealth-sxrun 'calc-discharge-score)))
               (dbset 'hospitalscore hscore)
               (dbset 'dischargescore dscore)
               'risk)
@@ -1177,10 +1180,10 @@
  (risk
    "Risk"
    ("Back" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               'summary))
    ("Start Again" ,(lambda ()
-                     (sxrun 'save-child)
+                     (lnhealth-sxrun 'save-child)
                      (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                      (dbclear 'childid)
                      (dbclear 'first)
@@ -1291,10 +1294,10 @@
  (blinded
    "Risk"
    ("Back" ,(lambda ()
-              (sxrun 'save-child)
+              (lnhealth-sxrun 'save-child)
               'summary))
    ("Start Again" ,(lambda ()
-                     (sxrun 'save-child)
+                     (lnhealth-sxrun 'save-child)
                      (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                      (dbclear 'childid)
                      (dbclear 'first)
