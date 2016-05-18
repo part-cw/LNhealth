@@ -203,7 +203,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
              (if (file-exists? sxbfile) (cdb->table sxbfile key) lnhealth:uiform-fallback)))))
 
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'fnt uiformfont_18.fnt)
-    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'hdfnt uiformfont_24.fnt)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'hdfnt uiformfont_26.fnt)
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'smlfnt uiformfont_14.fnt)
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'bigfnt uiformfont_40.fnt)
 
