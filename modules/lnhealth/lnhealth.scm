@@ -128,7 +128,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          )))
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'fnt uiformfont_18.fnt)
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'smlfnt uiformfont_14.fnt)
-    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'hdfnt uiformfont_24.fnt)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'hdfnt uiformfont_25.fnt)
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'bigfnt uiformfont_40.fnt)
 
     (let ((db (glgui-widget-get lnhealth:gui lnhealth:uiform 'database)))
@@ -160,7 +160,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ))
 
 (define (lnhealth-init w h . customloader)
-  (make-window 480 800)
+  (make-window w h)
   (glgui-orientation-set! GUI_PORTRAIT)
   (set! lnhealth:gui (make-glgui))
 
@@ -173,11 +173,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (if (not (file-exists? logdir)) (create-directory logdir))
   )
 
-  (let* ((w (glgui-width-get))
-         (h (glgui-height-get)))
-    (set! lnhealth:background (glgui-pixmap lnhealth:gui 0 0 lnhealth:default-background w h))
-    (set! lnhealth:uiform (glgui-uiform lnhealth:gui 0 0 w h))
-  )
+  (set! lnhealth:background (glgui-pixmap lnhealth:gui 0 0 lnhealth:default-background w h))
+  (set! lnhealth:uiform (glgui-uiform lnhealth:gui 0 0 w h))
+
   (if (pair? customloader)
     ((car customloader))
     (lnhealth:loadscript)

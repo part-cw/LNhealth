@@ -1,4 +1,7 @@
 #!/bin/sh
+if [ ! -f main.sx ]; then
+  echo "Migration already complete. Don't rerun to avoid breaking things."
+fi
 
 # Move files to Sandbox
 mkdir sandbox
@@ -10,7 +13,7 @@ git add sandbox/
 
 # fix some variable names in main.sx
 sed -i '' 's/store/lnhealth:store/g' sandbox/main.sx
-sed -i '' 's/sxrun/lnhealth:sxrun/g' sandbox/main.sx
+sed -i '' 's/sxrun/lnhealth-sxrun/g' sandbox/main.sx
 sed -i '' 's/ gui/ lnhealth:gui/g' sandbox/main.sx
 git add sandbox/main.sx
 
@@ -24,7 +27,7 @@ git add EMBED
 cat <<_EOF > main.scm
 (main
 ;; initialization
-  (lambda (w h) (lnhealth-init w h))
+  (lambda (w h) (lnhealth-init 480 800))
 ;; events
   (lambda (t x y) (lnhealth-events t x y))
 ;; termination

@@ -239,7 +239,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (let* ((t0 (sandbox-modtime))
            (t1 (apply max (map cadr (sxz-list))))
            (customloader (lambda () (sandbox-load (if (or (= t0 0) (> t1 t0)) uiform:menu #f)))))
-      (lnhealth-init w h customloader)
+      (lnhealth-init 480 800 customloader)
     )
   )
 ;; events
