@@ -1,6 +1,17 @@
 ;; belly breath johnny in the hot air!
 ;; Christian Leth Petersen 2012, 2014, 2015, 2016
 
+;; phase 2 changes
+;; * height on demo screen
+;; * free-running play
+;; * exit prompt in measure and play
+;; * female superhero (well, unisex pirate)
+;; * etnically diverse avatars
+;; * balloon choice on homescreen
+;; * mute sound if no sensor
+;; * open-ended PPG data collection
+;; * high score wrap-around
+
 (c-declare  #<<end-of-c-declare
 
 #include <stdio.h>
@@ -44,38 +55,45 @@ static void update_breath(double t)
 // -----------------------
 // recording
 
-#define RECLEN 120
-static char        *rec_name=0;
+// phase 2: updated for continous recording
+
+FILE *fd = 0;
+
+#define RECLEN 1
 static unsigned int rec_size=0;
-static float 	    *rec_buf=0;
-static unsigned int rec_idx=0;
+static float        *rec_buf[2]={0,0};
+static unsigned int rec_idx[2]={0,0};
+static unsigned int rec_side=0;
 
 static void start_recording(char *filename)
 {
   rec_size = (unsigned int)(RECLEN*srate*2);
-  rec_buf = (float *)malloc(rec_size*sizeof(float));
-  if (rec_buf) rec_name = strdup(filename);
-  rec_idx=0;
+  if (!rec_buf[0]) rec_buf[0] = (float *)malloc(rec_size*sizeof(float));
+  if (!rec_buf[1]) rec_buf[1] = (float *)malloc(rec_size*sizeof(float));
+  rec_side=0;
+  rec_idx[0]=rec_idx[1]=0;
+  fd=fopen(filename,"wb");
+  if (fd) fprintf(fd,"%s %s\n(RAW INPUT:FLOAT,BREATH STATE:FLOAT)\nSRATE=%06i\nORATE=%06i\n",
+        SYS_APPNAME, SYS_APPVERSION, (int)srate,(int)orate);
   t_input = t_output = 0; 
   breath_t = breath_cycle_t=0; breath_state=0;
 }
 
+static void dispatch_recording()
+{
+  if (fd) {
+    int save_side = rec_side;
+    rec_side=1-rec_side;
+    if (rec_idx[save_side]) fwrite(rec_buf[save_side],sizeof(float),rec_idx[save_side],fd);
+    rec_idx[save_side]=0;
+  }
+}
+
 static void stop_recording()
 {
-  if (rec_name) {
-    if (rec_idx>=rec_size/4) {
-      FILE *fd=fopen(rec_name,"wb");
-      fprintf(fd,"%s %s\n(RAW INPUT:FLOAT,BREATH STATE:FLOAT)\nSRATE=%06i\nORATE=%06i\n",
-        SYS_APPNAME, SYS_APPVERSION, (int)srate,(int)orate);
-      //fwrite(rec_buf,sizeof(float),rec_size,fd);
-      fwrite(rec_buf,sizeof(float),rec_idx,fd);
-      fclose(fd);
-    }
-    char *tmp = rec_name;
-    rec_name=0;
-    free(tmp);
-    free(rec_buf); 
-    rec_buf=0;
+  if (fd) { 
+    dispatch_recording();
+    fclose(fd); fd=0; 
   }
 }
 
@@ -85,6 +103,8 @@ static void stop_recording()
 void my_realtime_init(int samplerate) { 
   srate=(double)samplerate; 
 }
+
+int mute=0;
 
 double POWER=0;
 
@@ -97,10 +117,10 @@ extern void belly_input(double,double,int);
 
 void my_realtime_input(float v)
 {
-  if (rec_name&&rec_idx<rec_size) {
-    rec_buf[rec_idx]=v;
-    rec_buf[rec_idx+1]=(float)breath_state;
-    rec_idx+=2;
+  if (fd&&rec_idx[rec_side]<rec_size) {
+    rec_buf[rec_side][rec_idx[rec_side]]=v;
+    rec_buf[rec_side][rec_idx[rec_side]+1]=(float)breath_state;
+    rec_idx[rec_side]+=2;
   }
   double pwr = v*v;
   if (pwr>POWER) POWER=pwr; else POWER=pwr*1./srate + POWER*(1-1./srate);
@@ -115,8 +135,8 @@ void my_realtime_output(float *v1,float *v2)
 {
   float buffer = (float)sin(2*M_PI*orate*t_output);
   double a=(ampl==AMPL_HI?1:0.8);
-  *v1 = (buffer<0?a*0.95:a*0.70)*buffer; // red:ir
-  *v2 = -*v1;
+  *v1 = (mute?0:(buffer<0?a*0.95:a*0.70)*buffer); // red:ir
+  *v2 = (mute?0:-*v1);
   t_output+=1./srate;
 }
 
@@ -282,9 +302,11 @@ end-of-c-declare
           ((= state GOING_NOWHERE) AMPL_NOWHERE)
           ((= state GOING_DOWN) AMPL_DOWN)))
              (* (- 1. ampl_alpha) balloon_ampl)))
-        (angle (* newampl (sin (* 6.28 0.5 now)))))
+        (angle0 (sin (* 6.28 0.5 now)))
+        (angle (* newampl angle0)))
     (set! balloon_ampl newampl)
     (glgui-widget-set! gui balloon 'angle angle)
+    (glgui-widget-set! splash splash-balloon 'angle (* AMPL_UP angle0))
     (glgui-widget-set! gui balloon 'color (if (< speed 0.) Gray White))
   ))
 
@@ -367,8 +389,9 @@ end-of-c-declare
   (list avatar-super.img "FLASH BELLY!" 2)
   (list avatar-pigtail.img "Piggie Belly" 1)
   (list avatar-emo.img "Belly Man" 5)
-  (list avatar-royal.img "Stud Belly" '(4 6))
+  (list avatar-royal.img "Stud Belly" 4)
   (list avatar-emogirl.img "Belly Grrl" 5)
+  (list avatar-pirate.img "Where's me rum" 6)
  ))
 
 (define avatar-idx 0)
@@ -388,10 +411,14 @@ end-of-c-declare
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; splash menu
 
+(define skin-tones (list White (color-mix White Brown 0.25) (color-mix White Orange 0.25)))
+(define skin-idx 0)
+
 (define menu-mode 'MENU)
 
 (define splash #f)
 
+(define splash-balloon #f)
 (define splash-johnny #f)
 (define splash-johnny-eyes #f)
 (define splash-johnny-avatar #f)
@@ -401,6 +428,8 @@ end-of-c-declare
 (define splash-banner #f)
 (define splash-scorelabel #f)
 (define splash-hiscorelabel #f)
+(define splash-touchtime #f)
+(define splash-timeout 2)
 
 (define (make-splash w h)
   (set! splash (make-glgui))
@@ -438,23 +467,24 @@ end-of-c-declare
          (let ((rx (/ (- mx btnx) btnw))
                (ry (/ (- my btny) btnh)))
            (cond
-             ((and (< rx 0.5) (> ry 0.5))  ;; play
+             ((and (< rx 0.3) (> ry 0.5))  ;; play
+                (set! stagescore 0)
                 (glgui-set! world 'yofs 0)
                 (set! menu-mode 'FEEDBACK)
                 (belly-init)
                 (reset-time)
                 (start-recording))
-             ((and (> rx 0.5) (> ry 0.5)) ;; train
+             ((and (> rx 0.7) (> ry 0.5)) ;; train
                 (set! state GOING_NOWHERE)
                 (glgui-set! world 'yofs 0)
                 (set! menu-mode 'TEACH)
                 (reset-time)
                 (start-recording))
-             ((and (< rx 0.5) (< ry 0.5)) ;; blank
+             ((and (< rx 0.3) (< ry 0.5)) ;; blank
               (set! menu-mode 'MEASURE) 
               (reset-time)
               (start-recording))
-             ((and (> rx 0.5) (< ry 0.5)) ;; demo
+             ((and (> rx 0.7) (< ry 0.5)) ;; demo
                 (glgui-set! world 'yofs 0) 
                 (set! menu-mode 'DEMO))
            )
@@ -464,26 +494,54 @@ end-of-c-declare
            (jh (cadr johnny-happy.img))
            (x (+ (/ (- w jw) 2.0) 0))
            (y (- (/ (- h jh) 2.) 200 -16)))
+        
+      (set! splash-balloon (glgui-sprite splash 'x 0 'y 75 'image (car balloons) 'color (color-fade White 0.75)))
+      (glgui-widget-set! splash splash-balloon 'hidden #t)
+      (glgui-widget-set! splash splash-balloon 'input-handle #f)
       (set! splash-johnny  (glgui-sprite splash 'x x 'y y 'y0 y 'image johnny-happy.img 'color White))
       (set! splash-johnny-eyes  (glgui-sprite splash 'x x 'y y 'y0 y 'image eyes-straight.img 'color White))
       (set! splash-johnny-avatar  (glgui-sprite splash 'x x 'y y 'y0 y 'image (car (car avatars)) 'color White))
-      (glgui-widget-set! splash splash-johnny-avatar 'releasecallback (lambda (x . y) (avatar-rotate)))
-     )
-))
+      (glgui-widget-set! splash splash-johnny-avatar 
+         'presscallback (lambda (x . y) 
+             (avatar-rotate)
+             (glgui-widget-set! splash splash-balloon 'image (glgui-widget-get gui balloon 'image))
+             (glgui-widget-set! splash splash-balloon 'x (glgui-widget-get gui balloon 'x))
+             (glgui-widget-set! splash splash-balloon 'hidden #f)
+             (set! splash-touchtime (time->seconds (current-time)))
+             (set! splash-timeout 10.)
+             (let ((skin-tone (list-ref skin-tones skin-idx)))
+               (glgui-widget-set! splash splash-johnny 'color skin-tone)
+               (glgui-widget-set! gui johnny 'color skin-tone)
+               (set! skin-idx (modulo (+ skin-idx 1) (length skin-tones)))
+             )))
+      (glgui-widget-set! splash splash-johnny-avatar 
+         'releasecallback (lambda (x . y) 
+            (set! splash-touchtime (time->seconds (current-time)))
+            (set! splash-timeout 2.)))
+    )))
 
 (define (update-splash)
   (if (eq? menu-mode 'MENU) 
-    (let ((hidescore (not lastscore)))
-      (glgui-widget-set! splash splash-banner 'hidden hidescore)
-      (glgui-widget-set! splash splash-scorelabel 'hidden hidescore)
-      (glgui-widget-set! splash splash-hiscorelabel 'hidden hidescore)
-      (glgui-widget-set! splash splash-logo 'hidden (not hidescore))
+    (let ((hidescore (not lastscore))
+          (hideall splash-touchtime)
+          (drop-balloon (and splash-touchtime (> (- (time->seconds (current-time)) splash-touchtime) splash-timeout))))
+      (if drop-balloon (begin
+        (glgui-widget-set! splash splash-balloon 'hidden #t)
+        (set! hideall #f)
+        (set! splash-touchtime #f)
+      ))
+      (glgui-widget-set! splash splash-banner 'hidden (or hideall hidescore))
+      (glgui-widget-set! splash splash-scorelabel 'hidden (or hideall hidescore))
+      (glgui-widget-set! splash splash-hiscorelabel 'hidden (or hideall hidescore))
+      (glgui-widget-set! splash splash-logo 'hidden (or hideall (not hidescore)))
       (if (and lastscore hiscore (= lastscore hiscore))
         (glgui-widget-set! splash splash-scorelabel 'color (colorflutter scoreflutter)))
     )))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-;; gameover
+;; gameover and stage switch
+
+(define gameover-NOT #f)  ;; update for rolling stages
 
 (define gameover #f)
 (define gameover-scorelabel #f)
@@ -491,6 +549,8 @@ end-of-c-declare
 (define gameover-lastupdate 0.)
 (define gameover-stage 0)
 
+(define stagescore 0)
+(define stagelevel 0)
 (define bonus 0)
 (define basescore 0)
 (define bonusscore 0)
@@ -522,6 +582,10 @@ end-of-c-declare
     (glgui-widget-set! gameover gameover-scorelabel 'color (colorflutter scoreflutter)))
   (if (and (eq? menu-mode 'GAMEOVER) (>= (fl- n gameover-lastupdate) .1)) (begin 
     (set! gameover-stage (+ gameover-stage 1))
+    (if (and gameover-NOT (> gameover-stage 100)) (begin
+      (belly-reinit)
+      (set! menu-mode 'FEEDBACK)
+    ))
     (if (> gameover-stage 60)
       (let* ((deltascore (/ (* bonus basescore) 20.))
               (newscore (+ score deltascore))
@@ -534,19 +598,26 @@ end-of-c-declare
         (glgui-widget-set! gameover gameover-bonuslabel 'label (string-append "Bonus " (number->string (fix (* bonus 100.))) "%"))
         ))))))
 
-(define (prep-gameover)
+(define (prep-gameover . notreally)
   ;; FIXME convert to RSA reading here
-  (let ((bn (+ 0.1 (/ (random-real) 2.))))
+  (let ((bn (+ 0.1 (/ (random-real) 2.)))
+       ;; (bn (belly-rsa))
+       )
+   ;; (log-system "bna=" (belly-rsa-array 12))
+   ;; (log-system "bn=" bn)
+    (set! gameover-NOT (not (null? notreally)))
     (set! gameover-stage 0)
+    (set! stagelevel (if gameover-NOT (+ stagelevel 1) 0))
     (glgui-widget-set! gameover gameover-scorelabel 'color Yellow)
     (glgui-widget-set! gameover gameover-bonuslabel 'color Yellow)
-    (glgui-widget-set! gameover gameover-bonuslabel 'label "Score")
+    (glgui-widget-set! gameover gameover-bonuslabel 'label (if gameover-NOT (string-append "Stage " (number->string stagelevel)) "Score"))
     (glgui-widget-set! gameover gameover-scorelabel 'label (string-append (number->string (fix score)) "m"))
     (set! bonus bn)
     (set! basescore score)
     (set! bonusscore (* score (+ 1 bonus)))
     (set! lastscore bonusscore) 
-    (if (or (not hiscore) (> lastscore hiscore)) (begin
+    (set! stagescore (if gameover-NOT lastscore 0))
+    (if (and (not gameover-NOT) (or (not hiscore) (> lastscore hiscore))) (begin
       (set! hiscore lastscore)
       (with-output-to-file hiscorefile (lambda () (write hiscore)))))
     (if lastscore (glgui-widget-set! splash splash-scorelabel 'label (string-append (number->string (fix lastscore)) "m")))
@@ -569,12 +640,15 @@ end-of-c-declare
 (define (update-height)
   (let* ((y (glgui-get world 'yofs))
          (idx (/ y (- world-ofs-max)))
-         (hf (exp (* idx 13.815510557964275)))
+         (hf (+ stagescore (exp (* idx 13.815510557964275))))
          (hf2 (if (< hf 100.) (/ (fix (* 10. hf)) 10.) (fix hf)))
          (hstr (number->string hf2))
          (hlen (string-length hstr))
          (fnlstr (string-append hstr (if (string=? (substring hstr (- hlen 1) hlen) ".") "0m" "m"))))
-    (if (eq? menu-mode 'FEEDBACK) (set! score hf2))
+    (if (eq? menu-mode 'FEEDBACK) (begin
+       (set! score hf2)
+       (if (= idx 1.) (begin (set! stagescore score) (prep-gameover 'notreally)))
+    ))
     (glgui-widget-set! height height-label 'label fnlstr))) 
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -759,17 +833,41 @@ end-of-c-declare
 
 (define touch-gui #f)
 
+(define (glgui:image-touch g wgt type mx my)
+  (define (inside? mx my x y w h)
+     (and (> mx x) (< mx (+ x w)) (> my y) (< my (+ y h))))
+  (let* ((x (glgui-widget-get g wgt 'x))
+         (y (glgui-widget-get g wgt 'y))
+         (w (glgui-widget-get g wgt 'w))
+         (h (glgui-widget-get g wgt 'h))
+         (img (glgui-widget-get g wgt 'image))
+         (img-w (glgui:image-w img))
+         (img-h (glgui:image-h img))
+         (cb (glgui-widget-get g wgt 'callback))
+         (inside (inside? mx my x y w h))
+         (confirm (inside? mx my (+ x (- (/ w 2) (/ img-w 2))) (+ y (- (/ h 2) (/ img-h 2))) img-w img-h)))
+   (if (and inside cb (= type EVENT_BUTTON1UP)) (cb g wgt confirm))
+  inside
+))
+
 (define (make-touch-gui w h)
   (set! touch-gui (make-glgui))
-  (let ((wgt (glgui-box touch-gui 0 0 w h (color-fade Red 0.5))))
+  (let ((wgt (glgui-image touch-gui 0 0 w h exit.img White)))
     (glgui-widget-set! touch-gui wgt 'draw-handle #f)
-    (glgui-widget-set! touch-gui wgt 'callback (lambda (x . y) 
-       (stop-recording)
-       (set! menu-mode 'MENU) 
-       (glgui-set! world 'yofs 0)
-       (set! time-active #f)
-       (set! state GOING_UP)))
-  ))
+    (glgui-widget-set! touch-gui wgt 'input-handle glgui:image-touch)
+    (glgui-widget-set! touch-gui wgt 'callback (lambda (g wgt confirm)
+      (let* ((needs-confirm (or (eq? menu-mode 'FEEDBACK) (eq? menu-mode 'MEASURE)))
+             (delay-exit (and needs-confirm (not (glgui-widget-get touch-gui wgt 'draw-handle)))))
+        (if delay-exit (glgui-widget-set! touch-gui wgt 'draw-handle glgui:image-draw) 
+           (begin
+             (glgui-widget-set! touch-gui wgt 'draw-handle #f)
+             (if (or confirm (not needs-confirm)) (begin
+               (stop-recording)
+               (if (and (eq? menu-mode 'FEEDBACK) score (> score 1)) (prep-gameover) (set! menu-mode 'MENU))
+               (glgui-set! world 'yofs 0)
+               (set! time-active #f)
+               (set! state GOING_UP)
+             )))))))))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; time element
@@ -856,19 +954,24 @@ end-of-c-declare
 
 (define (update-status n)
   (if (>= (fl- n status-lastupdate) 1.0)
-    (let* ((pwr ((c-lambda () double "___result=POWER;")))
+    (let* ((haz-sensor (let ((res (audioaux-headphonepresent)))
+             ((c-lambda (int) void "mute=___arg1;") (if res 0 1))
+             res))
+           (pwr (if haz-sensor ((c-lambda () double "___result=POWER;")) #f))
            (str (cond
-             ((fl< pwr 0.005) "SENSOR ERROR")
-             ((fl> pwr 0.85) "NO FINGER")
+             ((and pwr (fl< pwr 0.005)) "SENSOR ERROR")
+             ((and pwr (fl> pwr 0.85)) "NO FINGER")
+             ((not haz-sensor) "NO SENSOR")
              (else #f))))
       (if (string? str) (begin
         (glgui-widget-set! status-gui status-label 'label str)
         (glgui-widget-set! status-gui status-label 'bgcolor (color-fade 
-          (if (string=? str "SENSOR ERROR") Red Yellow) 0.5))))
+          (if (string=? str "SENSOR ERROR") Red (if (string=? str "NO SENSOR") White Yellow)) 0.5))))
       (glgui-widget-set! status-gui status-label 'hidden (not (string? str)))
       (set! status-lastupdate n)
-   )))
-
+   ))
+   ((c-lambda () void "dispatch_recording"))
+  )
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; main program
@@ -909,6 +1012,13 @@ end-of-c-declare
    )
    (let ((logdir (string-append (system-directory) "/log")))
      (if (not (file-exists? logdir)) (create-directory logdir)))
+   (if (string=? (system-platform) "macosx") (begin
+     ;; quad capture
+     ((eval 'pa-idev-set!) 2) ((eval 'pa-odev-set!) 2)
+     ;; spdif i/o
+     ((eval 'pa-ochannel-set!) 2 3)
+     ((eval 'pa-ichannel-set!) 3 2)
+   ))
    (rtaudio-start 8000 1.0)
  ;;  (uploader-init "ecem.ece.ubc.ca" "/cgi-bin/bellybreath.cgi" "bin" 100000)
  ;;  (uploader-trigger)
@@ -925,7 +1035,7 @@ end-of-c-declare
      (update-measure)
      (update-bubbles now)
      (update-breath now)
-     (update-time now)
+   ;;  (update-time now)  ;; disable for phase 2
      (update-clock now)
      (update-status now)
      (update-gameover now)
@@ -939,7 +1049,6 @@ end-of-c-declare
         (let ((ypos (- (glgui-get world 'yofs)))
               (newypos (* 1. (DYNHEIGHT) (- world-ofs-max)))
               (newstate (let ((d (DYNDIR))) (if (= d 1) GOING_UP (if (= d -1) GOING_DOWN GOING_NOWHERE)))))
-         ;; (log-system "state=" newstate)
           (glgui-set! world 'yofs newypos)
           (set! state newstate)
      ))
@@ -950,10 +1059,16 @@ end-of-c-declare
      (glgui-event 
         (case menu-mode
           ((MENU)  (list world clock-gui status-gui splash))
-          ((TEACH) (list world gui instructions time-gui status-gui touch-gui))
-          ((DEMO) (list world gui clouds touch-gui))
-          ((FEEDBACK) (list world gui clouds height measure time-gui status-gui touch-gui))
-          ((MEASURE) (list time-gui status-gui touch-gui))
+          ((TEACH) (list world gui instructions 
+                     ;;  time-gui  ;; disable for phase 2
+                         status-gui touch-gui))
+          ((DEMO) (list world gui clouds height touch-gui))
+          ((FEEDBACK) (list world gui clouds height measure 
+               ;; time-gui  ;; disable for phase 2
+               status-gui touch-gui))
+          ((MEASURE) (list 
+               ;; time-gui ;; disable for phase 2 
+                status-gui touch-gui))
           ((GAMEOVER) (list world gameover touch-gui))
         ) t x y)
   ))
