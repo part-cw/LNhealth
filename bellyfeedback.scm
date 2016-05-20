@@ -16,6 +16,7 @@
 
 #define LR_HIPASS 1
 #define LR_LOPASS 0
+#define BELLYARRAY_SIZE 128
 
 struct lr_filter  {
  double a0,a1,a2,a3,a4;
@@ -78,6 +79,27 @@ static double lr_output(struct lr_filter *lp)
 }
 
 // ---------------------
+// function that returns the median from a sorted array
+
+static double median(double array[], int size){
+	static int i, pos, temp;
+
+	for( i = 1; i <= size - 1; i++ ) {
+		temp = array[i];
+		pos = size - 1;
+		while( pos >= 0 && array[pos] > temp ) {
+			array[pos+1] = array[pos];
+			pos--;
+		}
+		array[pos+1] = temp;
+	}
+	if( size % 2 == 0 )
+		return (array[(size/2)-1] + array[size/2])/2;
+	else
+		return array[(size/2)+1];
+}
+
+// ---------------------
 // heart rate extraction
 
 // how close consecutive HR's need to be
@@ -126,27 +148,45 @@ static double heartrate(double t, double x)
 static double belly_t=0;
 static double belly_height=0;
 static double belly_setpoint=0;
+//static int ratio_array_index=0;
+//static double ratio_array[BELLYARRAY_SIZE];
+
+static int FORCE_CONFORM=0; // set to 1 to simulate conformance
 
 static void belly_feedback(double dt, double hr,int sigerr)
 {
+  static int arm_rsa=0;
   static double inspiration_hr=0, expiration_hr=0;
   static double inspiration_cnt=0, expiration_cnt=0;
+
   if (sigerr) { belly_setpoint=0; } else {
-    if (dt>=2.5&&dt<=3.5) { inspiration_hr+=hr; inspiration_cnt++; }
+    if (dt>=2.5&&dt<=3.5) { arm_rsa=1; inspiration_hr+=hr; inspiration_cnt++; }
     if (dt>3.5&&dt<7.5&&inspiration_hr&&expiration_hr) {
       if (inspiration_cnt) { inspiration_hr/=inspiration_cnt; inspiration_cnt=0; }
       if (expiration_cnt) { expiration_hr/=expiration_cnt; expiration_cnt=0; }
-      belly_setpoint+=(inspiration_hr>FEEDBACK_THRESHOLD*expiration_hr?1:0);
-      if (inspiration_hr<0.9*expiration_hr&&belly_setpoint>0) belly_setpoint-=1;
+      belly_setpoint+=((FORCE_CONFORM||inspiration_hr>FEEDBACK_THRESHOLD*expiration_hr)?1:0);
+      if (!FORCE_CONFORM&&inspiration_hr<0.9*expiration_hr&&belly_setpoint>0) belly_setpoint-=1;
       expiration_hr=0;
     }
     if (dt>=7.5&&dt<=8.5) { expiration_hr+=hr; expiration_cnt++; }
     if (dt>8.5&&inspiration_hr&&expiration_hr) {
       if (inspiration_cnt) { inspiration_hr/=inspiration_cnt; inspiration_cnt=0; }
       if (expiration_cnt) { expiration_hr/=expiration_cnt; expiration_cnt=0; }
-      belly_setpoint+=(inspiration_hr>FEEDBACK_THRESHOLD*expiration_hr?1:0);
-      if (inspiration_hr<0.9*expiration_hr&&belly_setpoint>0) belly_setpoint-=1;
+      belly_setpoint+=((FORCE_CONFORM||inspiration_hr>FEEDBACK_THRESHOLD*expiration_hr)?1:0);
+      if (!FORCE_CONFORM&&inspiration_hr<0.9*expiration_hr&&belly_setpoint>0) belly_setpoint-=1;
       inspiration_hr=0;
+
+/*
+      if  (arm_rsa&&ratio_array_index < BELLYARRAY_SIZE) {
+       //ratio_array[ratio_array_index] = expiration_hr / inspiration_hr;
+        double rsa = inspiration_hr/expiration_hr;
+        belly_rsa_var=0.1*rsa+0.9*belly_rsa_var;
+	ratio_array[ratio_array_index] = rsa;
+        ratio_array_index++;
+        arm_rsa=0;
+      }
+*/
+
     }
   }
   double a= 1./(5*64);
@@ -159,11 +199,15 @@ static void belly_feedback(double dt, double hr,int sigerr)
 
 static struct lr_filter lp,hp;
 
-void belly_init()
+void belly_init(int hard_init)
 {
-  lr_init(&hp,64.,0.5,LR_HIPASS);
-  lr_init(&lp,64.,4.0,LR_LOPASS);
-  belly_t=belly_setpoint=belly_height=0;
+  if (hard_init) {
+    // ratio_array_index=0;
+    lr_init(&hp,64.,0.5,LR_HIPASS);
+    lr_init(&lp,64.,4.0,LR_LOPASS);
+    belly_t=0;
+  }
+  belly_setpoint=belly_height=0;
 }
 
 void belly_input(double dt, double POWER,int sigerr)
@@ -189,6 +233,27 @@ int belly_dir()
   return (belly_setpoint>belly_height?1:-1);
 }
 
+#define MAX(a,b) (a>b?a:b)
+
+/*
+double belly_rsa()
+{ 
+  if (ratio_array_index>0) {
+    return MAX(0.,median(ratio_array,ratio_array_index)-1.);
+  } else {
+    return 0;
+  }
+}
+
+void belly_rsa_array(double *data, int maxlen)
+{
+  int i;
+  for (i=0;i<(maxlen>ratio_array_index?ratio_array_index:maxlen);i++) {
+    data[i]=ratio_array[i];
+  }
+}
+*/
+
 // --------------
 
 #ifdef BELLY_STANDALONE
@@ -201,7 +266,7 @@ int main()
   double srate, orate;
   char buf[128];
   fgets(buf,128,stdin);
-  if (strncmp(buf,"BellyBreath",10)) { 
+  if (strncmp(buf,"BellyBreath",10)) {
     fprintf(stderr,"ERROR: incompatible magic\n");
     exit(1);
   }
@@ -214,9 +279,9 @@ int main()
   fgets(buf,128,stdin);
   fprintf(stderr,buf);
   sscanf(buf,"ORATE=%lf\n",&orate);
-  
+
   double POWER=0;
-  belly_init();
+  belly_init(1);
   double t=0;
   while (1) {
     float buf[2];
@@ -235,8 +300,20 @@ int main()
 end-of-c-declare
 )
 
-(define belly-init (c-lambda () void "belly_init"))
+(define belly-init (c-lambda () void "belly_init(1);"))
+(define belly-reinit (c-lambda () void "belly_init(0);"))
 (define belly-height (c-lambda () double "___result=belly_height;"))
 (define belly-dir (c-lambda () int "belly_dir"))
+
+#|
+;;(define belly-rsa (c-lambda () double "belly_rsa"))
+(define belly-rsa (c-lambda () double "___result=belly_rsa_var;"))
+
+(define (belly-rsa-array len)
+  (let ((f32v (make-f32vector len)))
+    ((c-lambda (scheme-object int) void "belly_rsa_array(___CAST(void*,___BODY_AS(___arg1,___tSUBTYPED)),___arg2);")
+       f32v len)
+    f32v))
+|#
 
 ;; eof
