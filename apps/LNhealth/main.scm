@@ -220,16 +220,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (glgui-widget-set! lnhealth:gui lnhealth:uiform 'store lnhealth:store)
     ))
 
-    (if (and oldsxtable hook:ondestroy) (hook:ondestroy))
+    (if (and oldsxtable lnhealth:ondestroy) (lnhealth:ondestroy))
 
     ;; prepare hooks
-    (set! hook:oncreate (car (table-ref sxtable 'oncreate '(#f))))
-    (set! hook:onresume (car (table-ref sxtable 'onresume '(#f))))
-    (set! hook:ondestroy (car (table-ref sxtable 'ondestroy '(#f))))
-    (set! hook:onevent (car (table-ref sxtable 'onevent '(#f))))
-    (set! hook:onscheduler (car (table-ref sxtable 'onscheduler '(#f))))
+    (set! lnhealth:oncreate (car (table-ref sxtable 'oncreate '(#f))))
+    (set! lnhealth:onresume (car (table-ref sxtable 'onresume '(#f))))
+    (set! lnhealth:ondestroy (car (table-ref sxtable 'ondestroy '(#f))))
+    (set! lnhealth:onevent (car (table-ref sxtable 'onevent '(#f))))
+    (set! lnhealth:onscheduler (car (table-ref sxtable 'onscheduler '(#f))))
 
-    (if hook:oncreate (hook:oncreate))
+    (if lnhealth:oncreate (lnhealth:oncreate))
 ))
 
 (main
