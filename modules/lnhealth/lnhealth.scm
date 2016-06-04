@@ -205,10 +205,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 )
 ;; suspend
 (define (lnhealth-suspend)
-  (if lnhealth:onsuspend (lnhealth:onsuspend)) (glgui-suspend)
+  (if lnhealth:onsuspend (lnhealth:onsuspend))
+  (glgui-suspend)
 )
 ;; resume
 (define (lnhealth-resume)
+  (glgui-resume)
   (if lnhealth:onresume (lnhealth:onresume))
 )
 ;; eof
