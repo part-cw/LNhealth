@@ -128,7 +128,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          )))
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'fnt uiformfont_18.fnt)
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'smlfnt uiformfont_14.fnt)
-    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'hdfnt uiformfont_26.fnt)
+    (glgui-widget-set! lnhealth:gui lnhealth:uiform 'hdfnt uiformfont_24.fnt)
     (glgui-widget-set! lnhealth:gui lnhealth:uiform 'bigfnt uiformfont_40.fnt)
 
     (let ((db (glgui-widget-get lnhealth:gui lnhealth:uiform 'database)))
