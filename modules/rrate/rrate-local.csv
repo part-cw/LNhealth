@@ -1,30 +1,30 @@
-Key,English,Luganda,Khmer,Amharic,Dinka
-CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,Londako emirundi gy'okoonye ku lutimbe egyetaagisibwa okubala enzisa,[t],የአተነፋፈስ መጠን ላማስላት የሚያገለግለውን ተመሳሰይ ንክኪ ብዛት ምረጪ,kueny adet tueny ca beeric yen wiic bi mat kek adet weei
-CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,[t],የተመሳሳይነት መነሻ ምረጪ,kuen ke ca beeric
-VIBRATE_SOUND,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.
-CANCEL,Cancel,Sazaamu,[t],ሰርዝ,temkou
-SETTINGS,Settings,Entereeza,[t],ሌቲንግ,cook piiny
-NO,No,Nedda,[t],አይደለም,[t]
-YES,Yes,Yee,[t],አዎ,[t]
-RESTART,Restart,[t],[t],እንደገና ማስጀመር,baan jook
-RR_MATCH,Does the breathing rate match the patient?,Enzisa efaanana n'eyomulwadde?,[t],የትንፋሽ መጠኑ ከታማሚው ጋር ይመሳሰላል?,ye weei raan tuany loou ka thoong
-EXIT,Exit,[t],[t],ውጪ,loou heer
-RRATE,Respiratory Rate:,Enzisa,[t],የአተነፋፈስ መጠን:,weeiyic:
-RRATE_UNIT,Breaths/min,[t],[t],የትንፋሸ መጠን በ1 ደfዎ,weei/yuolic
-TAP_TO_SYNC,Tap on inhalation to synchronize,[t],[t],[t],[t]
-FAST,Fast,Kumuukum,[t],ፈጣን,apuol
-CONSISTENT,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric
-CONSISTENTD,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric
-SLOW,Slow,Mpola,[t],ዝግ ያለ,ee cath amath
-TAP_INHALATION,Tap on inhalation,Koona ku kigambo "okusika omukka",[t],[t],tuany tene weei alongthinic
-TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,[t],የተዘበራረቀ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany aci beeric. theem det.
-NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,[t],በቂ ያልሆነ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,akac tuany apeth. theem det.
-TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,[t],በጣም ፈጣን ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany apuol apeidit. theem det.
-RETRY,Retry,[t],[t],ደግመሽ ሞክሪው,baan theem
-IGNORE,Ignore,[t],[t],ተይው,akac gaam
-INCONSISTENT,Inconsistent,Tebikwatagana,[t],ተመሳሳይ ያልሆነ,aci yeic beeric
-M_MEDIAN,M = Median Time Interval,M = amakati ng'obala essaawa mu kussa,[t],አ = አማካይ የግዜ መጠን,M = yuol ci thong
-C_CONSISTENCY,C = Consistency Threshold,C = webikoma okukwatagana,[t],ተ = የተመሳሳነት መነሻ,C = beericde
-M_pC,M + C,M + C,M + C,አ+ተ,M + C,
-M,M,M,M,አ,M
-M_mC,M - C,M - C,M - C,አ-ተ,M - C
+Key,English,Luganda,Khmer,Amharic,Dinka,Spanish,Quechua,Aymara
+CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,Londako emirundi gy'okoonye ku lutimbe egyetaagisibwa okubala enzisa,[t],የአተነፋፈስ መጠን ላማስላት የሚያገለግለውን ተመሳሰይ ንክኪ ብዛት ምረጪ,kueny adet tueny ca beeric yen wiic bi mat kek adet weei,Seleccione el número necesario de toques consistentes para calcular la frecuencia respiratoria,ñit'ispa yupanakunata akllay kallpachay chaninchaywan sapa samaywan,"qhawqha limiñasa wakisi uka ajlliña, samsunaka yatiñataki"
+CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,[t],የተመሳሳይነት መነሻ ምረጪ,kuen ke ca beeric,Seleccione el umbral de consistencia,chaykamalla ñit'ispa kallpachay,ukakama  puriñataki  aski ajllita.
+VIBRATE_SOUND,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrar con sonido,ch'aqwaypi kharkatiy,Suynayaña
+CANCEL,Cancel,Sazaamu,[t],ሰርዝ,temkou,Cancelar,tukupay,Ch’ujtayña
+SETTINGS,Settings,Entereeza,[t],ሌቲንግ,cook piiny,Configuración,wakmanta hallch'ay,Wakichaña
+NO,No,Nedda,[t],አይደለም,[t],No,mana,janiwa
+YES,Yes,Yee,[t],አዎ,[t],Si,ari,jisa
+RESTART,Restart,[t],[t],እንደገና ማስጀመር,baan jook,[t],[t],[t]
+RR_MATCH,Does the breathing rate match the patient?,Enzisa efaanana n'eyomulwadde?,[t],የትንፋሽ መጠኑ ከታማሚው ጋር ይመሳሰላል?,ye weei raan tuany loou ka thoong,[t],llankhaywan samaywan kuchkachay,jaqina samsutapaxa kikipakiw
+EXIT,Exit,[t],[t],ውጪ,loou heer,[t],[t],[t]
+RRATE,Respiratory Rate:,Enzisa,[t],የአተነፋፈስ መጠን:,weeiyic:,Frecuencia respiratoria:,sapa kuti samay:,Qhawqha  samsutasa:
+RRATE_UNIT,Breaths/min,[t],[t],የትንፋሸ መጠን በ1 ደfዎ,weei/yuolic,[t],[t],[t]
+TAP_TO_SYNC,Tap on inhalation to synchronize,[t],[t],[t],[t],Tocar en cada inspiración para sincronizar,samaywan takay chaninchanapaq,"Wakichañatakixa,  samkatasina  limiñawa"
+FAST,Fast,Kumuukum,[t],ፈጣን,apuol,Rápido,utqhay,k'ataki
+CONSISTENT,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric,Consistente,unaypaq,khusa wakisiri
+CONSISTENTD,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric,Consistente,unaypaq,wali wakisiri
+SLOW,Slow,Mpola,[t],ዝግ ያለ,ee cath amath,Despacio,allillanmanta,k'achata
+TAP_INHALATION,Tap on inhalation,Koona ku kigambo "okusika omukka",[t],[t],tuany tene weei alongthinic,Tocar en cada inspiracion ,samaywan takay ,Samkatasina  limxataña
+TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,[t],የተዘበራረቀ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany aci beeric. theem det.,"Los toques son inconsistentes. Por favor, inténtelo de nuevo.","ch'aqwaypi mana samaq. ama hinachu kay, wakmanta qallariy","Limitanakaxa  janiwa walikiti. Mira suma,  wasitata lurañawa"
+NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,[t],በቂ ያልሆነ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,akac tuany apeth. theem det.,"El número de toques es insuficiente. Por favor, inténtelo de nuevo","pisi chaqway. ama hinachu kay, wakmanta qallariy","Jani phuqata  limitanaka. Mira suma, wasitata lurañawa"
+TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,[t],በጣም ፈጣን ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany apuol apeidit. theem det.,"Los toques son demasiado rápidos. Por favor, inténtelo de nuevo","ch'aqwaykuna sinchiutqhay. ama hinachu kay, wakmanta qallariy","Limitaxa sinti k’ataki luratawa. Mira suma,  wasitata lurañawa"
+RETRY,Retry,[t],[t],ደግመሽ ሞክሪው,baan theem,[t],[t],[t],
+IGNORE,Ignore,[t],[t],ተይው,akac gaam,[t],[t],[t]
+INCONSISTENT,Inconsistent,Tebikwatagana,[t],ተመሳሳይ ያልሆነ,aci yeic beeric,Inconsistente,mana unaypaq,jani wakisiri
+M_MEDIAN,M = Median Time Interval,M = amakati ng'obala essaawa mu kussa,[t],አ = አማካይ የግዜ መጠን,M = yuol ci thong,M = Mediana del tiempo transcurrido entre toques,M = sapa ratu llankhay,"M = Qhawqha samsutasa utji,  uka  wakisirinaka tantiyañataki,"
+C_CONSISTENCY,C = Consistency Threshold,C = webikoma okukwatagana,[t],ተ = የተመሳሳነት መነሻ,C = beericde,C = Umbral de consistencia,C = chaykamalla kallpuchay,C = Ukakama  aski wakisiri.
+M_pC,M + C,M + C,M + C,አ+ተ,M + C,M + C,M + C,M + C
+M,M,M,M,አ,M,M,M,M
+M_mC,M - C,M - C,M - C,አ-ተ,M - C,M - C,M - C,M - C

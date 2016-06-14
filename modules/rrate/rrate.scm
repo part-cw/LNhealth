@@ -118,23 +118,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 (- h 285) (- w 20) 275 (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label rrate:settings:language 30 (- h 50) (- w 60) 23 "Select language" text_20.fnt Black)
   (rrate-setup-language-choices)
-  (set! rrate:settings:languagelist (glgui-list rrate:settings:language 50 (- h 285) 165 230 46
-    (map (lambda (lan)
-           (lambda (g wgt bx by bw bh selected?)
-             (glgui:draw-pixmap-center (+ bx 5) (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-             (glgui:draw-text-left (+ bx 42) (+ by 11) (- bw 52) 23 (cdr lan) text_20.fnt Black)))
-         rrate:settings:languagechoices)
-    (lambda (g wgt type mx my)
-      ;; Save the new settings
-      (let* ((cur (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'current))
-             (lindex (car (list-ref rrate:settings:languagechoices cur))))
-        (settings-set! "Language" lindex)
-        (local-index-set! lindex)
-        (rrate-init x y w h rrate:store rrate:cancelproc rrate:doneproc)))))
-  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'autohidebar #t)
-  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol1 (color-fade White 0))
-  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol2 (color-fade White 0))
-  (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current (list-pos rrate:settings:languagechoices (assoc (settings-ref "Language" 1) rrate:settings:languagechoices)))
+  (let ((oldoff (if rrate:settings:languagelist (fix (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'offset)) 0)))
+    (set! rrate:settings:languagelist (glgui-list rrate:settings:language 50 (- h 285) 165 230 46
+      (map (lambda (lan)
+             (lambda (g wgt bx by bw bh selected?)
+               (glgui:draw-pixmap-center (+ bx 5) (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+               (glgui:draw-text-left (+ bx 42) (+ by 11) (- bw 52) 23 (cdr lan) text_20.fnt Black)))
+           rrate:settings:languagechoices)
+      (lambda (g wgt type mx my)
+        ;; Save the new settings
+        (let* ((cur (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'current))
+               (lindex (car (list-ref rrate:settings:languagechoices cur))))
+          (settings-set! "Language" lindex)
+          (local-index-set! lindex)
+          (rrate-init x y w h rrate:store rrate:cancelproc rrate:doneproc)))))
+    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'autohidebar #t)
+    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol1 (color:shuffle #xc0d1d5ff))
+    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol2 (color:shuffle #xd7eaefff))
+    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset oldoff)
+    (let ((cur (list-pos rrate:settings:languagechoices (assoc (settings-ref "Language" 1) rrate:settings:languagechoices))))
+      (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current cur)
+      (if (fx> (- cur oldoff) 4)
+        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset (- cur 4)))))
   
   ;; The second page of settings, number of taps
   (set! rrate:settings:taps (glgui-container rrate:gui x y w h))
@@ -166,16 +171,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (let ((leftx (+ (- w 320) 20)))
     (set! rrate:settings:consistency (glgui-container rrate:gui x y w h))
     (glgui-widget-set! rrate:settings:consistency (glgui-box rrate:settings:consistency 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
-    (glgui-label-local rrate:settings:consistency 20 (- h 80) (- w 10) 60 "CONSISTENCY_THRESH" text_20.fnt Black)
-    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency 10 (- h 100) (- w 20) 20 "M_MEDIAN" text_14.fnt Black) 'align GUI_ALIGNCENTER)
-    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency 10 (- h 120) (- w 20) 20 "C_CONSISTENCY" text_14.fnt Black) 'align GUI_ALIGNCENTER)
-    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 155) 55 20 "M_pC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 170) 55 20 "M" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 185) 55 20 "M_mC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
-    (glgui-pixmap rrate:settings:consistency (+ leftx 58) (- h 190) diagram.img)
-    (glgui-label-local rrate:settings:consistency (+ leftx 103) (- h 150) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
-    (glgui-label-local rrate:settings:consistency (+ leftx 106) (- h 170) (- w 10) 20 "CONSISTENTD" text_14.fnt Black)
-    (glgui-label-local rrate:settings:consistency (+ leftx 103) (- h 190) (- w 10) 20 "INCONSISTENT" text_14.fnt Black))
+    (glgui-label-local rrate:settings:consistency 20 (- h 73) (- w 10) 60 "CONSISTENCY_THRESH" text_20.fnt Black)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency 10 (- h 110) (- w 20) 40 "M_MEDIAN" text_14.fnt Black) 'align GUI_ALIGNCENTER)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency 10 (- h 130) (- w 20) 20 "C_CONSISTENCY" text_14.fnt Black) 'align GUI_ALIGNCENTER)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 163) 55 20 "M_pC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 178) 55 20 "M" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+    (glgui-widget-set! rrate:settings:consistency (glgui-label-local rrate:settings:consistency leftx (- h 193) 55 20 "M_mC" text_14.fnt Black) 'align GUI_ALIGNRIGHT)
+    (glgui-pixmap rrate:settings:consistency (+ leftx 58) (- h 198) diagram.img)
+    (glgui-label-local rrate:settings:consistency (+ leftx 103) (- h 158) (- w 10) 20 "INCONSISTENT" text_14.fnt Black)
+    (glgui-label-local rrate:settings:consistency (+ leftx 106) (- h 178) (- w 10) 20 "CONSISTENTD" text_14.fnt Black)
+    (glgui-label-local rrate:settings:consistency (+ leftx 103) (- h 198) (- w 10) 20 "INCONSISTENT" text_14.fnt Black))
   (set! rrate:settings:percentlist (glgui-list rrate:settings:consistency 20 (- h 390) (- w 40) 180 35
     (map (lambda (p) (lambda (g wgt bx by bw bh selected?)
       (let ((cx (+ bx (- (/ bw 2) 50))))
@@ -970,20 +975,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Create popup background and message
    (set! rrate:popup:cont (glgui-container rrate:gui x y w h))
    (glgui-widget-set! rrate:gui rrate:popup:cont 'modal #t)
-   (set! rrate:popup:bg (glgui-box rrate:popup:cont (+ 45 rrate:xoffset) (+ 113 rrate:yoffset) 300 110 (color-fade Black 0.8)))
+   (set! rrate:popup:bg (glgui-box rrate:popup:cont (+ 45 rrate:xoffset) (+ 113 rrate:yoffset) 300 160 (color-fade Black 0.8)))
    (glgui-widget-set! rrate:popup:cont rrate:popup:bg 'rounded #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:bg 'modal #t)
 
    ;; Error messages about respiratory rate
-   (set! rrate:popup:inconsistent (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 50
+   (set! rrate:popup:inconsistent (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
      "TAPS_INCONSISTENT" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'modal #t)
-   (set! rrate:popup:notenough (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 50
+   (set! rrate:popup:notenough (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
       "NOT_ENOUGH_TAPS" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'modal #t)
-   (set! rrate:popup:toofast (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 50
+   (set! rrate:popup:toofast (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
      "TAPS_TOO_FAST" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)

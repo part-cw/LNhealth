@@ -35,3 +35,19 @@ DejaVuSans.ttf 14 'aci tade' NO5
 DejaVuSans.ttf 14 'ee tade' YES5
 DejaVuSans.ttf 12 'thueny//tene weei//alongthinic' TAP_TO_SYNC5
 AbyssinicaSIL-R.ttf 12 'አተነፋፈሱን//ለማመሳሰል//ወደ ውጭ//በሚተነፍስበት ግዜ ንኪ' TAP_TO_SYNC4 Script=Amharic
+DejaVuSans.ttf 14 'Volver a intentar' RETRY6
+DejaVuSans.ttf 12 'wakmanta yanay' RETRY7
+DejaVuSans.ttf 12 'Wasitampi  lurañawa' RETRY8
+DejaVuSans.ttf 14 'Ignorar' IGNORE6
+DejaVuSans.ttf 12 'qunqay' IGNORE7
+DejaVuSans.ttf 12 'Jani kuna luraña' IGNORE8
+DejaVuSans.ttf 12 'Coincide con la frecuencia//respiratoria del paciente?' RR_MATCH6
+DejaVuSans.ttf 11 'Respiraciones//por minuto' RRATE_UNIT6
+DejaVuSans.ttf 11 'sapa minutpi//samay' RRATE_UNIT7
+DejaVuSans.ttf 11 'Sapa minutuna//samsuta' RRATE_UNIT8
+DejaVuSans.ttf 14 'Volver a empezar' RESTART6
+DejaVuSans.ttf 16 'wakanta qallariy' RESTART7
+DejaVuSans.ttf 14 'Wasitata qalltaña' RESTART8
+DejaVuSans.ttf 14 'Salir' EXIT6
+DejaVuSans.ttf 16 'lluqsiy' EXIT7
+DejaVuSans.ttf 14 'Mistuña' EXIT8

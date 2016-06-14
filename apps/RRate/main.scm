@@ -71,9 +71,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          )
          ;; Language selection
          (let ((lanlist (rrate-setup-language-choices)))
-           (glgui-widget-set! gui:lang (glgui-box gui:lang 10 (- h 385) (- w 20) 295 (color:shuffle #xd7eaefff)) 'rounded #t)
-           (glgui-label gui:lang 30 (- h 130) (- w 60) 23 "Select language" textEng_20.fnt Black)
-           (let loop ((i 0) (by (- h 180)))
+           (glgui-widget-set! gui:lang (glgui-box gui:lang 10 10 (- w 20) (- h 64) (color:shuffle #xd7eaefff)) 'rounded #t)
+           (glgui-label gui:lang 30 (- h 87) (- w 60) 23 "Select language" textEng_20.fnt Black)
+           (let loop ((i 0) (by (- h 137)))
              (if (fx< i (length lanlist))
                (let* ((entry (list-ref lanlist i))
                       (lindex (car entry))
