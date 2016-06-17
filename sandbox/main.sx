@@ -248,8 +248,7 @@
     ;; Load the localization csv table to translate between languages, used by spo2spotcheck
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
     
-    ;; Setup rtaudio for pulse oximetry and setup SpO2 page
-    (rtaudio-start 96000 1.0)
+    ;; Setup pulse oximetry and setup SpO2 page
     (spo2spot-init 0 80 (glgui-width-get) (- (glgui-height-get) 80) lnhealth:store)
     (spo2-set-length 30)
     (spo2-set-quality-length 15)
