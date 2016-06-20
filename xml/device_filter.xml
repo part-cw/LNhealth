@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 0x0d8c: C-MEDIA ELECTRONICS INC. -->
+    <usb-device vendor-id="3468" />
+</resources>
