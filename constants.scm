@@ -12,7 +12,7 @@
 (define CMD_CONFIRMED_SET 5)
 (define CMD_GET 3)
 
-;; attributes 
+;; attributes
 (define NOM_ATTR_NU_VAL_OBS 		#x0950)
 (define NOM_ATTR_NU_CMPD_VAL_OBS 	#x094B)
 (define NOM_ATTR_SA_VAL_OBS 		#x096E)
@@ -26,6 +26,7 @@
 (define NOM_ATTR_ID_LABEL		#x0924)
 (define NOM_ATTR_METRIC_INFO_LABEL	2364)
 (define NOM_ATTR_ID_BED_LABEL 		#x091E)
+(define NOM_ATTR_ID_MODEL #x0928)
 (define NOM_ATTR_POLL_RTSA_PRIO_LIST 62010)
 (define NOM_ATTR_ALL_GROUPS 0)
 (define NOM_SAT_O2_TONE_FREQ      #xF008)

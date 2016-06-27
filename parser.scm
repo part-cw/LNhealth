@@ -149,6 +149,7 @@
          ((= val #x0d03) 2)
          ((= val #x0d01) 2)
          ((= val #x0d16) 2)
+         ((= val #x0d06) 3)
          (else (ivueparser:log 2 (string-append "ignoring type=" (number->string val 16)) 1) 0))))
 
 ;; parse a central station data frame
@@ -158,6 +159,7 @@
   (let* ((tpe (ivueparser:stationtype buf))
          (res  (cond ((= tpe 1) (ivueparser:parseServerWaveforms buf))
                      ((= tpe 2) (ivueparser:parseServerTrends buf))
+                     ((= tpe 3) (ivueparser:parseServerConnectIndInfo buf))
                      (else buf))))
    (if (> (u8data-length res) 0)
      (ivueparser:log 2 (string-append
@@ -167,8 +169,15 @@
          " trailing??") 1))
   #t))
 
-;; server waveforms ----
+;; server connect indication
+(define (ivueparser:parseServerConnectIndInfo buf)
+ (if (> (u8data-length buf) 40)
+  (let ((payload (ivueparser:skip buf 34)))
+     (let loop ((p payload))
+       (if (= (u8data-length p) 0) p
+         (loop (ivueparser:parseAttributeList p)))))))
 
+;; server waveforms ----
 (define (ivueparser:parseServerWaveforms buf)
   (if (> (u8data-length buf) 40)
   (let ((payload (ivueparser:skip buf 34)))
@@ -403,6 +412,10 @@
        (ivueparser:parsePrioList payload))
     ((fx= id NOM_ATTR_ID_BED_LABEL) ;; BedLabel
        (ivueparser:parseBedLabel payload len))
+    ((fx= id 61749) ;; BedLabel - connect Indicator
+       (ivueparser:parseBedLabel payload len))
+    ((fx= id NOM_ATTR_ID_MODEL)
+       (ivueparser:parseIdModel payload))
     ((fx= id NOM_ATTR_TIME_STAMP_ABS) ;; Absolute Timestamp (from boot)
        (ivueparser:parseAbsoluteTimeStamp payload))
     ((fx= id NOM_ATTR_TIME_STAMP_REL) ;; Relative Timestamp
@@ -610,8 +623,20 @@
 (define (ivueparser:parseBedLabel buf len)
   (let ((location (u8data->u8vector (subu8data buf 0 len))))
     (store-set! ivueparser:store "location" (ivueparser:u8vector->string location) "ivue")
-    (ivueparser:log 1 "ivueparser: " (ivueparser:u8vector->string location))
+    (ivueparser:log 1 "ivueparser: location" (ivueparser:u8vector->string location))
   ))
+
+(define (ivueparser:parseIdModel buf)
+  (let* ((len (u8data-u16 (subu8data buf 0 2)))
+         (manufacturer (u8vector->string (u8data->u8vector (subu8data buf 2 (+ 2 len)))))
+         (len2 (u8data-u16 (subu8data buf (+ 2 len) (+ 4 len))))
+         (model_number (u8vector->string (u8data->u8vector (subu8data buf (+ 4 len) (+ 4 len len2))))))
+    (store-set! ivueparser:store "manufacturer" manufacturer "ivue")
+    (store-set! ivueparser:store "model_number" model_number "ivue")
+    (ivueparser:log 1 "ivueparser: manufacturer" manufacturer)
+    (ivueparser:log 1 "ivueparser: model_number" model_number)
+  )
+)
 
 ;; NOT USED
 ;;(define (ivueparser:parseAttrMetricInfoLabel buf)
