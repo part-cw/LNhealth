@@ -12,8 +12,11 @@
 (define CMD_CONFIRMED_SET 5)
 (define CMD_GET 3)
 
+;; Attributes
 (define NOM_ATTR_ALL_GROUPS 0)
-;; attributes
+(define NOM_ATTR_PT_NAME_MIDDLE   #x095F) ;;Middle Name
+(define NOM_ATTR_PT_ENCOUNTER_ID  #xFFFF) ;;Encounter Id
+;; attributes defined in Data Export Interface Program Guide
 (define NOM_ATTR_AL_MON_P_AL_LIST   #x0902) ;;Device P-Alarm List
 (define NOM_ATTR_AL_MON_T_AL_LIST   #x0904) ;;Device T-Alarm List
 (define NOM_ATTR_ALTITUDE     #x090C) ;;Altitude
@@ -95,6 +98,17 @@
 (define NOM_ATTR_GRP_SYS_PROD     #x080C) ;;System Production Attribute Group
 (define NOM_ATTR_GRP_VMO_DYN    #x0810) ;;VMO Dynamic Attribute Group
 (define NOM_ATTR_GRP_VMO_STATIC   #x0811) ;;VMO Static Attribute Group
+
+;; patient sex
+(define SEX_UNKNOWN 0)
+(define MALE 1)
+(define FEMALE 2)
+(define SEX_UNSPECIFIED 9)
+;; patient type
+(define PAT_TYPE_UNSPECIFIED 0)
+(define ADULT 1)
+(define PEDIATRIC 2)
+(define NEONATAL 3)
 
 ;; poll object types
 (define NOM_MOC_VMO_METRIC_NU 6)

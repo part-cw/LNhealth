@@ -431,9 +431,9 @@
     ((fx= id NOM_ATTR_POLL_RTSA_PRIO_LIST)  ;; PrioList
        (ivueparser:parsePrioList payload))
     ((fx= id NOM_ATTR_ID_BED_LABEL) ;; BedLabel
-       (ivueparser:parseBedLabel payload len))
+       (ivueparser:parseAttrString "location" payload len))
     ((fx= id 61749) ;; BedLabel - connect Indicator
-       (ivueparser:parseBedLabel payload len))
+       (ivueparser:parseAttrString "location" payload len))
     ((fx= id NOM_ATTR_ID_MODEL)
        (ivueparser:parseIdModel payload))
     ((fx= id NOM_ATTR_MODE_OP)
@@ -442,8 +442,40 @@
        (ivueparser:parseSysId payload))
     ((fx= id NOM_ATTR_VAL_ENUM_OBS)
        (ivueparser:parseEnumObs payload))
+    ((fx= id NOM_ATTR_PT_NAME_GIVEN)
+       (ivueparser:parseAttrString "patient_given_name" payload len))
+    ((fx= id NOM_ATTR_PT_NAME_MIDDLE)
+       (ivueparser:parseAttrString "patient_middle_name" payload len))
+    ((fx= id NOM_ATTR_PT_NAME_FAMILY)
+       (ivueparser:parseAttrString "patient_family_name" payload len))
+    ((fx= id NOM_ATTR_PT_ID)
+       (ivueparser:parseAttrString "patient_id" payload len))
+    ((fx= id NOM_ATTR_PT_ENCOUNTER_ID)
+       (ivueparser:parseAttrString "patient_encounter_id" payload len))
+    ((fx= id NOM_ATTR_PT_SEX)
+       (ivueparser:parseSex payload))
+    ((fx= id NOM_ATTR_PT_DOB)
+       (ivueparser:parseAbsoluteTimeStamp "patient_dob" payload))
+    ((fx= id NOM_ATTR_PT_HEIGHT)
+       (ivueparser:parsePatMeasure "patient_height" payload))
+    ((fx= id NOM_ATTR_PT_WEIGHT)
+       (ivueparser:parsePatMeasure "patient_height" payload))
+    ((fx= id NOM_ATTR_PT_AGE)
+       (ivueparser:parsePatMeasure "patient_age" payload))
+    ((fx= id NOM_ATTR_PT_BSA)
+       (ivueparser:parsePatMeasure "patient_bsa" payload))
+    ((fx= id NOM_ATTR_PT_NOTES1)
+       (ivueparser:parseAttrString "patient_notes1" payload len))
+    ((fx= id NOM_ATTR_PT_NOTES2)
+       (ivueparser:parseAttrString "patient_notes2" payload len))
+    ((fx= id NOM_ATTR_PT_TYPE)
+       (ivueparser:parsePatType payload))
+    ((fx= id NOM_ATTR_PT_PACED_MODE)
+       (ivueparser:parsePacedMode payload))
+    ((fx= id NOM_ATTR_PT_ID_INT)
+       (ivueparser:parsePatIdInt payload len))
     ((fx= id NOM_ATTR_TIME_STAMP_ABS) ;; Absolute Timestamp (from boot)
-       (ivueparser:parseAbsoluteTimeStamp payload))
+       (ivueparser:parseAbsoluteTimeStamp "abs_time_stamp" payload))
     ((fx= id NOM_ATTR_TIME_STAMP_REL) ;; Relative Timestamp
        (ivueparser:parseRelativeTimeStamp payload))
     ((fx= id NOM_SAT_O2_TONE_FREQ) ;; SpO2 freq.
@@ -563,7 +595,7 @@
     )
   ))
 
-(define (ivueparser:parseAbsoluteTimeStamp buf)
+(define (ivueparser:parseAbsoluteTimeStamp label buf)
   (let ((century (ivueparser:decodebcd (u8data-u8 (subu8data buf 0 1))))
         (year (ivueparser:decodebcd (u8data-u8 (subu8data buf 1 2))))
         (month (ivueparser:decodebcd (u8data-u8 (subu8data buf 2 3))))
@@ -571,7 +603,7 @@
         (hour (ivueparser:decodebcd (u8data-u8 (subu8data buf 4 5))))
         (minute (ivueparser:decodebcd (u8data-u8 (subu8data buf 5 6))))
         (second (ivueparser:decodebcd (u8data-u8 (subu8data buf 7 8)))))
-    (if century (store-set! ivueparser:store "abs_time_stamp"
+    (if century (store-set! ivueparser:store label
       (string->seconds (string-append century year month day "-" hour minute second) "%Y%m%d-%H%M%S") "ivue"
     ))
   ))
@@ -645,11 +677,11 @@
     (table-set! ivueparser:labellut ivueparser:handleid label)
     payload))
 
-;; this is the bed label, set on admission/discharge
-(define (ivueparser:parseBedLabel buf len)
-  (let ((location (u8data->u8vector (subu8data buf 0 len))))
-    (store-set! ivueparser:store "location" (ivueparser:u8vector->string location) "ivue")
-    (ivueparser:log 1 "ivueparser: location" (ivueparser:u8vector->string location))
+;; A generic Attribute String parser
+(define (ivueparser:parseAttrString label buf len)
+  (let ((str (ivueparser:u8vector->string (u8data->u8vector (subu8data buf 0 len)))))
+    (store-set! ivueparser:store label str "ivue")
+    (ivueparser:log 1 "ivueparser:" label str)
   ))
 
 (define (ivueparser:parseIdModel buf)
@@ -679,6 +711,46 @@
 (define (ivueparser:parseEnumObs buf)
   #f
 )
+
+(define (ivueparser:parseSex buf)
+  (let* ((sex (u8data-u16 (subu8data buf 0 2)))
+         (sexstr (cond
+                   ((fx= sex MALE) "Male")
+                   ((fx= sex FEMALE) "Female")
+                   (else "Unknown"))))
+    (store-set! ivueparser:store "patient_sex" sexstr "ivue")
+    (ivueparser:log 1 "ivueparser: patient_sex" sexstr)
+  ))
+
+(define (ivueparser:parsePatMeasure label buf)
+  (let ((value (ivueparser:decodef32 (subu8data buf 0 4)))
+        (m_unit (u8data-u16 (subu8data buf 4 6))))
+    (store-set! ivueparser:store label value "ivue")
+    (ivueparser:log 1 "ivueparser:" label value)
+  ))
+
+(define (ivueparser:parsePatType buf)
+  (let* ((type (u8data-u16 (subu8data buf 0 2)))
+         (typestr (cond
+                   ((fx= type ADULT) "Adult")
+                   ((fx= type PEDIATRIC) "Child")
+                   ((fx= type NEONATAL) "Neonate")
+                   (else "Unspecified"))))
+    (store-set! ivueparser:store "patient_type" typestr "ivue")
+    (ivueparser:log 1 "ivueparser: patient_type" typestr)
+  ))
+
+(define (ivueparser:parsePacedMode buf)
+  (let ((mode (u8data-u16 (subu8data buf 0 2))))
+    (store-set! ivueparser:store "patient_paced_mode" mode "ivue")
+    (ivueparser:log 1 "ivueparser:" "patient_paced_mode" mode)
+  ))
+
+(define (ivueparser:parsePatIdInt buf len)
+  (let ((id (u8data->u8vector (subu8data buf 0 len))))
+    (store-set! ivueparser:store "patient_id_int" id "ivue")
+    (ivueparser:log 1 "ivueparser:" "patient_id_int" id)
+  ))
 
 ;; NOT USED
 ;;(define (ivueparser:parseAttrMetricInfoLabel buf)
