@@ -150,34 +150,51 @@
          ((= val #x0d01) 2)
          ((= val #x0d16) 2)
          ((= val #x0d06) 3)
-         (else (ivueparser:log 2 (string-append "ignoring type=" (number->string val 16)) 1) 0))))
+         ((= val #x0c11) 4)
+         (else (ivueparser:log 2 (string-append "ignoring type=" (number->string val 16))) 0))))
 
 ;; parse a central station data frame
 (define (ivueparser:parsecentralstation buf)
   (ivueparser:log 2 (string-append "ivueparser: central station frame length="
-                (number->string (u8data-length buf))) 1)
+                (number->string (u8data-length buf))))
   (let* ((tpe (ivueparser:stationtype buf))
          (res  (cond ((= tpe 1) (ivueparser:parseServerWaveforms buf))
                      ((= tpe 2) (ivueparser:parseServerTrends buf))
                      ((= tpe 3) (ivueparser:parseServerConnectIndInfo buf))
+                     ((= tpe 4) (ivueparser:parseServerPatientDemographics buf))
                      (else buf))))
-   (if (> (u8data-length res) 0)
+   (if (and (fx> (u8data-length res) 0) (not (fx= (u8data-length res) 34)))
      (ivueparser:log 2 (string-append
         "ivueparser: central station: message with "
-          (number->string (u8data-length res))
+         (number->string (u8data-length res))
          " bytes of " (number->string (u8data-length buf))
-         " trailing??") 1))
+         " trailing??")))
   #t))
+
+;; server patient demographics attributes
+(define (ivueparser:parseServerPatientDemographics buf)
+  (if (> (u8data-length buf) 50)
+    (let ((payload (ivueparser:skip buf 44)))
+      (let loop ((ct (u8data-u16 (subu8data buf 40 42))) (p payload))
+        (if (or (fx= ct 0) (fx= (u8data-length p) 0))
+          p
+          (loop (fx- ct 1) (ivueparser:parseAttributeList p))
+        ))
+    )
+    buf
+  ))
 
 ;; server connect indication
 (define (ivueparser:parseServerConnectIndInfo buf)
- (if (> (u8data-length buf) 40)
-  (let ((payload (ivueparser:skip buf 34)))
-     (let loop ((p payload))
-       (if (= (u8data-length p) 0) p
-         (loop (ivueparser:parseAttributeList p)))))))
+  (if (> (u8data-length buf) 36)
+    (let ((payload (ivueparser:skip buf 30)))
+      (ivueparser:parseAttributeList payload)
+    )
+    buf
+  ))
 
 ;; server waveforms ----
+
 (define (ivueparser:parseServerWaveforms buf)
   (if (> (u8data-length buf) 40)
   (let ((payload (ivueparser:skip buf 34)))
@@ -337,8 +354,8 @@
   payload))
 
 (define (ivueparser:parseActionResult buf) (ivueparser:skip buf 10))
-(define (ivueparser:parseGetResult buf) (ivueparser:skip buf 6))
-(define (ivueparser:parseSetResult buf) (ivueparser:skip buf 6))
+(define (ivueparser:parseGetResult buf) (ivueparser:skip buf 2))
+(define (ivueparser:parseSetResult buf) (ivueparser:skip buf 2))
 (define (ivueparser:parsePollMdibDataReply buf isext)
   (ivueparser:skip buf (if isext 22 20)))
 
@@ -374,11 +391,14 @@
     (ivueparser:skip payload len)))
 
 (define (ivueparser:parseAttributeList buf)
-  (let ((payload (ivueparser:skip buf 4))
-        (count (u8data-u16 (subu8data buf 0 2)))
-        (len (u8data-u16 (subu8data buf 2 4))))
- ;;   (ivueparser:log 0 (string-append "parseAttributeList count="
- ;;     (number->string count) " [" (number->string len) "]") 1)
+  (let* ((payload (ivueparser:skip buf 8))
+         ;;(attribute_id (u8data-u16 (subu8data buf 0 2)))
+         (len1 (u8data-u16 (subu8data buf 2 4)))
+         (count (u8data-u16 (subu8data buf 4 6)))
+         (len2 (u8data-u16 (subu8data buf 6 8)))
+         (len (if (fx= len2 0) (fx- len1 4) len2)))
+    ;;(ivueparser:log 0 (string-append "parseAttributeList count="
+    ;;  (number->string count) " [" (number->string len) "]"))
     (let loop ((n 0)(p payload))
       (if (fx< n count)
         (loop (fx+ n 1) (ivueparser:parseAttribute p))))
@@ -420,6 +440,8 @@
        (ivueparser:parseModeOp payload))
     ((fx= id NOM_ATTR_SYS_ID)
        (ivueparser:parseSysId payload))
+    ((fx= id NOM_ATTR_VAL_ENUM_OBS)
+       (ivueparser:parseEnumObs payload))
     ((fx= id NOM_ATTR_TIME_STAMP_ABS) ;; Absolute Timestamp (from boot)
        (ivueparser:parseAbsoluteTimeStamp payload))
     ((fx= id NOM_ATTR_TIME_STAMP_REL) ;; Relative Timestamp
@@ -432,7 +454,7 @@
        (ivueparser:parseDevAlarmList payload #f))
     ((fx= id NOM_ATTR_AL_MON_P_AL_LIST) ;; P-Alarm List
        (ivueparser:parseDevAlarmList payload #t))
-    (else (ivueparser:log 2 "ivueparser: unknown attribute " id " [" len "]" 1) )
+    (else (ivueparser:log 2 "ivueparser: unknown attribute " id " [" len "]"))
     )
    (ivueparser:skip payload len)))
 
@@ -567,17 +589,17 @@
         (physio_id (u8data-u16 (subu8data buf 0 2)))
         (state (u8data-u16 (subu8data buf 2 4)))
 ;;      (unit (u8data-u16 (subu8data buf 4 6)))
-        (value (ivueparser:decodef32 (subu8data buf 6 10))))
-;;     (ivueparser:log 0 (format "NuObsValue: data [~D] ~F" physio_id value) 1)
-       (if (not (or (= value 8388607.) (> (bitwise-and state #xff00) 0))) ;; ignore invalid data
-         (ivueparser:setphys! ivueparser:store physio_id
-           (table-ref ivueparser:labellut ivueparser:handleid) value)
-         (let ((name (ivueparser:findphys physio_id (table-ref ivueparser:labellut ivueparser:handleid))))
-           (if name (store-clear! ivueparser:store name))
-         )
-       )
-
-     payload))
+        (value (ivueparser:decodef32 (subu8data buf 6 10)))
+        (label (table-ref ivueparser:labellut ivueparser:handleid)))
+;;  (if (not (or (= value 8388607.) (> (bitwise-and state #xff00) 0))) ;; ignore invalid data
+    (if (not (or (= value 8388607.) (> (bitwise-and state #xf800) 0))) ;; ignore invalid data but allow demo
+      (ivueparser:setphys! ivueparser:store physio_id label value)
+      (let ((name (ivueparser:findphys physio_id label)))
+        (if name (store-clear! ivueparser:store name))
+      )
+    )
+    payload
+  ))
 
 (define (ivueparser:parseSaObsValueCmp buf)
   (let ((payload (ivueparser:skip buf 4))
@@ -639,8 +661,7 @@
     (store-set! ivueparser:store "model_number" model_number "ivue")
     (ivueparser:log 1 "ivueparser: manufacturer" manufacturer)
     (ivueparser:log 1 "ivueparser: model_number" model_number)
-  )
-)
+  ))
 
 (define (ivueparser:parseModeOp buf)
   (let ((mode_op (u8data-u16 (subu8data buf 0 2))))
@@ -655,6 +676,9 @@
     (ivueparser:log 1 "ivueparser: mac" mac)
   ))
 
+(define (ivueparser:parseEnumObs buf)
+  #f
+)
 
 ;; NOT USED
 ;;(define (ivueparser:parseAttrMetricInfoLabel buf)
