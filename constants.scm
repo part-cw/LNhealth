@@ -120,6 +120,7 @@
 ;; misc request variables
 (define NOM_ACT_POLL_MDIB_DATA 3094)
 (define NOM_ACT_POLL_MDIB_DATA_EXT 61755)
+(define NOM_ACT_DISCHARGE 3089)
 (define NOM_ATTR_POLL_OBJ_PRIO_NUM #xF228)
 (define NOM_PART_OBJ 1)
 

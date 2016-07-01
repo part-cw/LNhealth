@@ -215,7 +215,7 @@
 ;; parse a server waveform frame
 ;; this is purely empirical from inspecting raw frames
 (define (ivueparser:parseServerWaveform buf)
-  (ivueparser:log 2 (string-append "parseServerWaveform len=" (number->string (u8data-length buf))) 1)
+  (ivueparser:log 2 (string-append "parseServerWaveform len=" (number->string (u8data-length buf))))
   (let* ((payload   (ivueparser:skip buf 8))
          (handle_id (u8data-u16 (subu8data buf 0 2))) ;; not sure??
          (physio_id (u8data-u16 (subu8data buf 2 4)))
@@ -226,7 +226,7 @@
               (ivueparser:skip p 2) (append l (list
                  (u8data-u16 (subu8data p 0 2)))))))))
     (ivueparser:log 2 (string-append "parseServerWaveform: wave ["
-        (number->string physio_id) "] n=" (number->string count)) 1)
+        (number->string physio_id) "] n=" (number->string count)))
     (ivueparser:storage-data ivueparser:store handle_id physio_id data)
     (ivueparser:skip payload len)))
 
@@ -284,10 +284,10 @@
 
 ;; handle an ActionResult
 (define (ivueparser:doActionResult buf isextended)
-  (ivueparser:log 2 "ActionResult" 1)
+  (ivueparser:log 2 "ActionResult")
   (let* ((step4 (ivueparser:parseActionResult buf))
-        (step5 (ivueparser:parsePollMdibDataReply step4 isextended))
-        (step6 (if (fx> (u8data-length step5) 2) ;; skip empty lists
+         (step5 (ivueparser:parsePollMdibDataReply step4 isextended))
+         (step6 (if (fx> (u8data-length step5) 2) ;; skip empty lists
                   (ivueparser:parsePollInfoList step5)
                   (u8data)
          )))
@@ -353,7 +353,21 @@
   (set! ivueparser:cmd_type cmd_type)
   payload))
 
-(define (ivueparser:parseActionResult buf) (ivueparser:skip buf 10))
+(define (ivueparser:parseActionResult buf)
+  (let ((action_type (u8data-u16 (subu8data buf 6 8)))
+        (len (u8data-u16 (subu8data buf 8 10))))
+    (if (or (fx= action_type NOM_ACT_POLL_MDIB_DATA)
+            (fx= action_type NOM_ACT_POLL_MDIB_DATA_EXT))
+      (ivueparser:skip buf 10)
+      (begin ;;undocumented types
+        (ivueparser:log 2 "ivueparser: unknown action_type:" action_type)
+        (if (fx= action_type NOM_ACT_DISCHARGE)
+          (store-set! ivueparser:store "CaseEndPending" #t "ivue")
+        )
+        (u8vector->u8data (u8vector 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
+      )
+    )
+  ))
 (define (ivueparser:parseGetResult buf) (ivueparser:skip buf 2))
 (define (ivueparser:parseSetResult buf) (ivueparser:skip buf 2))
 (define (ivueparser:parsePollMdibDataReply buf isext)
