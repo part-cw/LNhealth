@@ -12,10 +12,10 @@ EXIT,Exit,[t],[t],ውጪ,loou heer,[t],[t],[t]
 RRATE,Respiratory Rate:,Enzisa,[t],የአተነፋፈስ መጠን:,weeiyic:,Frecuencia respiratoria:,sapa kuti samay:,Qhawqha  samsutasa:
 RRATE_UNIT,Breaths/min,[t],[t],የትንፋሸ መጠን በ1 ደfዎ,weei/yuolic,[t],[t],[t]
 TAP_TO_SYNC,Tap on inhalation to synchronize,[t],[t],[t],[t],Tocar en cada inspiración para sincronizar,samaywan takay chaninchanapaq,"Wakichañatakixa,  samkatasina  limiñawa"
-FAST,Fast,Kumuukum,[t],ፈጣን,apuol,Rápido,utqhay,k'ataki
+FAST,Fast,Kumuukum,[t],ፈጣን,apuol,Muy rápido,utqhay,k'ataki
 CONSISTENT,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric,Consistente,unaypaq,khusa wakisiri
 CONSISTENTD,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric,Consistente,unaypaq,wali wakisiri
-SLOW,Slow,Mpola,[t],ዝግ ያለ,ee cath amath,Despacio,allillanmanta,k'achata
+SLOW,Slow,Mpola,[t],ዝግ ያለ,ee cath amath,Muy despacio,allillanmanta,k'achata
 TAP_INHALATION,Tap on inhalation,Koona ku kigambo "okusika omukka",[t],[t],tuany tene weei alongthinic,Tocar en cada inspiracion ,samaywan takay ,Samkatasina  limxataña
 TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,[t],የተዘበራረቀ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany aci beeric. theem det.,"Los toques son inconsistentes. Por favor, inténtelo de nuevo.","ch'aqwaypi mana samaq. ama hinachu kay, wakmanta qallariy","Limitanakaxa  janiwa walikiti. Mira suma,  wasitata lurañawa"
 NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,[t],በቂ ያልሆነ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,akac tuany apeth. theem det.,"El número de toques es insuficiente. Por favor, inténtelo de nuevo","pisi chaqway. ama hinachu kay, wakmanta qallariy","Jani phuqata  limitanaka. Mira suma, wasitata lurañawa"
