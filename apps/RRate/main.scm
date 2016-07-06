@@ -56,7 +56,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (glgui-menubar gui 0 (- h 44) w 44)
      (glgui-pixmap gui 8 (- h 32) RRATE.img)
      (glgui-widget-set! gui (glgui-label-wrapped gui 120 (- h 44) 200 39 
-       (string-append "RRate " (system-appversion) "\nCopyright \302\251 2015\nUniversity of British Columbia") sans_10.fnt White)
+       (string-append "RRate " (system-appversion) "\nCopyright \302\251 2016\nUniversity of British Columbia") sans_10.fnt White)
        'align GUI_ALIGNRIGHT)
      
      ;; Use the rrate module with no store (no saving data),
