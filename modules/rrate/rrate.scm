@@ -115,11 +115,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   
   ;; The first page of settings, the language
   (set! rrate:settings:language (glgui-container rrate:gui x y w h))
-  (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 (- h 285) (- w 20) 275 (color:shuffle #xd7eaefff)) 'rounded #t)
+  (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 (- h (if rrate:settings:show_vibrate 285 380)) (- w 20) (if rrate:settings:show_vibrate 275 370) (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label rrate:settings:language 30 (- h 50) (- w 60) 23 "Select language" text_20.fnt Black)
   (rrate-setup-language-choices)
   (let ((oldoff (if rrate:settings:languagelist (fix (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'offset)) 0)))
-    (set! rrate:settings:languagelist (glgui-list rrate:settings:language 50 (- h 285) 165 230 46
+    (set! rrate:settings:languagelist (glgui-list rrate:settings:language 50 (- h (if rrate:settings:show_vibrate 285 380)) 165 (if rrate:settings:show_vibrate 230 325) 46
       (map (lambda (lan)
              (lambda (g wgt bx by bw bh selected?)
                (glgui:draw-pixmap-center (+ bx 5) (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
@@ -136,10 +136,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol1 (color:shuffle #xc0d1d5ff))
     (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol2 (color:shuffle #xd7eaefff))
     (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset oldoff)
-    (let ((cur (list-pos rrate:settings:languagechoices (assoc (settings-ref "Language" 1) rrate:settings:languagechoices))))
+    (let ((cur (list-pos rrate:settings:languagechoices (assoc (settings-ref "Language" 1) rrate:settings:languagechoices)))
+          (listlengthdiff (if rrate:settings:show_vibrate 4 6)))
       (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current cur)
-      (if (fx> (- cur oldoff) 4)
-        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset (- cur 4)))))
+      (if (fx> (- cur oldoff) listlengthdiff)
+        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset (- cur listlengthdiff)))))
   
   ;; The second page of settings, number of taps
   (set! rrate:settings:taps (glgui-container rrate:gui x y w h))
