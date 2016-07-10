@@ -7,10 +7,16 @@
 (define ROLRS_APDU 5)
 
 ;; command types
+(define CMD_EVENT_REPORT 0)
 (define CMD_CONFIRMED_EVENT_REPORT 1)
-(define CMD_CONFIRMED_ACTION 7)
-(define CMD_CONFIRMED_SET 5)
 (define CMD_GET 3)
+(define CMD_SET 4)
+(define CMD_CONFIRMED_SET 5)
+(define CMD_CONFIRMED_ACTION 7)
+
+;; action_type method identifier
+(define NOM_ACT_POLL_MDIB_DATA 3094)
+(define NOM_ACT_POLL_MDIB_DATA_EXT 61755)
 
 ;; Attributes
 (define NOM_ATTR_ALL_GROUPS 0)
