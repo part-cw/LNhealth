@@ -27,6 +27,7 @@ crunch_svg title.svg ../../textures/title.png 400
 crunch_svg buttons.svg ../../textures/buttons.png 480
 crunch_svg banner.svg ../../textures/banner.png 480
 crunch_svg bcch.svg ../../textures/bcch.png 250
+crunch_svg exit.svg ../../textures/exit.png 200
 tmpsize=4096
 crunch_svg trophy.svg ../../textures/trophy.png 480
 

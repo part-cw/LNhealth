@@ -486,7 +486,9 @@ end-of-c-declare
               (start-recording))
              ((and (> rx 0.7) (< ry 0.5)) ;; demo
                 (glgui-set! world 'yofs 0) 
-                (set! menu-mode 'DEMO))
+                (set! menu-mode 'DEMO)
+                (reset-time)
+                (start-recording))
            )
      )))))
 
