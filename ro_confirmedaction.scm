@@ -1,5 +1,6 @@
 ;; Philips Intellivue Parser
 ;; Matthias Görges, 2016
+(include "parse_attributelist.scm")
 
 ;; Parse Confirmed Action
 (define (ivueparser:parseActionArgument buf)
@@ -17,9 +18,9 @@
   (let ((action_type (ivueparser:parseActionArgument buf)))
     (cond
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA)
-        (ivueparser:parsePollMdibDataReply (ivueparser:skip buf 14)))
+        (ivueparser:parsePollMdibDataReply (u8data-skip buf 14)))
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA_EXT)
-        (ivueparser:parsePollMdibDataReplyExt (ivueparser:skip buf 14)))
+        (ivueparser:parsePollMdibDataReplyExt (u8data-skip buf 14)))
       (else
         (set! ivueparser:error #t)
         (ivueparser:log 2 "ivueparser: unknown action_type:" action_type))
@@ -59,7 +60,7 @@
 (define (ivueparser:parsePollInfoList buf)
   (let ((count (u8data-u16 (subu8data buf 0 2)))
         (len (u8data-u16 (subu8data buf 2 4))))
-    (let loop ((n 0)(p (ivueparser:skip buf 4)))
+    (let loop ((n 0)(p (u8data-skip buf 4)))
       (if (fx= n count)
         p
         (loop (fx+ n 1) (ivueparser:parseSingleContextPoll p))
@@ -72,7 +73,7 @@
   (let ((context_id (u8data-u16 (subu8data buf 0 2)))
         (count (u8data-u16 (subu8data buf 2 4)))
         (len (u8data-u16 (subu8data buf 4 6))))
-    (let loop ((n 0)(p (ivueparser:skip payload 6)))
+    (let loop ((n 0)(p (u8data-skip buf 6)))
       (if (fx= n count)
         p
         (loop (fx+ n 1) (ivueparser:parseObservationPoll p))
@@ -83,8 +84,8 @@
 ;; ObservationPoll
 (define (ivueparser:parseObservationPoll buf)
   (let ((obj_handle (u8data-u16 (subu8data buf 0 2)))
-        (attributes (ivueparser:skip buf 2)))
-    (ivueparser:parseAttributeList attributes)
+        (attributes (u8data-skip buf 2)))
+    (ivueparser:parseAttributeList obj_handle attributes)
   ))
 
 ;;eof

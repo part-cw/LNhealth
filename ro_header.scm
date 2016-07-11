@@ -44,7 +44,7 @@
         (ro_type (ivueparser:parseROapdus buf)))
     (cond
       ((fx= session_id #xE100)
-        (ivueparser:parseRemoteOperationHeader (ivueparser:skip buf 8) ro_type)
+        (ivueparser:parseRemoteOperationHeader (u8data-skip buf 8) ro_type)
       )
       (else
         (set! ivueparser:error #t)

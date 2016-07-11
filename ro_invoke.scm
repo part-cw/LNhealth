@@ -3,6 +3,8 @@
 
 ;; Parse Confirmed Action
 (include "ro_confirmedaction.scm")
+;; Parse Event Report
+(include "ro_eventreport.scm")
 
 ;; RemoteOperationInvoke tree
 (define (ivueparser:parseROIVapdu buf)
@@ -19,17 +21,17 @@
   (let ((command_type (ivueparser:parseROIVapdu buf)))
     (cond
       ((fx= command_type CMD_EVENT_REPORT)
-        (ivueparser:parseCmdEventReport (ivueparser:skip buf 6)))
+        (ivueparser:parseCmdEventReport (u8data-skip buf 6)))
       ((fx= command_type CMD_CONFIRMED_EVENT_REPORT)
-        (ivueparser:parseCmdConfirmedEventReport (ivueparser:skip buf 6)))
+        (ivueparser:parseCmdConfirmedEventReport (u8data-skip buf 6)))
       ((fx= command_type CMD_GET)
-        (ivueparser:parseCmdGet (ivueparser:skip buf 6)))
+        (ivueparser:parseCmdGet (u8data-skip buf 6)))
       ((fx= command_type CMD_SET)
-        (ivueparser:parseCmdSet (ivueparser:skip buf 6)))
+        (ivueparser:parseCmdSet (u8data-skip buf 6)))
       ((fx= command_type CMD_CONFIRMED_SET)
-        (ivueparser:parseCmdConfirmedSet (ivueparser:skip buf 6)))
+        (ivueparser:parseCmdConfirmedSet (u8data-skip buf 6)))
       ((fx= command_type CMD_CONFIRMED_ACTION)
-        (ivueparser:parseCmdConfirmedAction (ivueparser:skip buf 6)))
+        (ivueparser:parseCmdConfirmedAction (u8data-skip buf 6)))
       (else
         (set! ivueparser:error #t)
         (ivueparser:log 2 "ivueparser: unknown command_type:" command_type))
