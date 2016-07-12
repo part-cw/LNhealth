@@ -21,7 +21,18 @@
     )
   ))
 
-;; Parse Confirmed Action
+;; Parse MDS Create Information structure
+(define (ivueparser:parseMdsCreateInfo buf)
+  (let* ((managed_object (ivueparser:parseManagedObjectId buf))
+         (context_id (cadr managed_object))
+         (attribute_list (ivueparser:parseAttributeList context_id (u8data-skip buf 6))))
+    (if (fx= (u8data-length attribute_list) 0)
+      #t
+      (ivueparser:log 2 "ivueparser: incomplete parse of NetworkConnectionIndication" (u8data-length attribute_list))
+    )
+  ))
+
+;; Parse Event Report
 (define (ivueparser:parseCmdEventReport buf)
   (let ((managed_object (ivueparser:parseManagedObjectId (subu8data buf 0 6)))
         (event_time (ivueparser:parseRelativeTimeStamp (subu8data buf 6 10)))
@@ -34,6 +45,8 @@
         (ivueparser:parseNetworkTrends (u8data-skip buf 14)))
       ((fx= event_type #x0d04)
         (ivueparser:parseNetworkWaveforms (u8data-skip buf 14)))
+      ((fx= event_type #x0d06)
+        (ivueparser:parseMdsCreateInfo (u8data-skip buf 14)))
       (else
         (ivueparser:log 2 "ignoring event_type=" (number->string event_type 16)))
     )
@@ -41,4 +54,8 @@
 (for-each display (list managed_object " t:" event_time " t:" event_type " l:" len "\n"))
   ))
 
+;; Parse Confirmed Event Report
+(define (ivueparser:parseCmdConfirmedEventReport buf)
+  (ivueparser:parseCmdEventReport buf)
+)
 ;; eof
