@@ -38,4 +38,22 @@
     (list partition code)
   ))
 
+(define (ivueparser:parseFLOATType val)
+  (let ((exponent (u8data-ref val 0))
+        (mantissa (bitwise-ior (arithmetic-shift (u8data-ref val 1) 16)
+          (arithmetic-shift (u8data-ref val 2) 8) (u8data-ref val 3))))
+    (if (or (fx= mantissa #x800000) (fx= mantissa #x7fffff)
+            (fx= mantissa #x7ffffe) (fx= mantissa #x800002))
+      #f
+      (* (u8data:u24->s24 mantissa) (expt 10.0 (u8data:u8->s8 exponent)))
+    )
+  ))
+
+(define (ivueparser:parseBCD val)
+  (if (and (fx<= (arithmetic-shift val -4) 9)
+           (fx<= (modulo val 16) 9))
+    (string-append (number->string (arithmetic-shift val -4))
+                   (number->string (modulo val 16)))
+    #f
+  ))
 ;;eof

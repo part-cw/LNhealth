@@ -1,6 +1,7 @@
 ;; Philips Intellivue Parser
 ;; Chris Petersen, 2011
 ;; Matthias Görges, 2016
+(include "parse_numericvalue.scm")
 
 ;; Main Attribute List parser
 (define (ivueparser:parseAttributeList obj_handle buf)
@@ -34,7 +35,7 @@
       ((fx= attribute_id NOM_ATTR_PT_SEX)
         (ivueparser:parseSex val))
       ((fx= attribute_id NOM_ATTR_PT_DOB)
-        (ivueparser:parseAbsoluteTimeStamp "patient_dob" val))
+        (ivueparser:parseAbsoluteTime "patient_dob" val))
       ((fx= attribute_id NOM_ATTR_PT_HEIGHT)
         (ivueparser:parsePatMeasure "patient_height" val))
       ((fx= attribute_id NOM_ATTR_PT_WEIGHT)
@@ -62,11 +63,21 @@
         (ivueparser:parseModeOp val))
       ((fx= attribute_id NOM_ATTR_SYS_ID)
         (ivueparser:parseSysId val))
+      ;; Numeric Observed Values
+      ((fx= attribute_id NOM_ATTR_NU_VAL_OBS)
+        (ivueparser:parseNuObsValue obj_handle val))
+      ((fx= attribute_id NOM_ATTR_NU_CMPD_VAL_OBS)
+        (ivueparser:parseNuObsValueCmp obj_handle val))
+      ;; Timestamps
+      ((fx= attribute_id NOM_ATTR_TIME_STAMP_ABS)
+        (ivueparser:parseAbsoluteTime "abs_time_stamp" val))
+      ((fx= attribute_id NOM_ATTR_TIME_STAMP_REL)
+        (ivueparser:parseRelativeTime val))
       ;; And everything else
       ((fx= attribute_id NOM_ATTR_ID_BED_LABEL)
         (ivueparser:parseAttrString "location" val len))
       (else
-        (ivueparser:log 2 "ivueparser: unknown attribute " attribute_id " [" len "]")
+        (ivueparser:log 2 "ivueparser: unknown attribute:" attribute_id "[" len "]")
       )
     )
     (u8data-skip val len)
@@ -77,6 +88,32 @@
   (let ((str (ivueparser:u8vector->string (u8data->u8vector (subu8data buf 0 len)))))
     (store-set! ivueparser:store label str "ivue")
     (ivueparser:log 1 "ivueparser:" label str)
+  ))
+
+;; Timestamps
+(define (ivueparser:parseRelativeTime buf)
+  (let ((ts (fl/ (flo (u8data-u32 (subu8data buf 0 4))) 8000.))
+        (abs_time (store-ref ivueparser:store "abs_time_stamp"))
+        (rel_time (store-ref ivueparser:store "rel_time_stamp")))
+    (store-set! ivueparser:store "rel_time_stamp" ts "ivue")
+    (if (and abs_time rel_time (fl> ts rel_time))
+      (store-set! ivueparser:store "ivue_timestamp" (fl+ abs_time ts) "ivue")
+    )
+    ts
+  ))
+
+(define (ivueparser:parseAbsoluteTime label buf)
+  (let ((century (ivueparser:parseBCD (u8data-u8 (subu8data buf 0 1))))
+        (year (ivueparser:parseBCD (u8data-u8 (subu8data buf 1 2))))
+        (month (ivueparser:parseBCD (u8data-u8 (subu8data buf 2 3))))
+        (day (ivueparser:parseBCD (u8data-u8 (subu8data buf 3 4))))
+        (hour (ivueparser:parseBCD (u8data-u8 (subu8data buf 4 5))))
+        (minute (ivueparser:parseBCD (u8data-u8 (subu8data buf 5 6))))
+        (second (ivueparser:parseBCD (u8data-u8 (subu8data buf 7 8)))))
+    (if century (store-set! ivueparser:store label (flo (string->seconds
+      (string-append century year month day "-" hour minute second) "%Y%m%d-%H%M%S"))
+      "ivue"
+    ))
   ))
 
 ;; Patient Attributes

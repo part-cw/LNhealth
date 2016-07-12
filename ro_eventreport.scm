@@ -35,23 +35,23 @@
 ;; Parse Event Report
 (define (ivueparser:parseCmdEventReport buf)
   (let ((managed_object (ivueparser:parseManagedObjectId (subu8data buf 0 6)))
-        (event_time (ivueparser:parseRelativeTimeStamp (subu8data buf 6 10)))
+        (event_time (ivueparser:parseRelativeTime (subu8data buf 6 10)))
         (event_type (u8data-u16 (subu8data buf 10 12)))
         (len (u8data-u16 (subu8data buf 12 14))))
     (cond
+      ((fx= event_type #x0d01)
+        (ivueparser:parseNetworkTrends (u8data-skip buf 14)))
       ((fx= event_type #x0d03)
         (ivueparser:parseNetworkTrends (u8data-skip buf 14)))
-      ((fx= event_type #x0d01)
+      ((fx= event_type #x0d16)
         (ivueparser:parseNetworkTrends (u8data-skip buf 14)))
       ((fx= event_type #x0d04)
         (ivueparser:parseNetworkWaveforms (u8data-skip buf 14)))
       ((fx= event_type #x0d06)
         (ivueparser:parseMdsCreateInfo (u8data-skip buf 14)))
       (else
-        (ivueparser:log 2 "ignoring event_type=" (number->string event_type 16)))
+        (ivueparser:log 2 "ivueparser: ignoring event_type:" (number->string event_type 16) "len:" len))
     )
-
-(for-each display (list managed_object " t:" event_time " t:" event_type " l:" len "\n"))
   ))
 
 ;; Parse Confirmed Event Report
