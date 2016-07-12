@@ -2,6 +2,7 @@
 ;; Chris Petersen, 2011
 ;; Matthias Görges, 2016
 (include "parse_numericvalue.scm")
+(include "parse_alert.scm")
 
 ;; Main Attribute List parser
 (define (ivueparser:parseAttributeList obj_handle buf)
@@ -73,6 +74,13 @@
         (ivueparser:parseAbsoluteTime "abs_time_stamp" val))
       ((fx= attribute_id NOM_ATTR_TIME_STAMP_REL)
         (ivueparser:parseRelativeTime val))
+      ;; Alarms
+      ((fx= attribute_id NOM_ATTR_DEV_AL_COND)
+        (ivueparser:parseDeviceAlertCondition val))
+      ((fx= attribute_id NOM_ATTR_AL_MON_T_AL_LIST)
+        (ivueparser:parseDevAlarmList val #f))
+      ((fx= attribute_id NOM_ATTR_AL_MON_P_AL_LIST)
+        (ivueparser:parseDevAlarmList val #t))
       ;; And everything else
       ((fx= attribute_id NOM_ATTR_ID_BED_LABEL)
         (ivueparser:parseAttrString "location" val len))

@@ -56,4 +56,11 @@
                    (number->string (modulo val 16)))
     #f
   ))
+
+(define (ivueparser:parseString buf)
+  (let* ((len (u8data-u16 (subu8data buf 0 2)))
+         (value (u8vector->u16vector (u8data->u8vector (subu8data buf 2 (fx+ len 2))))))
+    (u8data-skip buf (fx+ len 2))
+  ))
+
 ;;eof
