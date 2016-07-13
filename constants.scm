@@ -18,6 +18,10 @@
 (define NOM_ACT_POLL_MDIB_DATA 3094)
 (define NOM_ACT_POLL_MDIB_DATA_EXT 61755)
 
+;; field choice of structure EnumVal
+(define ENUM_OBJ_ID_CHOSEN 1)
+(define ENUM_OBJ_ID_VAL_CHOSEN 4)
+
 ;; Attributes
 (define NOM_ATTR_ALL_GROUPS 0)
 (define NOM_ATTR_PT_NAME_MIDDLE   #x095F) ;;Middle Name

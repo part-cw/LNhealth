@@ -64,11 +64,26 @@
         (ivueparser:parseModeOp val))
       ((fx= attribute_id NOM_ATTR_SYS_ID)
         (ivueparser:parseSysId val))
+      ((fx= attribute_id NOM_ATTR_ID_LABEL)
+        (ivueparser:parseAttrIdLabel obj_handle val))
+      ((fx= attribute_id NOM_ATTR_ID_BED_LABEL)
+        (ivueparser:parseAttrString "location" val len))
       ;; Numeric Observed Values
       ((fx= attribute_id NOM_ATTR_NU_VAL_OBS)
         (ivueparser:parseNuObsValue obj_handle val))
       ((fx= attribute_id NOM_ATTR_NU_CMPD_VAL_OBS)
         (ivueparser:parseNuObsValueCmp obj_handle val))
+      ;; Waveform Attributes
+      ((fx= attribute_id NOM_ATTR_SA_VAL_OBS)
+        (ivueparser:parseSaObsValue val))
+      ((fx= attribute_id NOM_ATTR_SA_CMPD_VAL_OBS)
+        (ivueparser:parseSaObsValueCmp val))
+      ((fx= attribute_id NOM_ATTR_SCALE_SPECN_I16)
+        (ivueparser:parseScaleRangeSpec16 obj_handle val))
+      ((fx= attribute_id NOM_ATTR_METRIC_STAT)
+        (ivueparser:parseMetricState obj_handle val))
+      ((fx= attribute_id NOM_ATTR_COLOR)
+        (ivueparser:parseSimpleColour obj_handle val))
       ;; Timestamps
       ((fx= attribute_id NOM_ATTR_TIME_STAMP_ABS)
         (ivueparser:parseAbsoluteTime "abs_time_stamp" val))
@@ -82,8 +97,12 @@
       ((fx= attribute_id NOM_ATTR_AL_MON_P_AL_LIST)
         (ivueparser:parseDevAlarmList val #t))
       ;; And everything else
+      ((fx= attribute_id NOM_ATTR_VAL_ENUM_OBS)
+        (ivueparser:parseEnumObs val))
       ((fx= attribute_id NOM_ATTR_ID_BED_LABEL)
         (ivueparser:parseAttrString "location" val len))
+      ((fx= attribute_id NOM_SAT_O2_TONE_FREQ)
+        (ivueparser:parseSatToneFreq val))
       (else
         (ivueparser:log 2 "ivueparser: unknown attribute:" attribute_id "[" len "]")
       )
@@ -177,6 +196,11 @@
     (ivueparser:log 1 "ivueparser: model_number" model_number)
   ))
 
+(define (ivueparser:parseAttrIdLabel obj_handle buf)
+  (let ((label (u8data-u32 (subu8data buf 0 4))))
+    (table-set! ivueparser:labellut obj_handle label)
+  ))
+
 (define (ivueparser:parseModeOp buf)
   (let ((mode_op (u8data-u16 (subu8data buf 0 2))))
     (store-set! ivueparser:store "operation_mode" mode_op "ivue")
@@ -188,6 +212,43 @@
          (mac (u8data->u8vector (subu8data buf 2 (+ 2 len)))))
     (store-set! ivueparser:store "mac" mac "ivue")
     (ivueparser:log 1 "ivueparser: mac" mac)
+  ))
+
+;; Enum-Ovserved-Value
+(define (ivueparser:parseEnumObs buf)
+  (let ((physio_id (u8data-u16 (subu8data buf 0 2)))
+        (state (u8data-u16 (subu8data buf 2 4)))
+        (value (ivueparser:parseEnumVal (u8data-skip buf 4))))
+    value
+  ))
+
+(define (ivueparser:parseEnumVal buf)
+  (let ((choice (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (cond
+      ((fx= choice ENUM_OBJ_ID_CHOSEN)
+        (let ((enum_obj_id (u8data-u16 (subu8data buf 4 6))))
+          enum_obj_id
+        ))
+      ((fx= choice ENUM_OBJ_ID_VAL_CHOSEN)
+        (ivueparser:parseEnumObjIdVal (subu8data buf 4 (fx+ len 4))))
+      (else
+        (ivueparser:log 2 "ivueparser: unknown choice:" choice)
+        #f)
+    )
+  ))
+
+(define (ivueparser:parseEnumObjIdVal buf)
+  (let ((obj_id (u8data-u16 (subu8data buf 0 2)))
+        (num_val (ivueparser:parseFLOATType (subu8data buf 2 6)))
+        (unit_code (u8data-u16 (subu8data buf 6 8))))
+    (list obj_id num_val unit_code)
+  ))
+
+;; Private Attributes
+(define (ivueparser:parseSatToneFreq buf)
+  (let ((freq (flo (u8data-u16 (subu8data buf 0 2)))))
+    (store-set! ivueparser:store "sat_o2_freq" (fl/ 1000000. freq) "ivue")
   ))
 
 ;; eof
