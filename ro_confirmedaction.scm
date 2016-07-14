@@ -3,24 +3,25 @@
 (include "parse_attributelist.scm")
 
 ;; Parse Confirmed Action
-(define (ivueparser:parseActionArgument buf)
+(define (ivueparser:parseActionResult buf)
   (let ((managed_object (ivueparser:parseManagedObjectId buf))
-        (scope (u8data-u32 (subu8data buf 6 10)))
-        (action_type (u8data-u16 (subu8data buf 10 12)))
-        (len (u8data-u16 (subu8data buf 12 14))))
-    (if (fx= len (fx- (u8data-length buf) 14))
+        (action_type (u8data-u16 (subu8data buf 6 8)))
+        (len (u8data-u16 (subu8data buf 8 10))))
+    (if (fx= len (fx- (u8data-length buf) 10))
       action_type
       -1
     )
   ))
 
 (define (ivueparser:parseCmdConfirmedAction buf)
-  (let ((action_type (ivueparser:parseActionArgument buf)))
+  (let ((action_type (ivueparser:parseActionResult buf)))
     (cond
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA)
         (ivueparser:parsePollMdibDataReply (u8data-skip buf 14)))
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA_EXT)
         (ivueparser:parsePollMdibDataReplyExt (u8data-skip buf 14)))
+      ((fx= action_type NOM_ACT_DISCHARGE)
+        (store-set! ivueparser:store "CaseEndPending" #t "ivue"))
       (else
         (set! ivueparser:error #t)
         (ivueparser:log 1 "ivueparser: unknown action_type:" action_type))
@@ -34,7 +35,7 @@
         ;;(abs_time_stamp (ivueparser:parseAbsoluteTime "poll_data_result_timestamp" (subu8data buf 6 14)))
         ;;(polled_obj_type (ivueparser:parseTYPE ((subu8data buf 14 18))))
         (polled_attr_grp  (u8data-u16 (subu8data buf 18 20)))
-        (poll_info_list (ivueparser:parsePollInfoList)))
+        (poll_info_list (ivueparser:parsePollInfoList (u8data-skip buf 20))))
     (if (fx= (u8data-length poll_info_list) 0)
       #t
       (ivueparser:log 1 "ivueparser: incomplete parse of PollMdibDataReply" (u8data-length poll_info_list))
@@ -49,7 +50,7 @@
         ;;(abs_time_stamp (ivueparser:parseAbsoluteTime "poll_data_result_timestamp" (subu8data buf 8 16)))
         ;;(polled_obj_type (ivueparser:parseTYPE ((subu8data buf 16 20))))
         (polled_attr_grp  (u8data-u16 (subu8data buf 20 22)))
-        (poll_info_list (ivueparser:parsePollInfoList)))
+        (poll_info_list (ivueparser:parsePollInfoList (u8data-skip buf 22))))
     (if (fx= (u8data-length poll_info_list) 0)
       #t
       (ivueparser:log 1 "ivueparser: incomplete parse of PollMdibDataReplyExt" (u8data-length poll_info_list))

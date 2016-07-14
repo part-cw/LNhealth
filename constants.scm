@@ -17,6 +17,7 @@
 ;; action_type method identifier
 (define NOM_ACT_POLL_MDIB_DATA 3094)
 (define NOM_ACT_POLL_MDIB_DATA_EXT 61755)
+(define NOM_ACT_DISCHARGE 62050)
 
 ;; field choice of structure EnumVal
 (define ENUM_OBJ_ID_CHOSEN 1)
@@ -128,9 +129,6 @@
 (define NOM_MOC_VMP_AL_MON 54)
 
 ;; misc request variables
-(define NOM_ACT_POLL_MDIB_DATA 3094)
-(define NOM_ACT_POLL_MDIB_DATA_EXT 61755)
-(define NOM_ACT_DISCHARGE 62050)
 (define NOM_ATTR_POLL_OBJ_PRIO_NUM #xF228)
 (define NOM_PART_OBJ 1)
 
