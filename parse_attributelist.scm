@@ -83,7 +83,7 @@
       ((fx= attribute_id NOM_ATTR_METRIC_STAT)
         (ivueparser:parseMetricState obj_handle val))
       ((fx= attribute_id NOM_ATTR_COLOR)
-        (ivueparser:parseSimpleColour obj_handle val))
+        (ivueparser:parseSimpleColourAttribute obj_handle val))
       ;; Timestamps
       ((fx= attribute_id NOM_ATTR_TIME_STAMP_ABS)
         (ivueparser:parseAbsoluteTime "abs_time_stamp" val))
@@ -104,7 +104,7 @@
       ((fx= attribute_id NOM_SAT_O2_TONE_FREQ)
         (ivueparser:parseSatToneFreq val))
       (else
-        (ivueparser:log 2 "ivueparser: unknown attribute:" attribute_id "[" len "]")
+        (ivueparser:log 1 "ivueparser: unknown attribute:" attribute_id "[" len "]")
       )
     )
     (u8data-skip val len)
@@ -114,7 +114,6 @@
 (define (ivueparser:parseAttrString label buf len)
   (let ((str (ivueparser:u8vector->string (u8data->u8vector (subu8data buf 0 len)))))
     (store-set! ivueparser:store label str "ivue")
-    (ivueparser:log 1 "ivueparser:" label str)
   ))
 
 ;; Timestamps
@@ -151,14 +150,12 @@
                    ((fx= sex FEMALE) "Female")
                    (else "Unknown"))))
     (store-set! ivueparser:store "patient_sex" sexstr "ivue")
-    (ivueparser:log 1 "ivueparser: patient_sex" sexstr)
   ))
 
 (define (ivueparser:parsePatMeasure label buf)
   (let ((value (ivueparser:decodef32 (subu8data buf 0 4)))
         (m_unit (u8data-u16 (subu8data buf 4 6))))
     (store-set! ivueparser:store label value "ivue")
-    (ivueparser:log 1 "ivueparser:" label value)
   ))
 
 (define (ivueparser:parsePatType buf)
@@ -169,19 +166,16 @@
                    ((fx= type NEONATAL) "Neonate")
                    (else "Unspecified"))))
     (store-set! ivueparser:store "patient_type" typestr "ivue")
-    (ivueparser:log 1 "ivueparser: patient_type" typestr)
   ))
 
 (define (ivueparser:parsePacedMode buf)
   (let ((mode (u8data-u16 (subu8data buf 0 2))))
     (store-set! ivueparser:store "patient_paced_mode" mode "ivue")
-    (ivueparser:log 1 "ivueparser:" "patient_paced_mode" mode)
   ))
 
 (define (ivueparser:parsePatIdInt buf len)
   (let ((id (u8data->u8vector (subu8data buf 0 len))))
     (store-set! ivueparser:store "patient_id_int" id "ivue")
-    (ivueparser:log 1 "ivueparser:" "patient_id_int" id)
   ))
 
 ;; System Info
@@ -192,8 +186,6 @@
          (model_number (u8vector->string (u8data->u8vector (subu8data buf (+ 4 len) (+ 4 len len2))))))
     (store-set! ivueparser:store "manufacturer" manufacturer "ivue")
     (store-set! ivueparser:store "model_number" model_number "ivue")
-    (ivueparser:log 1 "ivueparser: manufacturer" manufacturer)
-    (ivueparser:log 1 "ivueparser: model_number" model_number)
   ))
 
 (define (ivueparser:parseAttrIdLabel obj_handle buf)
@@ -204,14 +196,12 @@
 (define (ivueparser:parseModeOp buf)
   (let ((mode_op (u8data-u16 (subu8data buf 0 2))))
     (store-set! ivueparser:store "operation_mode" mode_op "ivue")
-    (ivueparser:log 1 "ivueparser: operation_mode" mode_op)
   ))
 
 (define (ivueparser:parseSysId buf)
   (let* ((len (u8data-u16 (subu8data buf 0 2)))
          (mac (u8data->u8vector (subu8data buf 2 (+ 2 len)))))
     (store-set! ivueparser:store "mac" mac "ivue")
-    (ivueparser:log 1 "ivueparser: mac" mac)
   ))
 
 ;; Enum-Ovserved-Value
@@ -233,7 +223,7 @@
       ((fx= choice ENUM_OBJ_ID_VAL_CHOSEN)
         (ivueparser:parseEnumObjIdVal (subu8data buf 4 (fx+ len 4))))
       (else
-        (ivueparser:log 2 "ivueparser: unknown choice:" choice)
+        (ivueparser:log 1 "ivueparser: unknown choice:" choice)
         #f)
     )
   ))

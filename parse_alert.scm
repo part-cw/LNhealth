@@ -42,7 +42,7 @@
           (ivueparser:parseStrAlMonInfo (subu8data buf 18 (fx+ len 18)) al_ct_name))
         ((fx= alert_info_id GEN_ALMON_INFO)
           (ivueparser:parseAlMonGenInfo (subu8data buf 18 (fx+ len 18)) al_ct_name))
-        (else (ivueparser:log 2 "ivueparser: unknown alert_info_id:" alert_info_id))
+        (else (ivueparser:log 1 "ivueparser: unknown alert_info_id:" alert_info_id))
       )
     )
     (u8data-skip buf (fx+ len 18))
@@ -57,8 +57,8 @@
     (u8data-skip buf 10)
   ))
 
-(define (ivueparser:parseStrAlMonInfo buf al_no)
-  (let* ((AlMonGenInfo (ivueparser:parseAlMonGenInfo buf al_no))
+(define (ivueparser:parseStrAlMonInfo buf al_ct_name)
+  (let* ((AlMonGenInfo (ivueparser:parseAlMonGenInfo buf al_ct_name))
          (str (ivueparser:parseString AlMonGenInfo)))
     #f
   ))

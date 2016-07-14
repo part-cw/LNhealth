@@ -35,7 +35,7 @@
       (ivueparser:parseRemoteOperationLinkedResult buf 6))
     (else
       (set! ivueparser:error #t)
-      (ivueparser:log 2 "ivueparser: unknown ro_type:" ro_type))
+      (ivueparser:log 1 "ivueparser: unknown ro_type:" ro_type))
   ))
 
 ;; The main parsing function
@@ -48,7 +48,7 @@
       )
       (else
         (set! ivueparser:error #t)
-        (ivueparser:log 2 "ivueparser: unknown ro_type:" ro_type)
+        (ivueparser:log 1 "ivueparser: unknown ro_type:" ro_type)
       )
     )
   ))

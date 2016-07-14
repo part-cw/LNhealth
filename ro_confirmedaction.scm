@@ -23,7 +23,7 @@
         (ivueparser:parsePollMdibDataReplyExt (u8data-skip buf 14)))
       (else
         (set! ivueparser:error #t)
-        (ivueparser:log 2 "ivueparser: unknown action_type:" action_type))
+        (ivueparser:log 1 "ivueparser: unknown action_type:" action_type))
     )
   ))
 
@@ -37,7 +37,7 @@
         (poll_info_list (ivueparser:parsePollInfoList)))
     (if (fx= (u8data-length poll_info_list) 0)
       #t
-      (ivueparser:log 2 "ivueparser: incomplete parse of PollMdibDataReply" (u8data-length poll_info_list))
+      (ivueparser:log 1 "ivueparser: incomplete parse of PollMdibDataReply" (u8data-length poll_info_list))
     )
   ))
 
@@ -52,7 +52,7 @@
         (poll_info_list (ivueparser:parsePollInfoList)))
     (if (fx= (u8data-length poll_info_list) 0)
       #t
-      (ivueparser:log 2 "ivueparser: incomplete parse of PollMdibDataReplyExt" (u8data-length poll_info_list))
+      (ivueparser:log 1 "ivueparser: incomplete parse of PollMdibDataReplyExt" (u8data-length poll_info_list))
     )
   ))
 

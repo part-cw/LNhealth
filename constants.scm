@@ -145,4 +145,18 @@
 (define GEN_ALMON_INFO 513)
 (define STR_ALMON_INFO 516)
 
+;;colors
+(define COL_BLACK 0)
+(define COL_RED 1)
+(define COL_GREEN 2)
+(define COL_YELLOW 3)
+(define COL_BLUE 4)
+(define COL_MAGENTA 5)
+(define COL_CYAN 6)
+(define COL_WHITE 7)
+(define COL_PINK 20)
+(define COL_ORANGE 35)
+(define COL_LIGHT_GREEN 50)
+(define COL_LIGHT_RED 65)
+
 ;; eof

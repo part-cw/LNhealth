@@ -54,7 +54,7 @@
          (localname (ivueparser:findphys physio_id (table-ref ivueparser:labellut handle_id))))
     (if localname
       (store-waveform-append ivueparser:store localname (u16vector->list (u8vector->u16vector vals)))
-      (ivueparser:log 2 "ivueparser: no waveform name for" label "," physio_id)
+      (ivueparser:log 1 "ivueparser: no waveform name for" label "," physio_id)
     )
     (u8data-skip buf (fx+ len 6))
   ))
@@ -73,7 +73,7 @@
             (list lower_scaled_value upper_scaled_value lower_absolute_value upper_absolute_value)
           )
         )
-        (ivueparser:log 2 "ivueparser: no waveform name for" physio_id)
+        (ivueparser:log 1 "ivueparser: no waveform name for" physio_id)
       )
     )
     (u8data-skip buf 12)
@@ -87,10 +87,13 @@
   ))
 
 ;; Color
-(define (ivueparser:parseSimpleColour handle_id buf)
-  (let ((SimpleColour (u8data-u16 (subu8data buf 0 2))))
-    (ivueparser:log 2 "ivueparser: SimpleColour" handle_id SimpleColour)
-    SimpleColour
+(define (ivueparser:parseSimpleColourAttribute handle_id buf)
+  (let* ((SimpleColour (ivueparser:parseSimpleColour (u8data-u16 (subu8data buf 0 2))))
+         (physio_id (bitwise-and (table-ref ivueparser:labellut handle_id) #xffff))
+         (name (table-ref ivueparser:phystable1 physio_id)))
+    (if name
+      (store-set! ivueparser:store (string-append name "_color") SimpleColour "ivue")
+    )
   ))
 
 ;; eof

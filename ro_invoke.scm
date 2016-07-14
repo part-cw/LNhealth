@@ -34,7 +34,7 @@
         (ivueparser:parseCmdConfirmedAction (u8data-skip buf 6)))
       (else
         (set! ivueparser:error #t)
-        (ivueparser:log 2 "ivueparser: unknown command_type:" command_type))
+        (ivueparser:log 1 "ivueparser: unknown command_type:" command_type))
     )
   ))
 ;;eof

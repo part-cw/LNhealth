@@ -60,7 +60,25 @@
 (define (ivueparser:parseString buf)
   (let* ((len (u8data-u16 (subu8data buf 0 2)))
          (value (u8vector->u16vector (u8data->u8vector (subu8data buf 2 (fx+ len 2))))))
-    (u8data-skip buf (fx+ len 2))
+    value
   ))
 
+(define (ivueparser:parseSimpleColour buf)
+  (let ((SimpleColour (u8data-u16 (subu8data buf 0 2))))
+    (cond
+      ((fx= SimpleColour COL_BLACK) Black)
+      ((fx= SimpleColour COL_RED) Red)
+      ((fx= SimpleColour COL_GREEN) Green)
+      ((fx= SimpleColour COL_YELLOW) Yellow)
+      ((fx= SimpleColour COL_BLUE) Blue)
+      ((fx= SimpleColour COL_MAGENTA) Magenta)
+      ((fx= SimpleColour COL_CYAN) Cyan)
+      ((fx= SimpleColour COL_WHITE) White)
+      ((fx= SimpleColour COL_PINK) Pink)
+      ((fx= SimpleColour COL_ORANGE) Orange)
+      ((fx= SimpleColour COL_LIGHT_GREEN) LightGreen)
+      ((fx= SimpleColour COL_LIGHT_RED) (color:shuffle #xff474cff))
+      (else Gray)
+    )
+  ))
 ;;eof
