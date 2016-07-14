@@ -2,8 +2,8 @@
 ;; Matthias Görges, 2016
 (include "parse_helpers.scm")
 
-;; RemoteOperationInvoke
-(include "ro_invoke.scm")
+(include "ro_invoke.scm") ;; RemoteOperationInvoke
+(include "ro_result.scm") ;; RemoteOperationResult
 
 ;; Session Header and Remote Operation Header
 (define (ivueparser:parseSPdu buf)
