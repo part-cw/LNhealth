@@ -1,0 +1,283 @@
+#|
+lnHealth - Health related apps for the LambdaNative framework
+Copyright (c) 2009-2015, University of British Columbia
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the
+following conditions are met:
+
+* Redistributions of source code must retain the above
+copyright notice, this list of conditions and the following
+disclaimer.
+
+* Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials
+provided with the distribution.
+
+* Neither the name of the University of British Columbia nor
+the names of its contributors may be used to endorse or
+promote products derived from this software without specific
+prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+|#
+
+`(
+
+  (background-image "background.png")
+  (background-color ,Red)
+
+  (oncreate ,(lambda () #t))
+  (onscheduler ,(lambda () #t))
+  (onsuspend ,(lambda () #t))
+  (onresume ,(lambda () #t))
+  (ondestroy ,(lambda () #t))
+
+  (about 
+    "About"
+    ("Done" main)
+    #f
+    (spacer)
+    (label align left wrap #t text "lnHealth is a free and open framework for developing and deploying advanced data collection forms and applications. It is being developed by the Pediatric Anesthesia Research Team at the University of British Columbia for use in global health applications.")
+    (spacer)
+    (label align left wrap #t text "For more information please visit:")
+    (spacer)
+    ,(lambda () (if (host-ipaddr) 
+       `(button text "http://lambdanative.org" action ,(lambda () (launch-url "http://lambdanative.org") #f))
+       `(label text "http://lambdanative.org")))
+    (spacer)
+    (label size small align left wrap #t text "Copyright  2009-2015, University of British Columbia\nAll rights reserved.\n\nRedistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:\n\n * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.\n\n * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.\n\n * Neither the name of the University of British Columbia nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. "
+  )
+  (spacer)
+  )
+ 
+  (main
+    "LambdaNative"
+    ("About" about)
+    ("Next" ex_buttons #f)
+    (spacer)
+    (label wrap #t text "This an example of the elements that can be used to construct data collection applications in LambdaNative")
+    (spacer)
+    (label wrap #t text "Click a button below or choose Next")
+    (spacer)
+    (button text "Buttons" action ex_buttons)
+    (spacer height 10)
+    (button text "Text Entry Elements" action ex_textentry)
+    (spacer height 10)
+    (button text "Labels" action ex_labels)
+    (spacer height 10)
+    (button text "Radio/Check Boxes" action ex_boxes)
+    (spacer height 10)
+    (button text "Checklists" action ex_checklists)
+    (spacer height 10)
+    (button text "Dropdown Lists" action ex_dropdowns)
+    (spacer height 10)
+    (button text "Images" action ex_images)
+    (spacer height 10)
+    (button text "Progress Bar" action ex_progress)
+    (spacer height 10)
+    (button text "Modal Dialogs" action ex_modal)
+    (spacer height 10)
+    (button text "Camera" action ex_camera)
+    (spacer height 10)
+    (button text "Barcodes" action ex_barcodes)
+    (spacer height 10)
+    (button text "Sensors" action ex_sensors)
+    (spacer)
+  )
+
+  (ex_buttons
+    "Buttons"
+    ("Prev" main)
+    ("Next" ex_textentry)
+    (spacer)
+    (button text "This is a normal button") 
+    (spacer)
+    (button text "This button has a very long label on it, too long to fit on one line")
+    (spacer)
+    (button color ,Black size big text "Custom Button") 
+    (spacer)
+  )
+
+  (ex_textentry
+    "Text Entry"
+    ("Prev" ex_buttons #f)
+    ("Next" ex_labels #f)
+    (spacer)
+    (textentry text "Plain text:" id dummy_pt)
+    (spacer)
+    (textentry text "Password:" id dummy_pw password #t)
+    (spacer)
+    (textentry text "Integer:" id dummy_it keypad numint)
+    (spacer)
+    (textentry text "Time:" id dummy_tm keypad numcolon default "HH:MM")
+    (spacer)
+  )
+   
+  (ex_labels
+    "Labels"
+    ("Prev" ex_textentry #f)
+    ("Next" ex_boxes #f)
+    (spacer)
+    (label text "Default text")
+    (spacer)
+    (label text "Left aligned text" align left)
+    (spacer)
+    (label text "Right aligned text" align right)
+    (spacer)
+    (label align left color ,Black size small wrap #t text "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+    (spacer)
+    (label text "BIG TEXT" size big)
+    (spacer)
+  )   
+
+  (ex_boxes
+    "Radio/Check Boxes"
+    ("Prev" ex_labels #f)
+    ("Next" ex_checklists #f)
+    (spacer)
+    (label text "Choose one:" align center)
+    (spacer)
+    (radiobox id dummy_radio location ui left ("Yes" 1 #f) right ("No" 2 #f))
+    (spacer)
+    (spacer)
+    ,(lambda () 
+       (let ((value (uiget 'dummy_radio 0)))
+        `(label text ,(cond ((= value 0) "No choice made")
+                            ((= value 1) "You chose: Yes")
+                            ((= value 2) "You chose: No")) align center)))
+    (spacer)
+    (spacer)
+    (checkbox id dummy_check location ui text "This is a checkbox")
+    (spacer)
+  ) 
+
+  (ex_checklists
+    "Checklists"
+    ("Prev" ex_boxes #f)
+    ("Next" ex_dropdowns #f)
+    (spacer)
+    (label text "Multiple choice:" align center)
+    (spacer)
+    (checklist id dummy_lst1 default ("element 1" "element 2" "element 3"))
+    (spacer)
+    (label text "Single choice:" align center)
+    (spacer)
+    (checklist id dummy_lst2 default ("element 4" "element 5" "element 6") radio #t)
+  )
+
+  (ex_dropdowns
+    "Dropdown Lists"
+    ("Prev" ex_checklists #f)
+    ("Next" ex_images #f)
+    (spacer)
+    (label text "Click to select:" align center)
+    (spacer)
+    (dropdown text "No selection made" id dummy_dd entries ("Element 1" "Element 2" "Element 3"))
+  )
+
+  (ex_images
+    "Images"
+    ("Prev" ex_dropdowns)
+    ("Next" ex_progress)
+    (spacer)
+    (image file "LambdaNative_logo.png") 
+    (spacer)
+  ) 
+
+  (ex_progress
+    "ProgressBar"
+    ("Prev" ex_images)
+    ("Next" ex_modal)
+    (spacer)
+    (label text "Making some progress..")
+    (spacer)
+    (progress value ,(lambda () 
+      (let ((val (uiget 'progressval 0.)))
+        (uiset 'progressval (if (> val 1.) 0. (+ val 0.01)))
+        val)))
+    (spacer)
+  )
+
+  (ex_modal
+    "Modal Dialogs"
+    ("Prev" ("Are you sure?" ("Yes" ex_progress) ("No" #f)))
+    ("Next" ("This will take you\nto the next page" ("OK" ex_camera)))
+    (spacer)
+    (label wrap #t align left text "Modal dialogs will appear when clicking Prev and Done. Notice the two different types.")
+    (spacer)
+  )
+
+  (ex_camera
+    "Camera"
+    ("Prev" ex_modal)
+    ("Next" ex_barcodes)
+    (spacer)
+    (label text "Touch below to take photo:")
+    (spacer)
+    (camera filename "test.png" default "photo here")
+    (spacer)
+  )
+
+  (ex_barcodes
+    "Barcodes"
+    ("Prev" ex_camera)
+    ("Next" ex_sensors)
+    (spacer)
+    (label text "Data Matrix Barcode:")
+    (spacer)
+    (dmencode text "http://lambdanative.org")
+    (spacer)
+    (label text "Touch button to take photo and\nscan it for DM barcode:" wrap #t)
+    (spacer)
+    (dmdecode id dmtest default "<no code>")
+    (spacer)
+  )
+
+  (ex_sensors
+    "Sensors"
+    ("Prev" ex_barcodes)
+    ("Next" #f)
+    (spacer)
+    (label text "GPS:")
+    (label text ,(lambda () (string-append 
+       (float->choppedstring (gps-latitude) 8) ":"
+       (float->choppedstring (gps-longitude) 8))))
+    (spacer)
+    (label text "Accelerometer:")
+    (label text ,(lambda () (string-append 
+       (float->choppedstring (accel-x) 6) ":"
+       (float->choppedstring (accel-y) 6) ":"
+       (float->choppedstring (accel-z) 6))))
+    (spacer)
+    (label text "Gyro:")
+    (label text ,(lambda () (string-append 
+       (float->choppedstring (gyro-yaw) 6) ":"
+       (float->choppedstring (gyro-pitch) 6) ":"
+       (float->choppedstring (gyro-roll) 6))))
+    (spacer)
+  )
+
+  (example6
+    "graph example"
+    ("Prev" example5 #f)
+    ("Next" example7 #f)
+    (spacer)
+  )
+
+
+)
