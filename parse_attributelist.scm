@@ -112,9 +112,9 @@
       ((fx= attribute_id NOM_SAT_O2_TONE_FREQ)
         (ivueparser:parseSatToneFreq val))
       ((fx= attribute_id 62007)
-        (ivueparser:log 3 "ivueparser: 62007:" (u8data-u32 (subu8data val 0 4))))
+        (ivueparser:log 3 "ivueparser: 62007: " (u8data-u32 (subu8data val 0 4))))
       (else
-        (ivueparser:log 1 "ivueparser: unknown attribute:" (number->string attribute_id 16) "[" len "]")
+        (ivueparser:log 1 "ivueparser: unknown attribute: " (number->string attribute_id 16) " [" len "]")
       )
     )
     (u8data-skip val len)
@@ -238,7 +238,7 @@
       ((fx= choice ENUM_OBJ_ID_VAL_CHOSEN)
         (ivueparser:parseEnumObjIdVal (subu8data buf 4 (fx+ len 4))))
       (else
-        (ivueparser:log 1 "ivueparser: unknown choice:" choice)
+        (ivueparser:log 1 "ivueparser: unknown choice: " choice)
         #f)
     )
   ))

@@ -8,7 +8,7 @@
         (poll_info_list (ivueparser:parsePollInfoList (u8data-skip buf 2))))
     (if (fx= (u8data-length poll_info_list) 0)
       #t
-      (ivueparser:log 0 "ivueparser: incomplete parse of NetworkTrend" (u8data-length poll_info_list))
+      (ivueparser:log 0 "ivueparser: incomplete parse of NetworkTrend [" (u8data-length poll_info_list) "]")
     )
   ))
 ;; Parse Server waveform package
@@ -17,7 +17,7 @@
         (poll_wave_list (ivueparser:parsePollWaveformList (u8data-skip buf 2))))
     (if (fx= (u8data-length poll_wave_list) 0)
       #t
-      (ivueparser:log 0 "ivueparser: incomplete parse of NetworkWaveform" (u8data-length poll_wave_list))
+      (ivueparser:log 0 "ivueparser: incomplete parse of NetworkWaveform [" (u8data-length poll_wave_list) "]")
     )
   ))
 
@@ -28,7 +28,7 @@
          (attribute_list (ivueparser:parseAttributeList context_id (u8data-skip buf 6))))
     (if (fx= (u8data-length attribute_list) 0)
       #t
-      (ivueparser:log 0 "ivueparser: incomplete parse of NetworkConnectionIndication" (u8data-length attribute_list))
+      (ivueparser:log 0 "ivueparser: incomplete parse of NetworkConnectionIndication [" (u8data-length attribute_list) "]")
     )
   ))
 
@@ -50,7 +50,7 @@
       ((fx= event_type #x0d06)
         (ivueparser:parseMdsCreateInfo (u8data-skip buf 14)))
       (else
-        (ivueparser:log 2 "ivueparser: ignoring event_type:" (number->string event_type 16) "len:" len))
+        (ivueparser:log 2 "ivueparser: ignoring event_type: " (number->string event_type 16) " [" len "]"))
     )
   ))
 

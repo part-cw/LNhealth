@@ -32,7 +32,7 @@
       (if name
         (store-set! ivueparser:store name value "ivue")
         (if (fx> label 0)
-          (ivueparser:log 1 "ivueparser: failed to lookup code:" (number->string physio_id 16)
+          (ivueparser:log 1 "ivueparser: failed to lookup code: " (number->string physio_id 16)
             " label=" (number->string label 16))
         )
       )

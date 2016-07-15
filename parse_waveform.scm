@@ -54,7 +54,7 @@
          (localname (ivueparser:findphys physio_id (table-ref ivueparser:labellut handle_id))))
     (if localname
       (store-waveform-append ivueparser:store localname (u16vector->list (u8vector->u16vector vals)))
-      (ivueparser:log 1 "ivueparser: no waveform name for" label "," physio_id)
+      (ivueparser:log 1 "ivueparser: no waveform name for: " label ", " physio_id)
     )
     (u8data-skip buf (fx+ len 6))
   ))
@@ -72,7 +72,7 @@
           (list lower_scaled_value upper_scaled_value lower_absolute_value upper_absolute_value)
         )
       )
-      (ivueparser:log 1 "ivueparser: no waveform name for" physio_id)
+      (ivueparser:log 1 "ivueparser: no waveform name for: " physio_id)
     )
     (u8data-skip buf 12)
   ))
@@ -81,9 +81,10 @@
 (define (ivueparser:parseMetricState handle_id buf)
   (let ((MetricState (u8data-u16 (subu8data buf 0 2)))
         (name (ivueparser:getname handle_id)))
-    (if name
-      (store-set! ivueparser:store (string-append name "_state") (fx= MetricState #x8000) "ivue") ;; "waveform")
-    )
+    (if name (store-set! ivueparser:store
+      (string-append name "_state") (not (fx= MetricState #x8000))
+      "ivue" ;; "waveform"
+    ))
   ))
 
 ;; Color
