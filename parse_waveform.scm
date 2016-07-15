@@ -54,7 +54,7 @@
          (localname (ivueparser:findphys physio_id (table-ref ivueparser:labellut handle_id))))
     (if localname
       (store-waveform-append ivueparser:store localname (u16vector->list (u8vector->u16vector vals)))
-      (ivueparser:log 1 "ivueparser: no waveform name for: " label ", " physio_id)
+      (ivueparser:log 1 "ivueparser: no waveform name for: " handle_id ", " physio_id)
     )
     (u8data-skip buf (fx+ len 6))
   ))
@@ -72,7 +72,7 @@
           (list lower_scaled_value upper_scaled_value lower_absolute_value upper_absolute_value)
         )
       )
-      (ivueparser:log 1 "ivueparser: no waveform name for: " physio_id)
+      (ivueparser:log 1 "ivueparser: no waveform name for: " handle_id)
     )
     (u8data-skip buf 12)
   ))
