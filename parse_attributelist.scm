@@ -68,11 +68,17 @@
         (ivueparser:parseAttrIdLabel obj_handle val))
       ((fx= attribute_id NOM_ATTR_ID_BED_LABEL)
         (ivueparser:parseAttrString "location" val len))
+      ((fx= attribute_id NOM_ATTR_MODE_MSMT)
+        (ivueparser:parseMeasureMode val))
       ;; Numeric Observed Values
       ((fx= attribute_id NOM_ATTR_NU_VAL_OBS)
         (ivueparser:parseNuObsValue obj_handle val))
       ((fx= attribute_id NOM_ATTR_NU_CMPD_VAL_OBS)
         (ivueparser:parseNuObsValueCmp obj_handle val))
+      ((fx= attribute_id NOM_ATTR_DISP_RES)
+        (ivueparser:parseDispResolution obj_handle val))
+      ((fx= attribute_id NOM_ATTR_UNIT_CODE)
+        (ivueparser:parseUnitCode obj_handle val))
       ;; Waveform Attributes
       ((fx= attribute_id NOM_ATTR_SA_VAL_OBS)
         (ivueparser:parseSaObsValue val))
@@ -84,6 +90,8 @@
         (ivueparser:parseMetricState obj_handle val))
       ((fx= attribute_id NOM_ATTR_COLOR)
         (ivueparser:parseSimpleColourAttribute obj_handle val))
+      ((fx= attribute_id NOM_ATTR_GRID_VIS_I16)
+        (ivueparser:parseSaVisualGrid16 obj_handle val))
       ;; Timestamps
       ((fx= attribute_id NOM_ATTR_TIME_STAMP_ABS)
         (ivueparser:parseAbsoluteTime "abs_time_stamp" val))
@@ -103,8 +111,10 @@
         (ivueparser:parseAttrString "location" val len))
       ((fx= attribute_id NOM_SAT_O2_TONE_FREQ)
         (ivueparser:parseSatToneFreq val))
+      ((fx= attribute_id 62007)
+        (ivueparser:log 3 "ivueparser: 62007:" (u8data-u32 (subu8data val 0 4))))
       (else
-        (ivueparser:log 1 "ivueparser: unknown attribute:" attribute_id "[" len "]")
+        (ivueparser:log 1 "ivueparser: unknown attribute:" (number->string attribute_id 16) "[" len "]")
       )
     )
     (u8data-skip val len)
@@ -202,6 +212,11 @@
   (let* ((len (u8data-u16 (subu8data buf 0 2)))
          (mac (u8data->u8vector (subu8data buf 2 (+ 2 len)))))
     (store-set! ivueparser:store "mac" mac "ivue")
+  ))
+
+(define (ivueparser:parseMeasureMode buf)
+  (let ((MeasureMode (u8data-u16 (subu8data buf 0 2))))
+    (store-set! ivueparser:store "measure_mode" MeasureMode "ivue")
   ))
 
 ;; Enum-Ovserved-Value
