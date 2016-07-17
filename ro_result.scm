@@ -1,7 +1,5 @@
 ;; Philips Intellivue Parser
 ;; Matthias Görges, 2016
-(include "ro_confirmedset.scm")
-
 (define (ivueparser:parseRORSapdu buf)
   (let ((invoke_id (u8data-u16 (subu8data buf 0 2)))
         (command_type (u8data-u16 (subu8data buf 2 4)))

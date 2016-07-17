@@ -5,6 +5,10 @@
 (include "ro_confirmedaction.scm")
 ;; Parse Event Report
 (include "ro_eventreport.scm")
+;; Parse Confirmed Set
+(include "ro_confirmedset.scm")
+;; Parse Get
+(include "ro_get.scm")
 
 ;; RemoteOperationInvoke tree
 (define (ivueparser:parseROIVapdu buf)
