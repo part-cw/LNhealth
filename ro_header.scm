@@ -26,12 +26,10 @@
     ((fx= ro_type ROIV_APDU)
       (ivueparser:parseRemoteOperationInvoke buf))
     ((fx= ro_type RORS_APDU)
-      (set! ivueparser:islinked #f)
       (ivueparser:parseRemoteOperationResult buf))
     ((fx= ro_type ROER_APDU)
       (ivueparser:parseRemoteOperationError buf))
     ((fx= ro_type ROLRS_APDU)
-      (set! ivueparser:islinked #t)
       (ivueparser:parseRemoteOperationLinkedResult buf 6))
     (else
       (set! ivueparser:error #t)
@@ -48,7 +46,7 @@
       )
       (else
         (set! ivueparser:error #t)
-        (ivueparser:log 1 "ivueparser: unknown session_id: " session_id)
+        (ivueparser:log 1 "ivueparser: unknown session_id: " session_id " [" (u8data-length buf) "]")
       )
     )
   ))

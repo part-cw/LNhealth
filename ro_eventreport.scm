@@ -49,6 +49,16 @@
         (ivueparser:parseNetworkWaveforms (u8data-skip buf 14)))
       ((fx= event_type #x0d06)
         (ivueparser:parseMdsCreateInfo (u8data-skip buf 14)))
+      ((fx= event_type #x0d19)
+        ;; Structure-wise this works, but the second element is a list of three numbered elements?
+        ;; (ivueparser:parseObservationPoll (u8data-skip buf 14))
+        (ivueparser:log 2 "ivueparser: ignoring event_type: 0d19 [" len "]"))
+      ((fx= event_type #x0d14)
+        ;; ManagedObjectId, len=8, bytes
+        (ivueparser:log 2 "ivueparser: ignoring event_type: 0d14 [" len "]"))
+      ((fx= event_type #x0d0b)
+        (ivueparser:log 2 "ivueparser: ignoring event_type: 0d0b [" len "]")
+      )
       (else
         (ivueparser:log 2 "ivueparser: ignoring event_type: " (number->string event_type 16) " [" len "]"))
     )
