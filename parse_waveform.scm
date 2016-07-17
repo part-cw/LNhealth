@@ -1,6 +1,21 @@
 ;; Philips Intellivue Parser
 ;; Matthias Görges, 2016
 
+(define (ivueparser-defaultwaveformscaling store)
+  (for-each (lambda (l) (store-waveform-scale store (car l) (cdr l)))
+    '(("ABP" 160 9120 -40 520)
+      ("ART" 160 9120 -40 520)
+      ("CO2aw" 100 4000 -4 48)
+      ("CVP" 160 9120 -40 520)
+      ("ECG" 0 16383 -40.96 40.955)
+      ("ICP" 160 9120 -40 520)
+      ("Resp" 0 4095 -0.6 1.9)
+      ("PAP" 160 9120 -40 520)
+      ("PLETHl" 0 4095 0. 1.)
+      ("Pleth" 0 4095 0. 1.)
+      ("Resp" 0 4095 -0.6 1.9))
+   ))
+
 ;; Special network parsing
 ;; PollWaveformList
 (define (ivueparser:parsePollWaveformList buf)
@@ -74,6 +89,8 @@
       )
       (ivueparser:log 1 "ivueparser: no waveform name for: " handle_id)
     )
+    (ivueparser:log 3 "ivueparser: waveform scaling: " name " "
+      (table-ref (store:wscalingtable ivueparser:store) name))
     (u8data-skip buf 12)
   ))
 

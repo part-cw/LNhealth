@@ -10,6 +10,10 @@
 ;; Add the code needed for serial-based ivue communication
 (include "ivue.scm")
 
+;; Set the debug level
+(define ivueparser:debuglevel 0)
+(define (ivueparser:log level . x) (if (fx>= ivueparser:debuglevel level) (apply log-system x)))
+
 ;; Some variable definitions for data export
 (define ivue:physdatavalues_aisys '(
   "RRaw" "SpRR"
