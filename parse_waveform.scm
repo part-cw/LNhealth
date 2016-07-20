@@ -1,7 +1,7 @@
 ;; Philips Intellivue Parser
 ;; Matthias Görges, 2016
 
-(define (ivueparser-defaultwaveformscaling store)
+(define (ivueparser-set-defaultwaveformscaling! store)
   (for-each (lambda (l) (store-waveform-scale store (car l) (cdr l)))
     '(("ABP" 160 9120 -40 520)
       ("ART" 160 9120 -40 520)

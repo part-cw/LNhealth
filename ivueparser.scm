@@ -11,6 +11,9 @@
 (include "ivue.scm")
 
 ;; Set the debug level
+(define (ivueparser-set-debuglevel! level)
+  (set! ivueparser:debuglevel level)
+)
 (define ivueparser:debuglevel 0)
 (define (ivueparser:log level . x) (if (fx>= ivueparser:debuglevel level) (apply log-system x)))
 
