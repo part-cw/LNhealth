@@ -70,6 +70,10 @@
         (ivueparser:parseAttrString "location" val len))
       ((fx= attribute_id NOM_ATTR_MODE_MSMT)
         (ivueparser:parseMeasureMode val))
+      ((fx= attribute_id NOM_ATTR_VMS_MDS_STAT)
+        (ivueparser:parseMDSStatus val))
+      ((fx= attribute_id NOM_ATTR_MDS_GEN_INFO)
+        (ivueparser:parseMdsGenSystemInfo val))
       ;; Numeric Observed Values
       ((fx= attribute_id NOM_ATTR_NU_VAL_OBS)
         (ivueparser:parseNuObsValue obj_handle val))
@@ -219,6 +223,43 @@
     (store-set! ivueparser:store "measure_mode" MeasureMode "ivue")
   ))
 
+(define (ivueparser:parseMDSStatus buf)
+  (let ((MDSStatus (u8data-u16 (subu8data buf 0 2))))
+    (store-set! ivueparser:store "mds_status" MDSStatus "ivue")
+  ))
+
+(define (ivueparser:parseMdsGenSystemInfo buf)
+  (let ((count (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (let loop ((n 0)(p (u8data-skip buf 4)))
+      (if (or (fx= n count) (fx= (u8data-length p) 0))
+        p
+        (loop (fx+ n 1) (ivueparser:parseMdsGenSystemInfoEntry p))
+      )
+    )
+  ))
+
+(define (ivueparser:parseMdsGenSystemInfoEntry buf)
+  (let ((choice (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (cond
+      ((fx= choice MDS_GEN_SYSTEM_INFO_SYSTEM_PULSE_CHOSEN)
+        (ivueparser:parseSystemPulseInfo (u8data-skip buf 4))
+      )
+      (else
+        (ivueparser:log 1 "ivueparser: unknown MdsGenSystemInfo choice: " choice)
+        (u8data-skip buf (fx+ len 4))
+      )
+    )
+  ))
+
+(define (ivueparser:parseSystemPulseInfo buf)
+  (let ((system_pulse (ivueparser:parseManagedObjectId buf))
+        (alarm_source (ivueparser:parseManagedObjectId (u8data-skip buf 6))))
+    (ivueparser:log 3 "ivueparser: SystemPulseInfo: " system_pulse " " alarm_source)
+    (u8data-skip buf 12)
+  ))
+
 ;; Enum-Ovserved-Value
 (define (ivueparser:parseEnumObs buf)
   (let ((physio_id (u8data-u16 (subu8data buf 0 2)))
@@ -238,7 +279,7 @@
       ((fx= choice ENUM_OBJ_ID_VAL_CHOSEN)
         (ivueparser:parseEnumObjIdVal (subu8data buf 4 (fx+ len 4))))
       (else
-        (ivueparser:log 1 "ivueparser: unknown choice: " choice)
+        (ivueparser:log 1 "ivueparser: unknown Enum choice: " choice)
         #f)
     )
   ))

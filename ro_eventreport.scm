@@ -34,11 +34,12 @@
 
 ;; Parse Event Report
 (define (ivueparser:parseCmdEventReport buf)
-  (let ((managed_object (ivueparser:parseManagedObjectId (subu8data buf 0 6)))
+  (let ((managed_object (ivueparser:parseManagedObjectId buf))
         (event_time (ivueparser:parseRelativeTime (subu8data buf 6 10)))
         (event_type (u8data-u16 (subu8data buf 10 12)))
         (len (u8data-u16 (subu8data buf 12 14))))
     (cond
+      ((fx= len 0) #f)
       ((fx= event_type #x0d01)
         (ivueparser:parseNetworkTrends (u8data-skip buf 14)))
       ((fx= event_type #x0d03)
@@ -49,15 +50,17 @@
         (ivueparser:parseNetworkWaveforms (u8data-skip buf 14)))
       ((fx= event_type #x0d06)
         (ivueparser:parseMdsCreateInfo (u8data-skip buf 14)))
+      ((fx= event_type #x0d05) ;; ModeOp, MDSStatus, MdsGenSystemInfo
+        (ivueparser:parseAttributeList (cadr managed_object) (u8data-skip buf 14)))
       ((fx= event_type #x0d19)
         ;; Structure-wise this works, but the second element is a list of three numbered elements?
         ;; (ivueparser:parseObservationPoll (u8data-skip buf 14))
-        (ivueparser:log 2 "ivueparser: ignoring event_type: 0d19 [" len "]"))
+        (ivueparser:log 2 "ivueparser: ignoring known event_type: 0d19 [" len "]"))
       ((fx= event_type #x0d14)
         ;; ManagedObjectId, len=8, bytes
-        (ivueparser:log 2 "ivueparser: ignoring event_type: 0d14 [" len "]"))
+        (ivueparser:log 2 "ivueparser: ignoring known event_type: 0d14 [" len "]"))
       ((fx= event_type #x0d0b)
-        (ivueparser:log 2 "ivueparser: ignoring event_type: 0d0b [" len "]")
+        (ivueparser:log 2 "ivueparser: ignoring known event_type: 0d0b [" len "]")
       )
       (else
         (ivueparser:log 2 "ivueparser: ignoring event_type: " (number->string event_type 16) " [" len "]"))

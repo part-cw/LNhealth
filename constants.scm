@@ -23,6 +23,9 @@
 (define ENUM_OBJ_ID_CHOSEN 1)
 (define ENUM_OBJ_ID_VAL_CHOSEN 4)
 
+;; field choice for MdsGenSystemInfoEntry
+(define MDS_GEN_SYSTEM_INFO_SYSTEM_PULSE_CHOSEN 1)
+
 ;; Attributes
 (define NOM_ATTR_ALL_GROUPS 0)
 (define NOM_ATTR_PT_NAME_MIDDLE   #x095F) ;;Middle Name
