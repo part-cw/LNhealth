@@ -4,6 +4,9 @@
 (include "parse_numericvalue.scm")
 (include "parse_alert.scm")
 
+;; table to associate handles with labels
+(define ivueparser:labellut (make-table init: 0))
+
 ;; Main Attribute List parser
 (define (ivueparser:parseAttributeList obj_handle buf)
   (let ((count (u8data-u16 (subu8data buf 0 2)))
@@ -167,7 +170,7 @@
   ))
 
 (define (ivueparser:parsePatMeasure label buf)
-  (let ((value (ivueparser:decodef32 (subu8data buf 0 4)))
+  (let ((value (ivueparser:parseFLOATType (subu8data buf 0 4)))
         (m_unit (u8data-u16 (subu8data buf 4 6))))
     (store-set! ivueparser:store label value "ivue")
   ))
