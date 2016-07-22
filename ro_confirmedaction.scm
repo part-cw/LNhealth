@@ -23,7 +23,6 @@
       ((fx= action_type NOM_ACT_DISCHARGE)
         (store-set! ivueparser:store "CaseEndPending" #t "ivue"))
       (else
-        (set! ivueparser:error #t)
         (ivueparser:log 1 "ivueparser: unknown action_type: " action_type))
     )
   ))

@@ -1,30 +1,25 @@
 ;; Philips Intellivue Parser
 ;; Matthias Görges, 2016
 
-;; Parse Confirmed Action
-(include "ro_confirmedaction.scm")
-;; Parse Event Report
-(include "ro_eventreport.scm")
-;; Parse Confirmed Set
-(include "ro_confirmedset.scm")
-;; Parse Get
-(include "ro_get.scm")
-;; Parse Set
-(include "ro_set.scm")
+(define (ivueparser:parseRorlsId buf)
+  (let ((state (u8data-u8 (subu8data buf 0 1)))
+        (count (u8data-u8 (subu8data buf 1 2))))
+    (list state count)
+  ))
 
-;; RemoteOperationInvoke tree
-(define (ivueparser:parseROIVapdu buf)
-  (let ((invoke_id (u8data-u16 (subu8data buf 0 2)))
-        (command_type (u8data-u16 (subu8data buf 2 4)))
-        (len (u8data-u16 (subu8data buf 4 6))))
-    (if (fx= len (fx- (u8data-length buf) 6))
+(define (ivueparser:parseROLRSapdu buf)
+  (let ((linked_id (ivueparser:parseRorlsId buf))
+        (invoke_id (u8data-u16 (subu8data buf 2 4)))
+        (command_type (u8data-u16 (subu8data buf 4 6)))
+        (len (u8data-u16 (subu8data buf 6 8))))
+    (if (fx= len (fx- (u8data-length buf) 8))
       command_type
       -1
     )
   ))
 
-(define (ivueparser:parseRemoteOperationInvoke buf)
-  (let ((command_type (ivueparser:parseROIVapdu buf)))
+(define (ivueparser:parseRemoteOperationLinkedResult buf)
+  (let ((command_type (ivueparser:parseROLRSapdu buf)))
     (cond
       ((fx= command_type CMD_EVENT_REPORT)
         (ivueparser:parseCmdEventReport (u8data-skip buf 6)))
@@ -42,4 +37,4 @@
         (ivueparser:log 1 "ivueparser: unknown command_type: " command_type))
     )
   ))
-;;eof
+;; eof

@@ -4,6 +4,7 @@
 
 (include "ro_invoke.scm") ;; RemoteOperationInvoke
 (include "ro_result.scm") ;; RemoteOperationResult
+(include "ro_linkedresult.scm") ;; RemoteOperationLinkedResult
 
 ;; Session Header and Remote Operation Header
 (define (ivueparser:parseSPdu buf)
@@ -30,9 +31,8 @@
     ((fx= ro_type ROER_APDU)
       (ivueparser:parseRemoteOperationError buf))
     ((fx= ro_type ROLRS_APDU)
-      (ivueparser:parseRemoteOperationLinkedResult buf 6))
+      (ivueparser:parseRemoteOperationLinkedResult buf))
     (else
-      (set! ivueparser:error #t)
       (ivueparser:log 1 "ivueparser: unknown ro_type: " ro_type))
   ))
 
@@ -45,7 +45,6 @@
         (ivueparser:parseRemoteOperationHeader (u8data-skip buf 8) ro_type)
       )
       (else
-        (set! ivueparser:error #t)
         (ivueparser:log 1 "ivueparser: unknown session_id: " session_id " [" (u8data-length buf) "]")
       )
     )
