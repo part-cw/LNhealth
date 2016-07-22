@@ -9,6 +9,8 @@
 (include "ro_confirmedset.scm")
 ;; Parse Get
 (include "ro_get.scm")
+;; Parse Set
+(include "ro_set.scm")
 
 ;; RemoteOperationInvoke tree
 (define (ivueparser:parseROIVapdu buf)

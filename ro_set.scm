@@ -1,8 +1,8 @@
 ;; Philips Intellivue Parser
 ;; Matthias Görges, 2016
 
-;; Parse Get
-(define (ivueparser:parseCmdGet buf)
+;; Parse Set
+(define (ivueparser:parseCmdSet buf)
   (let* ((managed_object (ivueparser:parseManagedObjectId buf))
          (context_id (cadr managed_object))
          (attributeList (ivueparser:parseAttributeList context_id (u8data-skip buf 6))))
