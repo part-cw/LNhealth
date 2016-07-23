@@ -5,6 +5,7 @@
 (include "ro_invoke.scm") ;; RemoteOperationInvoke
 (include "ro_result.scm") ;; RemoteOperationResult
 (include "ro_linkedresult.scm") ;; RemoteOperationLinkedResult
+(include "ro_error.scm") ;; RemoteOperationError
 
 ;; Session Header and Remote Operation Header
 (define (ivueparser:parseSPdu buf)

@@ -26,6 +26,18 @@
 ;; field choice for MdsGenSystemInfoEntry
 (define MDS_GEN_SYSTEM_INFO_SYSTEM_PULSE_CHOSEN 1)
 
+;; error values
+(define NO_SUCH_OBJECT_CLASS 0)
+(define NO_SUCH_OBJECT_INSTANCE 1)
+(define ACCESS_DENIED 2)
+(define GET_LIST_ERROR 7)
+(define SET_LIST_ERROR 8)
+(define NO_SUCH_ACTION 9)
+(define PROCESSING_FAILURE 10)
+(define INVALID_ARGUMENT_VALUE 15)
+(define INVALID_SCOPE 16)
+(define INVALID_OBJECT_INSTANCE 17)
+
 ;; Attributes
 (define NOM_ATTR_ALL_GROUPS 0)
 (define NOM_ATTR_PT_NAME_MIDDLE   #x095F) ;;Middle Name
