@@ -17,9 +17,9 @@
   (let ((action_type (ivueparser:parseActionResult buf)))
     (cond
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA)
-        (ivueparser:parsePollMdibDataReply (u8data-skip buf 14)))
+        (ivueparser:parsePollMdibDataReply (u8data-skip buf 10)))
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA_EXT)
-        (ivueparser:parsePollMdibDataReplyExt (u8data-skip buf 14)))
+        (ivueparser:parsePollMdibDataReplyExt (u8data-skip buf 10)))
       ((fx= action_type NOM_ACT_DISCHARGE)
         (store-set! ivueparser:store "CaseEndPending" #t "ivue"))
       (else
