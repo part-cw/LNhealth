@@ -20,7 +20,7 @@
   (glgui-pixmap gui:main 675 2 copyright.img)
 
   (glgui-menubar gui:main 0 (- (glgui-height-get) 30) (glgui-width-get) 30)
-  
+
   ;; Label in upper left corner
   (glgui-label gui:main 10 (- (glgui-height-get) 24 3) 350 24 "Philips Data Logger" ascii_24.fnt White)
 
@@ -39,8 +39,8 @@
     (glgui-widget-set! gui:main log-list 'hidden #t)
     ;;Text Entry String
     (set! text (glgui-label gui:main (+ x 5) (- y 5 34 (* 12 30)) w 24 "" ascii_24.fnt White))
-    ;; Recording start button  
-    (set! recording-start-button 
+    ;; Recording start button
+    (set! recording-start-button
       (glgui-button-string gui:main x (- y (* 6 30)) w 50 "Start Recording" ascii_24.fnt start-recording-callback)
     )
   )
@@ -57,7 +57,7 @@
 	   (loop (+ i 1)(append result (list (log-list-element (list-ref logs i)))))
         )
       )
-      (list) 
+      (list)
     )
   )
 )
@@ -67,8 +67,8 @@
 ;; Draw a log-list element with data from the entry field
 (define (log-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 16) 2)) 70 16 (seconds->string (car entry) "%T") ascii_16.fnt White)  
-    (glgui:draw-text-left (+ x 75) (+ y (/ (- h 24) 2)) (- w 90) 24 (cadr entry) ascii_24.fnt White)  
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 16) 2)) 70 16 (seconds->string (car entry) "%T") ascii_16.fnt White)
+    (glgui:draw-text-left (+ x 75) (+ y (/ (- h 24) 2)) (- w 90) 24 (cadr entry) ascii_24.fnt White)
   )
 )
 
@@ -145,7 +145,7 @@
   (set! time03 (glgui-label gui:main (+ 5 400 -17) (- (glgui-height-get) 50 (* 120 3) 20) 60 16 "" ascii_16.fnt DarkGray))
 
   ;;Place the Trace Widgets
-  (set! pr-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 1)) 400 110 pr-trace Green ascii_16.fnt))    
+  (set! pr-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 1)) 400 110 pr-trace Green ascii_16.fnt))
   (set! spo2-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 3)) 400 110 spo2-trace Aquamarine ascii_16.fnt))
   (set! map-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map-trace Red ascii_16.fnt))
   (set! map_nibp-trend (glgui-trace-slider gui:trends 5 (- (glgui-height-get) 50 (* 120 2)) 400 110 map_nibp-trace IndianRed ascii_16.fnt))
@@ -158,7 +158,7 @@
 (define (update-trends store)
   (if (> (- ##now last-trend-update) delta-update)
     (begin
-      (set! last-trend-update ##now)	
+      (set! last-trend-update ##now)
       ;; Update the Trend Numerics and Waveform
       (gltrace-add pr-trace (store-timedref store "PR(SpO2)"))
       (gltrace-add spo2-trace (store-timedref store "SpO2"))
@@ -166,7 +166,7 @@
       (gltrace-add map-trace (store-timedref store "ABPmean"))
 
       ;; Update the traces
-      (gltrace-update pr-trace) 
+      (gltrace-update pr-trace)
       (gltrace-update spo2-trace)
       (gltrace-update map-trace)
       (gltrace-update map_nibp-trace)
@@ -181,7 +181,7 @@
 (define (update-values store)
   (if (> (- ##now last-value-update) delta-time-update)
     (begin
-      (set! last-value-update ##now)	
+      (set! last-value-update ##now)
       ;; Update the Trend Numerics and Waveform
       (let ((pr-val (store-timedref store "PR(SpO2)")))
         (glgui-widget-set! gui:trends pr_value 'label (if pr-val (number->string (fix pr-val)) ""))
@@ -196,8 +196,8 @@
         (glgui-widget-set! gui:trends map_nibp_value 'label (if map-val (number->string (fix map-val)) ""))
       )
       ;; Update times everywhere
-      (store-set! "main" "time_str" (seconds->string ##now "%H%M%S"))              
-      (glgui-widget-set! gui:main clock 'label (seconds->string ##now "%T"))       
+      (store-set! "main" "time_str" (seconds->string ##now "%H%M%S"))
+      (glgui-widget-set! gui:main clock 'label (seconds->string ##now "%T"))
       ;; Update the other clocks too
       (glgui-widget-set! gui:main time63 'label (seconds->string (- ##now trend-time) "%H:%M"))
       (glgui-widget-set! gui:main time43 'label (seconds->string (- ##now (* (/ trend-time 3) 2)) "%H:%M"))
@@ -215,29 +215,30 @@
 ;; initialization
   (lambda (w h)
     (if (or (string=? (system-platform) "macosx")
-            (string=? (system-platform) "linux") 
+            (string=? (system-platform) "linux")
             (string=? (system-platform) "win32")) (make-window 1000 475))
     (glgui-orientation-set! GUI_LANDSCAPE)
     ;; Initialize the gui and the monitor connection
     (init-gui-main)
-    (init-gui-trends)    
+    (init-gui-trends)
     (make-store "main")
 
     ;; Initialize the Philips monitor plugin
-    (make-instance "main" "PHILIPSmonitor" "monitor" `("Port" ,(cond 
+    (make-instance "main" "PHILIPSmonitor" "monitor" `("Port" ,(cond
       ((string=? (system-platform) "linux") "/dev/ttyUSB0")
       ((string=? (system-platform) "win32") "COM3")
+      ((string=? (system-platform) "macosx") (detect-usb-serial))
       (else "/dev/tty.iap"))) '("Waveforms" #t) '("Debug" #f))
 
     ;;Make sure that scheduler actually runs !!!
     (scheduler-init)
   )
 ;; events
-  (lambda (t x y) 
+  (lambda (t x y)
     (update-trends "main")
     (update-values "main")
     ;; These are button presses
-    (if (= t EVENT_KEYPRESS) 
+    (if (= t EVENT_KEYPRESS)
       (begin
 	(cond
 	  ((= x EVENT_KEYESCAPE) (terminate))
@@ -263,11 +264,11 @@
 	)
 	(glgui-widget-set! gui:main text 'label buf)
       )
-    ) 
+    )
     (glgui-event (list gui:main gui:trends) t x y)
-    
+
     ;; Garbage collect, sleep and iterate over new plugin data
-    (##gc)                     ;; This calls the garbage collector 
+    (##gc)                     ;; This calls the garbage collector
     (thread-sleep! 0.005)        ;; Sleep for 5 usec
     (scheduler-iterate)
   )
