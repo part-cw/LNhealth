@@ -46,7 +46,7 @@
         (ivueparser:parseRemoteOperationHeader (u8data-skip buf 8) ro_type)
       )
       (else
-        (ivueparser:log 1 "ivueparser: unknown session_id: " session_id " [" (u8data-length buf) "]")
+        (ivueparser:log 3 "ivueparser: unknown session_id: " session_id " [" (u8data-length buf) "]")
       )
     )
   ))
