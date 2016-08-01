@@ -20,8 +20,6 @@
         (ivueparser:parsePollMdibDataReply (u8data-skip buf 10)))
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA_EXT)
         (ivueparser:parsePollMdibDataReplyExt (u8data-skip buf 10)))
-      ((fx= action_type NOM_ACT_DISCHARGE)
-        (store-set! ivueparser:store "CaseEndPending" #t "ivue"))
       (else
         (ivueparser:log 1 "ivueparser: unknown action_type: " action_type))
     )

@@ -7,6 +7,7 @@
 
 ;; Add the code needed for serial-based ivue communication
 (include "ivue.scm")
+(include "parse_frame.scm")
 
 ;; Set the debug level
 (define (ivueparser-set-debuglevel! level)

@@ -17,7 +17,6 @@
 ;; action_type method identifier
 (define NOM_ACT_POLL_MDIB_DATA 3094)
 (define NOM_ACT_POLL_MDIB_DATA_EXT 61755)
-(define NOM_ACT_DISCHARGE 62050)
 
 ;; field choice of structure EnumVal
 (define ENUM_OBJ_ID_CHOSEN 1)

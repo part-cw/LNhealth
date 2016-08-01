@@ -211,8 +211,19 @@
   ))
 
 (define (ivueparser:parseModeOp buf)
-  (let ((mode_op (u8data-u16 (subu8data buf 0 2))))
+  (let ((mode_op (u8data-u16 (subu8data buf 0 2)))
+        (old_mode_op (store-ref ivueparser:store "operation_mode" #f)))
     (store-set! ivueparser:store "operation_mode" mode_op "ivue")
+    ;; entering standby
+    (if (and old_mode_op (fx= (bitwise-and old_mode_op OPMODE_STANDBY) 0)
+             (fx= (bitwise-and mode_op OPMODE_STANDBY) OPMODE_STANDBY))
+      (store-set! ivueparser:store "CaseEndPending" #t "ivue")
+    )
+    ;; leaving standby
+    (if (and old_mode_op (fx= (bitwise-and old_mode_op OPMODE_STANDBY) OPMODE_STANDBY)
+             (fx= (bitwise-and mode_op OPMODE_STANDBY) 0))
+      (store-clear! ivueparser:store "CaseEndPending")
+    )
   ))
 
 (define (ivueparser:parseSysId buf)
