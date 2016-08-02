@@ -25,6 +25,14 @@
 ;; field choice for MdsGenSystemInfoEntry
 (define MDS_GEN_SYSTEM_INFO_SYSTEM_PULSE_CHOSEN 1)
 
+;; Operating Mode bit field
+(define OPMODE_UNSPEC #x8000)
+(define MONITORING #x4000)
+(define DEMO #x2000)
+(define SERVICE #x1000)
+(define OPMODE_STANDBY #x0002)
+(define CONFIG #x0001)
+
 ;; error values
 (define NO_SUCH_OBJECT_CLASS 0)
 (define NO_SUCH_OBJECT_INSTANCE 1)

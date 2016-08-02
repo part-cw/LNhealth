@@ -88,9 +88,9 @@
         (ivueparser:parseUnitCode obj_handle val))
       ;; Waveform Attributes
       ((fx= attribute_id NOM_ATTR_SA_VAL_OBS)
-        (ivueparser:parseSaObsValue handle_id val))
+        (ivueparser:parseSaObsValue obj_handle val))
       ((fx= attribute_id NOM_ATTR_SA_CMPD_VAL_OBS)
-        (ivueparser:parseSaObsValueCmp handle_id val))
+        (ivueparser:parseSaObsValueCmp obj_handle val))
       ((fx= attribute_id NOM_ATTR_SCALE_SPECN_I16)
         (ivueparser:parseScaleRangeSpec16 obj_handle val))
       ((fx= attribute_id NOM_ATTR_METRIC_STAT)

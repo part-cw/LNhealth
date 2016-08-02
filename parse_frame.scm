@@ -21,7 +21,7 @@
          (fcs (u8data-u16 (subu8data buf (fx- len 2) len)))
          (crc (ivueparser:crc (u8data->u8vector buf) 0 (fx- len 2))))
     ;; the bitwise and's are needed to eliminate sign!
-    (if (fx= (bitwise-and fcs #xffff) (bitwise-and crc #xffff)))
+    (if (fx= (bitwise-and fcs #xffff) (bitwise-and crc #xffff))
       (bitwise-and fcs #xffff)
       (begin
         (ivueparser:log 1 "ivueparser: frame check sequence failed" fcs crc)
@@ -35,9 +35,9 @@
     (if (and (fx= (u8data-ref buf 0) #xc0)
              (fx= (u8data-ref buf (fx- len 1))) #xc1)
       (let loop ((i 1) (obuf (u8vector)) (escaped #f))
-        (if (fx= i (fx- buflen 1))
+        (if (fx= i (fx- len 1))
           (u8vector->u8data obuf)
-          (let* ((c (u8data-ref ibuf i))
+          (let* ((c (u8data-ref buf i))
                  (newescaped (fx= c #x7d)))
             (loop (fx+ i 1) (u8vector-append obuf (if newescaped (u8vector)
               (if escaped (u8vector (bitwise-xor c #x20)) (u8vector c)))) newescaped)
