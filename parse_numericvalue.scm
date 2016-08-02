@@ -26,15 +26,11 @@
          (state (u8data-u16 (subu8data buf 2 4)))
          (unit_code (u8data-u16 (subu8data buf 4 6)))
          (value (ivueparser:parseFLOATType (subu8data buf 6 10)))
-         (label (table-ref ivueparser:labellut handle_id))
-         (name (ivueparser:findphys physio_id label)))
+         (name (table-ref ivueparser:phystable1 physio_id)))
     (if (and value (fx= (bitwise-and state #xf800) 0)) ;; ignore invalid data but allow demo
       (if name
         (store-set! ivueparser:store name value "ivue")
-        (if (fx> label 0)
-          (ivueparser:log 1 "ivueparser: failed to lookup code: " (number->string physio_id 16)
-            " label=" (number->string label 16))
-        )
+        (ivueparser:log 1 "ivueparser: failed to lookup code: " (number->string physio_id 16))
       )
       (if name (store-clear! ivueparser:store name))
     )

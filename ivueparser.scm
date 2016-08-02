@@ -17,6 +17,18 @@
 (define (ivueparser:log level . x) (if (fx>= ivueparser:debuglevel level) (apply log-system x)))
 
 ;; Some variable definitions for data export
+(define ivue:physdatavalues_basic '(
+  "HR" "STi" "STii" "STiii" "PVC" "RR"
+  "ABPmean" "ABPsys" "ABPdia" "PRabp"
+  "PAPmean" "PAPsys" "PAPdia" "PRpap"
+  "nibp_sys" "nibp_dia" "nibp_mean" "nibp_hr"
+  "Temp"
+  "SpO2" "PR(SpO2)" "Perf" "sat_o2_freq"
+  "SpO2l" "PR(SpO2l)" "Perfl"
+  "CO2e" "CO2imin" "awRR"))
+(define ivue:waveform_basic '(
+  "II" "V1" "aVR" "ABP" "PAP" "Pleth" "PLETHl" "CO2aw"))
+
 (define ivue:physdatavalues_aisys '(
   "RRaw" "SpRR"
   "InsTi" "ExpTi" "I:E"
