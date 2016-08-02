@@ -26,7 +26,7 @@
          (state (u8data-u16 (subu8data buf 2 4)))
          (unit_code (u8data-u16 (subu8data buf 4 6)))
          (value (ivueparser:parseFLOATType (subu8data buf 6 10)))
-         (name (table-ref ivueparser:phystable1 physio_id)))
+         (name (ivueparser:findphys physio_id (table-ref ivueparser:labellut handle_id))))
     (if (and value (fx= (bitwise-and state #xf800) 0)) ;; ignore invalid data but allow demo
       (if name
         (store-set! ivueparser:store name value "ivue")
