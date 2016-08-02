@@ -66,10 +66,10 @@
          (state (u8data-u16 (subu8data buf 2 4)))
          (len (u8data-u16 (subu8data buf 4 6)))
          (vals (u8data->u8vector (subu8data buf 6 (fx+ 6 len))))
-         (localname (ivueparser:findphys physio_id (table-ref ivueparser:labellut handle_id))))
-    (if localname
-      (store-waveform-append ivueparser:store localname (u16vector->list (u8vector->u16vector vals)))
-      (ivueparser:log 1 "ivueparser: no waveform name for: " handle_id ", " physio_id)
+         (name (table-ref ivueparser:phystable1 physio_id)))
+    (if name
+      (store-waveform-append ivueparser:store name (u16vector->list (u8vector->u16vector vals)))
+      (ivueparser:log 1 "ivueparser: failed to lookup code: " (number->string physio_id 16))
     )
     (u8data-skip buf (fx+ len 6))
   ))
