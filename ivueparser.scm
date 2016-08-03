@@ -3,8 +3,8 @@
 (include "constants.scm")
 (include "crc.scm")
 (include "lookup.scm")
-(include "ro_header.scm")
 (include "parse_frame.scm")
+(include "parse_session.scm")
 
 ;; Add the code needed for serial-based ivue communication
 (include "ivue.scm")
@@ -43,4 +43,9 @@
   "sΔPEEP" "sAADel" "sTrgFl" "sTrgLv" "sEndFl" "sInsTi" "sSIMV" "sPSVbd" "sfgFl" "sAGT"))
 (define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "HAL" "ISO" "ENF" "SEV" "DES" "CO2"))
 
+;; Public parsing function hook
+(define (ivueparser store data)
+  (set! ivueparser:store store)
+  (ivueparser:parseSessionHeader data)
+)
 ;; eof
