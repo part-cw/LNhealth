@@ -58,7 +58,7 @@
       (let ((len (ivueparser:parseFrameHdr (subu8data buf 0 4)))
             (fcs (ivueparser:verifyFCS buf)))
         (if (and fcs len)
-          (ivueparser:parseMessage (subu8data buf 4 len))
+          (subu8data buf 4 len)
           #f
         )
       )

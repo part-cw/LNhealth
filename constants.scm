@@ -45,6 +45,14 @@
 (define INVALID_SCOPE 16)
 (define INVALID_OBJECT_INSTANCE 17)
 
+;; Session types
+(define CN_SPDU_SI #x0D)
+(define AC_SPDU_SI #x0E)
+(define RF_SPDU_SI #x0C)
+(define FN_SPDU_SI #x09)
+(define DN_SPDU_SI #x0A)
+(define AB_SPDU_SI #x19)
+
 ;; Attributes
 (define NOM_ATTR_ALL_GROUPS 0)
 (define NOM_ATTR_PT_NAME_MIDDLE   #x095F) ;;Middle Name

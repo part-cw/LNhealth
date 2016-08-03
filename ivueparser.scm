@@ -3,11 +3,11 @@
 (include "constants.scm")
 (include "crc.scm")
 (include "lookup.scm")
-(include "parser.scm")
+(include "ro_header.scm")
+(include "parse_frame.scm")
 
 ;; Add the code needed for serial-based ivue communication
 (include "ivue.scm")
-(include "parse_frame.scm")
 
 ;; Set the debug level
 (define (ivueparser-set-debuglevel! level)

@@ -1,6 +1,7 @@
 ;; Philips Intellivue Parser
 ;; Matthias Görges, 2016
 (include "parse_helpers.scm")
+(include "parse_session.scm")
 
 (include "ro_invoke.scm") ;; RemoteOperationInvoke
 (include "ro_result.scm") ;; RemoteOperationResult
@@ -54,7 +55,7 @@
 ;; Public parsing function hook
 (define (ivueparser store data)
   (set! ivueparser:store store)
-  (ivueparser:parsedata data)
+  (ivueparser:parseSessionHeader data)
 )
 
 ;;eof
