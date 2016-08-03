@@ -8,7 +8,7 @@
          (len0 (u8data-u8 (subu8data buf 1 2)))
          (len1 (u8data-u16 (subu8data buf 2 4)))
          (len (if (fx= len0 #xff) len1 len0))
-         (data (if (fx= len0 #xff) (u8data-skip buf 4) (u8data-skip buf buf 2))))
+         (data (if (fx= len0 #xff) (u8data-skip buf 4) (u8data-skip buf 2))))
     (cond
       ((fx= type CN_SPDU_SI) ;; Session Connect
         (ivueparser:log 2 "ivueparser: connect from monitor") #f)
