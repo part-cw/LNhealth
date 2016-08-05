@@ -18,7 +18,9 @@
 
 (define (ivueparser:verifyFCS buf)
   (let* ((len (u8data-length buf))
-         (fcs (u8data-u16 (subu8data buf (fx- len 2) len)))
+         ;; The protocol specified the CRC to be send LSB first ...
+         (fcs (bitwise-ior (arithmetic-shift (u8data-ref buf (fx- len 1)) 8)
+              (u8data-ref buf (fx- len 2))))
          (crc (ivueparser:crc (u8data->u8vector buf) 0 (fx- len 2))))
     ;; the bitwise and's are needed to eliminate sign!
     (if (fx= (bitwise-and fcs #xffff) (bitwise-and crc #xffff))
@@ -55,10 +57,10 @@
 (define (ivueparser:parseframe buf)
   (let ((data (ivueparser:decodeframe buf)))
     (if (u8data:sane? data)
-      (let ((len (ivueparser:parseFrameHdr (subu8data buf 0 4)))
-            (fcs (ivueparser:verifyFCS buf)))
+      (let ((len (ivueparser:parseFrameHdr data))
+            (fcs (ivueparser:verifyFCS data)))
         (if (and fcs len)
-          (subu8data buf 4 len)
+          (subu8data data 4 (fx+ len 4))
           #f
         )
       )
