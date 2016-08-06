@@ -152,11 +152,15 @@
 (define NEONATAL 3)
 
 ;; poll object types
+(define NOM_MOC_VMO 1)
 (define NOM_MOC_VMO_METRIC_NU 6)
 (define NOM_MOC_VMO_METRIC_SA_RT 9)
 (define NOM_MOC_VMS_MDS 33)
-(define NOM_MOC_VMS_T_DEMOG 42)
-(define NOM_MOC_VMP_AL_MON 54)
+(define NOM_MOC_VMS_MDS_COMPOS_SINGLE_BED 35)
+(define NOM_MOC_VMS_MDS_SIMP 37)
+(define NOM_MOC_BATT 41)
+(define NOM_MOC_PT_DEMOG 42)
+(define NOM_MOC_VMO_AL_MON 54)
 
 ;; misc request variables
 (define NOM_ATTR_POLL_OBJ_PRIO_NUM #xF228)

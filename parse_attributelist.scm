@@ -77,6 +77,8 @@
         (ivueparser:parseMDSStatus val))
       ((fx= attribute_id NOM_ATTR_MDS_GEN_INFO)
         (ivueparser:parseMdsGenSystemInfo val))
+      ((fx= attribute_id NOM_ATTR_SYS_SPECN)
+        (ivueparser:parseSystemSpec val))
       ;; Numeric Observed Values
       ((fx= attribute_id NOM_ATTR_NU_VAL_OBS)
         (ivueparser:parseNuObsValue obj_handle val))
@@ -272,6 +274,44 @@
         (alarm_source (ivueparser:parseManagedObjectId (u8data-skip buf 6))))
     (ivueparser:log 3 "ivueparser: SystemPulseInfo: " system_pulse " " alarm_source)
     (u8data-skip buf 12)
+  ))
+
+(define (ivueparser:parseSystemSpec buf)
+  (let ((count (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (let loop ((n 0)(p (u8data-skip buf 4)))
+      (if (or (fx= n count) (fx= (u8data-length p) 0))
+        p
+        (loop (fx+ n 1) (ivueparser:parseSystemSpecEntry p))
+      )
+    )
+  ))
+
+(define (ivueparser:parseSystemSpecEntry buf)
+  (let ((component_capab_id (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (ivueparser:parseMdibObjectSupport (u8data-skip buf 4))
+    (u8data-skip buf (fx+ len 4))
+  ))
+
+(define (ivueparser:parseMdibObjectSupport buf)
+  (let ((count (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (let loop ((n 0)(mos '())(p (u8data-skip buf 4)))
+      (if (or (fx= n count) (fx= (u8data-length p) 0))
+        (begin
+          (store-set! ivueparser:store "MdibObjectSupport" mos "ivue")
+          p
+        )
+        (loop (fx+ n 1) (append mos (ivueparser:parseMdibObjectSupportEntry p)) (u8data-skip p 8))
+      )
+    )
+  ))
+
+(define (ivueparser:parseMdibObjectSupportEntry buf)
+  (let ((object_type (ivueparser:parseTYPE buf))
+        (max_inst (u8data-u32 (subu8data buf 4 8))))
+    (list (append object_type (list max_inst)))
   ))
 
 ;; Enum-Ovserved-Value

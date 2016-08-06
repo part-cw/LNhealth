@@ -144,6 +144,7 @@
             ))
           ))
           (ivue:send dev (ivue:polltrends) debug)
+          (ivue:send dev (ivue:pollalarms) debug)
           (set! ivue:lastchecked ##now)
         ))
         (if ivue:data
