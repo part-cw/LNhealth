@@ -940,10 +940,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Make quality lines
    (set! rrate:qualitybg (glgui-pixmap rrate:cont 0 53 quality_lines.img w (cadr quality_lines.img)))
    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden #t)
-   (let ((x (- (glgui-width-get) 128)) (w 125) (h 20))
-     (set! rrate:qualitybg_high (glgui-label-local rrate:cont x 87 w h "FAST" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
-     (set! rrate:qualitybg_consistent (glgui-label-local rrate:cont x 69 w h "CONSISTENT" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
-     (set! rrate:qualitybg_low (glgui-label-local rrate:cont x 50 w h "SLOW" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER)))
+   (let ((x (- w 128)) (w1 125) (h1 20))
+     (set! rrate:qualitybg_high (glgui-label-local rrate:cont x 87 w1 h1 "FAST" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
+     (set! rrate:qualitybg_consistent (glgui-label-local rrate:cont x 69 w1 h1 "CONSISTENT" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER))
+     (set! rrate:qualitybg_low (glgui-label-local rrate:cont x 50 w1 h1 "SLOW" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER)))
    (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #t))
      (list rrate:qualitybg_high rrate:qualitybg_consistent rrate:qualitybg_low))
  
