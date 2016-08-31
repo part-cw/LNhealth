@@ -892,7 +892,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (yabove (floor (+ yimage (cadr top_layer.img)))))
      (set! rrate:xoffset wspace)
      (set! rrate:yoffset (+ hspace 1))
-     (set! rrate:animationbg (glgui-pixmap rrate:cont (+ rrate:xoffset 35) (+ 43 rrate:yoffset) stage2_bg.img w (cadr stage2_bg.img)))
+     (set! rrate:animationbg (glgui-pixmap rrate:cont (+ rrate:xoffset 35) (+ 43 (max rrate:yoffset 0)) stage2_bg.img w (cadr stage2_bg.img)))
      (glgui-widget-set! rrate:cont rrate:animationbg 'hidden #t)
      (set! rrate:position:rarmx (+ rrate:position:rarmx_def rrate:xoffset))
      (set! rrate:position:rarmy (+ rrate:position:rarmy_def rrate:yoffset))
