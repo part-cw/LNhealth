@@ -44,14 +44,20 @@
         (name (ivueparser:getname handle_id)))
     (if name (store-set! ivueparser:store
       (string-append name "_resolution") (list pre_point post_point)
-      "ivue" ;; "waveform"
+      "ivue_display"
     ))
   ))
 
 ;; Unit Code
 (define (ivueparser:parseUnitCode handle_id buf)
-  (let ((OIDType (u8data-u16 (subu8data buf 0 2))))
-    #f
+  (let* ((unit_code (u8data-u16 (subu8data buf 0 2)))
+         (unit (car (table-ref ivueparser:unittable unit_code '(#f))))
+         (name (ivueparser:getname handle_id)))
+   (if (and name unit) (store-set! ivueparser:store
+     (string-append name "_unit") unit
+     "ivue"
+   ))
+    unit_code
   ))
 
 ;; eof

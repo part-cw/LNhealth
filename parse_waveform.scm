@@ -100,7 +100,7 @@
         (name (ivueparser:getname handle_id)))
     (if name (store-set! ivueparser:store
       (string-append name "_state") (not (fx= MetricState #x8000))
-      "ivue" ;; "waveform"
+      "ivue_display"
     ))
   ))
 
@@ -109,7 +109,7 @@
   (let ((SimpleColour (ivueparser:parseSimpleColour (subu8data buf 0 2)))
         (name (ivueparser:getname handle_id)))
     (if name
-      (store-set! ivueparser:store (string-append name "_color") SimpleColour "ivue") ;; "waveform")
+      (store-set! ivueparser:store (string-append name "_color") SimpleColour "ivue_display")
     )
   ))
 
@@ -121,7 +121,7 @@
     (if name
       (let loop ((n 0)(grid (list))(p (u8data-skip buf 4)))
         (if (fx= n count)
-          (store-set! ivueparser:store (string-append name "_grid") grid "ivue") ;; "waveform")
+          (store-set! ivueparser:store (string-append name "_grid") grid "ivue_display")
           (loop (fx+ n 1) (append grid (ivueparser:parseSaGridEntry16 p)) (u8data-skip p 8))
         )
       )
