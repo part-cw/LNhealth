@@ -24,11 +24,11 @@ end-of-c-declare
 (define ivueparser:phystable2 (make-table init: #f))
 
 ;; lookup the name of incoming data
-(define (ivueparser:findphys code label)
-  (if (and code label)
-    (let ((name1 (table-ref ivueparser:phystable1 code)))
+(define (ivueparser:findphys physio_id label)
+  (if (and physio_id label)
+    (let ((name1 (table-ref ivueparser:phystable1 physio_id)))
       (if name1 name1
-          (table-ref ivueparser:phystable2 (ivueparser:hash label code))))
+          (table-ref ivueparser:phystable2 (ivueparser:hash label physio_id))))
     "lookuperror"))
 
 ;; store incoming trend data
@@ -40,22 +40,22 @@ end-of-c-declare
         (begin (if (> label 0) (log-warning (string-append "ivueparse: failed to lookup code="
            (number->string code 16) " label=" (number->string label 16)))) #f))))
 
-;; check if a physid is unique
-(define (ivueparser:uniquephysid? physid data)
+;; check if a physio_id is unique
+(define (ivueparser:uniquephysio_id? physio_id data)
   (let loop ((d (map (lambda (x) (list-ref x 4)) data))(n 0))
     (if (= (length d) 0) (= n 1)
-      (loop (cdr d) (if (= (car d) physid) (+ n 1) n)))))
+      (loop (cdr d) (if (= (car d) physio_id) (+ n 1) n)))))
 
 ;; generate hash tables (at runtime)
 (define (ivueparser:buildphystable data)
   (let loop ((d data))
     (if (> (length d) 0)
-      (let* ((labelid (list-ref (car d) 2))
-             (physid  (list-ref (car d) 4))
-             (h (ivueparser:hash labelid physid))
+      (let* ((label (list-ref (car d) 2))
+             (physio_id  (list-ref (car d) 4))
+             (h (ivueparser:hash label physio_id))
              (name (car (car d))))
-        (if (ivueparser:uniquephysid? physid data)
-           (table-set! ivueparser:phystable1 physid name))
+        (if (ivueparser:uniquephysio_id? physio_id data)
+           (table-set! ivueparser:phystable1 physio_id name))
         (if (table-ref ivueparser:phystable2 h)
           (log-error (string-append "ivueparser: duplicate hash for " name " ["
               (table-ref ivueparser:phystable2 h) "]" ))

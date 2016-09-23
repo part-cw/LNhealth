@@ -4,8 +4,9 @@
 
 ;; Helper for quick name retrieval
 (define (ivueparser:getname handle_id)
-  (let ((physio_id (bitwise-and (table-ref ivueparser:labellut handle_id) #xffff)))
-    (table-ref ivueparser:phystable1 physio_id)
+  (let* ((label (table-ref ivueparser:labellut handle_id))
+         (physio_id (bitwise-and label #xffff)))
+    (ivueparser:findphys physio_id label)
   ))
 
 ;; Parse Compound Numeric Observed Value
