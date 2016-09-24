@@ -155,10 +155,12 @@
         (hour (ivueparser:parseBCD (u8data-u8 (subu8data buf 4 5))))
         (minute (ivueparser:parseBCD (u8data-u8 (subu8data buf 5 6))))
         (second (ivueparser:parseBCD (u8data-u8 (subu8data buf 7 8)))))
-    (if century (store-set! ivueparser:store label (flo (string->seconds
-      (string-append century year month day "-" hour minute second) "%Y%m%d-%H%M%S"))
-      "ivue"
-    ))
+    (if (and century year month day hour minute second)
+      (store-set! ivueparser:store label (flo (string->seconds
+        (string-append century year month day "-" hour minute second) "%Y%m%d-%H%M%S"))
+        "ivue"
+      )
+    )
   ))
 
 ;; Patient Attributes

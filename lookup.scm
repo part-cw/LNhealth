@@ -1409,7 +1409,7 @@ end-of-c-declare
   (6228 "TELEMETRY STANDBY")
   (6229 "XXX STANDBY")
   (6256 "XXXXXX UNPLUGGED")
-  (6257 "Unsupported LAN")
+  (6257 "MMS Unplugged") ;; (6257 "Unsupported LAN")
   (6658 "BIS IMPEDANCE CHCK")
   (6659 "Coincidence")
   (6662 "XXXXXX CAL REQUIRD")
