@@ -219,12 +219,18 @@
     ;; entering standby
     (if (and old_mode_op (fx= (bitwise-and old_mode_op OPMODE_STANDBY) 0)
              (fx= (bitwise-and mode_op OPMODE_STANDBY) OPMODE_STANDBY))
-      (store-set! ivueparser:store "CaseEndPending" #t "ivue")
+      (begin
+        (store-set! ivueparser:store "CaseEndPending" #t "ivue")
+        (store-clear! ivueparser:store "CaseStartPending")
+      )
     )
     ;; leaving standby
     (if (and old_mode_op (fx= (bitwise-and old_mode_op OPMODE_STANDBY) OPMODE_STANDBY)
              (fx= (bitwise-and mode_op OPMODE_STANDBY) 0))
-      (store-clear! ivueparser:store "CaseEndPending")
+      (begin
+        (store-clear! ivueparser:store "CaseEndPending")
+        (store-set! ivueparser:store "CaseStartPending" #t "ivue")
+      )
     )
   ))
 

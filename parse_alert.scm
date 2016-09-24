@@ -21,6 +21,7 @@
         (al_code (u8data-u16 (subu8data buf 2 4)))
         (al_type (u8data-u16 (subu8data buf 4 6)))
         (al_state (u8data-u16 (subu8data buf 6 8)))
+        (managed_object (ivueparser:parseManagedObjectId (subu8data buf 8 14)))
         (alert_info_id (u8data-u16 (subu8data buf 14 16)))
         (len (u8data-u16 (subu8data buf 16 18))))
     (let* ((name (table-ref ivueparser:phystable1 al_source "???"))
@@ -36,6 +37,14 @@
       ;; New alarms
       (if (and (fx= al_state 8) (fx> (string-length msg) 0))
         (store-event-add ivueparser:store 0 (store-ref ivueparser:store "location" ivueparser:store) msg))
+      ;; MMS Disconnection
+      (if (and (fx= al_state 8) (fx= al_source NOM_OBJ_MMS) (fx= al_code 6257)) ;;NOM_EVT_STAT_DISCONN+1
+        (begin
+          (store-set! ivueparser:store "CaseEndPending" #t "ivue")
+          (store-clear! ivueparser:store "CaseStartPending")
+        )
+      )
+
       ;; Parse alarm internals
       (cond
         ((fx= alert_info_id STR_ALMON_INFO)
