@@ -43,6 +43,7 @@
     (set! recording-start-button
       (glgui-button-string gui:main x (- y (* 6 30)) w 50 "Start Recording" ascii_24.fnt start-recording-callback)
     )
+    (glgui-widget-set! gui:main recording-start-button 'hidden #t)
   )
 )
 
@@ -155,9 +156,19 @@
 ;;
 ;; Update the trends every delta time using data from STORE
 (define last-trend-update 0)
+(define show-recording-once #f)
 (define (update-trends store)
   (if (> (- ##now last-trend-update) delta-update)
     (begin
+      ;; Hide recording button until we have some data
+      (if (and show-recording-once (store-ref store "ivue_timestamp" #f))
+        (begin
+          (glgui-widget-set! gui:main recording-start-button 'hidden #f)
+          (set! show-recording-once #f)
+        )
+      )
+      (if (= last-trend-update 0) (set! show-recording-once #t))
+      ;;
       (set! last-trend-update ##now)
       ;; Update the Trend Numerics and Waveform
       (gltrace-add pr-trace (store-timedref store "PR(SpO2)"))
