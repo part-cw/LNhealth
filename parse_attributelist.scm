@@ -79,6 +79,8 @@
         (ivueparser:parseMdsGenSystemInfo val))
       ((fx= attribute_id NOM_ATTR_SYS_SPECN)
         (ivueparser:parseSystemSpec val))
+      ((fx= attribute_id NOM_ATTR_SYS_TYPE)
+        (ivueparser:parseSystemType val))
       ;; Numeric Observed Values
       ((fx= attribute_id NOM_ATTR_NU_VAL_OBS)
         (ivueparser:parseNuObsValue obj_handle val))
@@ -101,6 +103,8 @@
         (ivueparser:parseSimpleColourAttribute obj_handle val))
       ((fx= attribute_id NOM_ATTR_GRID_VIS_I16)
         (ivueparser:parseSaVisualGrid16 obj_handle val))
+      ((fx= attribute_id NOM_ATTR_TIME_PD_SAMP)
+        (ivueparser:parseSamplePeriod obj_handle val))
       ;; Timestamps
       ((fx= attribute_id NOM_ATTR_TIME_STAMP_ABS)
         (ivueparser:parseAbsoluteTime "abs_time_stamp" val))
@@ -199,6 +203,12 @@
     (store-set! ivueparser:store "patient_id_int" id "ivue")
   ))
 
+;; System Type
+(define (ivueparser:parseSystemType buf)
+  (let ((system_type (ivueparser:parseTYPE (subu8data buf 0 4))))
+    (store-set! ivueparser:store "system_type" system_type "ivue")
+  ))
+
 ;; System Info
 (define (ivueparser:parseIdModel buf)
   (let* ((len (u8data-u16 (subu8data buf 0 2)))
@@ -211,7 +221,7 @@
 
 (define (ivueparser:parseAttrIdLabel obj_handle buf)
   (let ((label (u8data-u32 (subu8data buf 0 4))))
-    (table-set! ivueparser:labellut obj_handle label)
+    (if (fx> label 0) (table-set! ivueparser:labellut obj_handle label))
   ))
 
 (define (ivueparser:parseModeOp buf)

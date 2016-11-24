@@ -138,4 +138,13 @@
     (list (list absolute_value scaled_value level))
   ))
 
+;; Sample Period
+(define (ivueparser:parseSamplePeriod handle_id buf)
+  (let ((ts (fl/ (flo (u8data-u32 (subu8data buf 0 4))) 8000.))
+        (name (ivueparser:getname handle_id)))
+    (if name
+      (store-set! ivueparser:store (string-append name "_grid") ts "ivue")
+    )
+  ))
+
 ;; eof
