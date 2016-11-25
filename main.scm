@@ -36,7 +36,6 @@
     (set! log-list
       (glgui-list gui:main x (- y 5 (* 12 30)) w (* 12 30) 30 (build-log-list) #f)
     )
-    (glgui-widget-set! gui:main log-list 'hidden #t)
     ;;Text Entry String
     (set! text (glgui-label gui:main (+ x 5) (- y 5 34 (* 12 30)) w 24 "" ascii_24.fnt White))
     ;; Recording start button
@@ -51,7 +50,7 @@
 ;;
 ;; The build-log list creator, which loops through the log entries and makes appropriate gui elements for it
 (define (build-log-list)
-  (let ((logs (store-ref "main" "Log")))
+  (let ((logs (store-event-listnew store)))
     (if logs
       (let loop ((i 0) (result (list)))
         (if (= i (length logs)) result
@@ -82,17 +81,15 @@
       (let* ((trends (map car (store-listcat "main" "ivue")))
              (buf (string-append "TRENDS: " (string-mapconcat trends ", "))))
         (make-instance "main" "TRENDOUT" "trendoutput" `("Trends" ,(append (list "time_str") trends)))
-        (store-set! "main" "Log" (append (list (list (floor ##now) buf)) (store-ref "main" "Log" '())))
+        (store-event-add store 1 buf)
         (glgui-widget-set! gui:main log-list 'list (build-log-list))
-        (store-event-add "main" 1 buf)
       )
       ;; Log the waveforms recorded
       (let* ((waves (table-ref (store:wdatatable "main") 'IdList '()))
              (buf (string-append "WAVES: " (string-mapconcat waves ", "))))
         (for-each (lambda (l) (make-instance "main" (string-append "WAVEOUT" l) "waveoutput" `("Source" ,l))) waves)
-        (store-set! "main" "Log" (append (list (list (floor ##now) buf)) (store-ref "main" "Log" '())))
+        (store-event-add store 1 buf)
         (glgui-widget-set! gui:main log-list 'list (build-log-list))
-        (store-event-add "main" 1 buf)
       )
       ;; Start the case
       (scheduler-startcase "main" (time->timestamp (current-time)))
@@ -230,9 +227,9 @@
             (string=? (system-platform) "win32")) (make-window 1000 475))
     (glgui-orientation-set! GUI_LANDSCAPE)
     ;; Initialize the gui and the monitor connection
+    (set! store (make-store "main"))
     (init-gui-main)
     (init-gui-trends)
-    (make-store "main")
 
     ;; Initialize the Philips monitor plugin
     (make-instance "main" "PHILIPSmonitor" "monitor" `("Port" ,(cond
@@ -259,15 +256,16 @@
 	  ((= x 3) ;; This is backspace
 	    (if (> (string-length buf) 0) (set! buf (substring buf 0 (- (string-length buf) 1))))
 	  )
+    ((= x EVENT_KEYTAB) (for-each display (list (store-listcat "main" "ivue") "\n")))
 	  ((= x 1) ;; This is return
 	    (begin
 	      (if (> (string-length buf) 0)
-		;; It there is data in the string log it.
-		(begin
-		  (store-set! "main" "Log" (append (list (list (floor ##now) buf)) (store-ref "main" "Log" '())))
-		  (glgui-widget-set! gui:main log-list 'list (build-log-list))
-		  (store-event-add "main" 1 buf)
-		)
+		      ;; It there is data in the string log it.
+		      (begin
+            (store-event-add store 1 buf)
+		        (glgui-widget-set! gui:main log-list 'list (build-log-list))
+		        (store-event-add "main" 1 buf)
+		      )
 	      )
 	      (set! buf "")
 	    )
@@ -294,3 +292,4 @@
 ;; resume
   (lambda () (glgui-resume))
 )
+;; eof
