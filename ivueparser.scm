@@ -45,6 +45,11 @@
   "sΔPEEP" "sAADel" "sTrgFl" "sTrgLv" "sEndFl" "sInsTi" "sSIMV" "sPSVbd" "sfgFl" "sAGT"))
 (define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "HAL" "ISO" "ENF" "SEV" "DES" "CO2"))
 
+(define ivue:demographics '(
+  "patient_given_name" "patient_middle_name" "patient_family_name" "patient_id" "patient_encounter_id"
+  "patient_dob" "patient_height" "patient_weight" "patient_age" "patient_bsa"
+  "patient_notes1" "patient_notes2" "patient_sex" "patient_type"  "patient_paced_mode" "patient_id_int"))
+
 ;; Public parsing function hook
 (define (ivueparser store data)
   (set! ivueparser:store store)
