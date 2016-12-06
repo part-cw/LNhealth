@@ -30,12 +30,12 @@
 (define (s5parser:settrend! store name value . scale0)
   (let* ((scale (if (fx= (length scale0) 1) (car scale0) 1.))
          (val (s5parser:validate value scale)))
-    (if s5parser:group_active? 
+    (if s5parser:group_active?
       (store-set! store name val "s5")
       (store-clear! store name)
     )
   ))
-    
+
 ;; ----------------
 ;; trends
 
@@ -70,7 +70,7 @@
     (s5parser:settrend! s "hr" hr 	1.)
     (s5parser:settrend! s "HR" hr 	1.)
     ;; HR Source is bits 3-6
-    (store-set! s "hr_source" (s5parser:hr_getsource (bitwise-and (arithmetic-shift s5parser:status_bits -3) 15)) "s5") 
+    (store-set! s "hr_source" (s5parser:hr_getsource (bitwise-and (arithmetic-shift s5parser:status_bits -3) 15)) "s5")
     ;; ECG Labels are bits 0-11
     (store-set! s "ecg3_label" (s5parser:ecg_getlabel (bitwise-and (arithmetic-shift s5parser:group_label 0) 15)) "s5")
     (store-set! s "ecg2_label" (s5parser:ecg_getlabel (bitwise-and (arithmetic-shift s5parser:group_label -4) 15)) "s5")
@@ -326,9 +326,9 @@
   "o2_et" "o2_fi" "n2o_et" "n2o_fi"
   "aa_et" "aa_fi" "aa_mac"
   "rr" "ppeak" "peep" "pplat" "tv_insp" "tv_exp" "compliance" "mv_exp"
-  "co" "blood_temp" "ref" "pcwp" 
-  "nmt_t1" "nmt_tratio" "nmt_ptc" 
-  "hr_ecg" "hr_max" "hr_min" 
+  "co" "blood_temp" "ref" "pcwp"
+  "nmt_t1" "nmt_tratio" "nmt_ptc"
+  "hr_ecg" "hr_max" "hr_min"
   "svo2"
   "p5_sys" "p5_dia" "p5_mean" "p5_hr"
   "p6_sys" "p6_dia" "p6_mean" "p6_hr"))
@@ -357,7 +357,7 @@
          (stIII (u8data-le-s16 (subu8data step1 4 6)))
          (stAVL (u8data-le-s16 (subu8data step1 6 8)))
          (stAVR (u8data-le-s16 (subu8data step1 8 10)))
-         (stAVF (u8data-le-s16 (subu8data step1 10 12))) 
+         (stAVF (u8data-le-s16 (subu8data step1 10 12)))
          (stV1 (u8data-le-s16 (subu8data step1 12 14)))
          (stV2 (u8data-le-s16 (subu8data step1 14 16)))
          (stV3 (u8data-le-s16 (subu8data step1 16 18)))
@@ -482,7 +482,7 @@
 
 ;; Added so we can reference it in trendoutput or other apps
 (define s5parser:physdatavalues_ext2 (list
-  "nmt_t1" "nmt_t2" "nmt_t3" "nmt_t4" 
+  "nmt_t1" "nmt_t2" "nmt_t3" "nmt_t4"
   "femg"
   "eeg1_ampl" "eeg1_sef" "eeg1_mf" "eeg1_deltap" "eeg1_thetap" "eeg1_alphap" "eeg1_betap" "eeg1_bsr"
   "eeg2_ampl" "eeg2_sef" "eeg2_mf" "eeg2_deltap" "eeg2_thetap" "eeg2_alphap" "eeg2_betap" "eeg2_bsr"
@@ -561,7 +561,7 @@
     (s5parser:settrend! s "phi_delay" phi_delay)
     (s5parser:settrend! s "amb_press"  amb_press 10.)
     (s5parser:settrend! s "cpma" cpma 10.)
-    (u8data-skip step1 16)))                         
+    (u8data-skip step1 16)))
 
 (define (s5parser:aa2_group s buf)
   (let* ((step1 (s5parser:group_hdr buf))
@@ -598,7 +598,7 @@
 ;; Added so we can reference it in trendoutput or other apps
 (define s5parser:physdatavalues_ext3 (list
   "gasex_vo2" "gasex_vco2" "gasex_ee" "gasex_rq"
-  "ipeep" "pmean" "raw" "mv_insp" "epeep" "mv_spont" "ie_ratio" "insp_time" "exp_time" "static_compliance" "static_pplat" "static_peepe" "static_peepi" 
+  "ipeep" "pmean" "raw" "mv_insp" "epeep" "mv_spont" "ie_ratio" "insp_time" "exp_time" "static_compliance" "static_pplat" "static_peepe" "static_peepi"
   "bal_gas_et" "bal_gas_fi"
   "prco2" "pr_et" "pr_pa" "pa_delay" "phi" "phi_delay" "amb_press" "cpma"
   "mac_age_sum" "spv" "ppv" "cpp"))
@@ -612,7 +612,7 @@
         (marker (u8data-u8 (subu8data buf 274 275))) ;;needed for iFish-AA application
         (cl_drivl_subt (u8data-le-u16 (subu8data buf 276 278))))
   (let ((flag (bitwise-and (arithmetic-shift cl_drivl_subt -8) 3)))
-    (cond 
+    (cond
       ((fx= flag 0) (s5parser:basic_phdb store payload))
       ((fx= flag 1) (s5parser:ext1_phdb store payload))
       ((fx= flag 2) (s5parser:ext2_phdb store payload))
@@ -638,7 +638,7 @@
 ;; ----------------
 ;; waveforms   [Changed ECG from 1.0 to 1000.0 as the standard is mV not uV]
 
-(define s5parser:waveforms '( 
+(define s5parser:waveforms '(
   (1 "ECG1" 1000.)  (2 "ECG2" 1000.) (3 "ECG3" 1000.)
   (4 "INVP1" 100.) (5 "INVP2" 100.) (6 "INVP3" 100.) (7 "INVP4" 100.)
   (8 "PLETH" 100.) (9 "CO2" 100.) (10 "O2" 100.) (11 "N2O" 100.)
@@ -659,7 +659,7 @@
  ;; (display "parsing waveforms\n")
   (let loop ((srs srlist))
     (if (> (length srs) 0)
-      (let* ((ofs (car (car srs))) 
+      (let* ((ofs (car (car srs)))
              (type (cadr (car srs)))
              (wave (assoc type s5parser:waveforms))
              (wavename (if wave (cadr wave) #f))
@@ -672,7 +672,7 @@
              (wavescaleinv (/ 1. wavescale)))
          ;; populate the vector
          (let loop2 ((o (fx+ ofs 6))(n 0)(flag 0))
-           (if (fx= n wavelen)  
+           (if (fx= n wavelen)
              (if (and (> flag 0) (not s5parser:fromfile)) (s5parser:log 0 "s5parser: invalid data in waveform " flag))
              (let* ((val (u8data-le-s16 (subu8data buf o (fx+ o 2))))
                     (newflag (fx< val -32000))
@@ -694,6 +694,8 @@
 
 ;; ----------------
 ;; patient data
+(define s5parser:demographics '(
+  "FirstName" "LastName" "PatientID" "Sex" "Age" "Height" "Weight"))
 
 (define (s5parser:nw_pat_descr s buf)
   (let ((pat_1stname (u8data->u8vector (subu8data buf 0 30)))
@@ -718,7 +720,7 @@
 ;;      (change_src (u8data-le-s16 (subu8data buf 230 232)))
 ;;      (reserved (subu8data buf 232 350))
        )
-;;   (for-each display (list "s5parser: patient: gender=" gender 
+;;   (for-each display (list "s5parser: patient: gender=" gender
 ;;       " age_years=" age_years
 ;;       " age_days=" age_days
 ;;       " age_hours=" age_hours
@@ -733,7 +735,7 @@
    (if (fx= gender 1) (store-set! s "Sex" "Male" "s5"))
    (if (fx= gender 2) (store-set! s "Sex" "Female" "s5"))
    ;; age
-   (if (and (>= age_years 0) (>= age_days 0) (>= age_hours 0)) 
+   (if (and (>= age_years 0) (>= age_days 0) (>= age_hours 0))
      (let ((age (+ age_years (/ age_days 360.) (/ age_hours (* 360. 24.)))))
       (if (> age 0) (store-set! s "Age" age "s5"))))
    ;; height
@@ -754,7 +756,7 @@
         (cond
           ((fx= type 6) (s5parser:nw_pat_descr s (u8data-skip buf ofs)))
           ((fx= type 10) (begin
-            (store-clear! s (map cadr s5parser:physdatavalues_basic)) 
+            (store-clear! s (map cadr s5parser:physdatavalues_basic))
             (store-clear! s (map cadr s5parser:physdatavalues_ext1))
             (store-clear! s (map cadr s5parser:physdatavalues_ext2))
             (store-clear! s (map cadr s5parser:physdatavalues_ext3))
@@ -806,7 +808,7 @@
 (define (s5parser:dri_al_msg s buf)
   (let* (
 ;;       (reserved1 (subu8data buf 0 2))
-;;       (sound_on_off (u8data-le-s16 (subu8data buf 2 4)))         
+;;       (sound_on_off (u8data-le-s16 (subu8data buf 2 4)))
 ;;       (reserved2 (subu8data buf 4 6))
 ;;       (reserved3 (subu8data buf 6 8))
 ;;       (silence_info (u8data-le-s16 (subu8data buf 8 10)))
@@ -856,9 +858,9 @@
     (store-set! store "r_time" r_time "s5")
     (let loop ((n 0)(p subrecords)(srlist '())(done #f))
       (if (or done (fx= n 8)) (begin
-;;        (for-each display (list "s5parser: type=" r_maintype " : " 
+;;        (for-each display (list "s5parser: type=" r_maintype " : "
 ;;           (length srlist) " subrecords..\n"))
-        (cond 
+        (cond
           ((fx= r_maintype 0)
              (if (> r_len 270)  ;; at least one trend block please
                (s5parser:parsetrends store payload srlist)
