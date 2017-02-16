@@ -18,32 +18,32 @@
 
 ;; Some variable definitions for data export
 (define ivue:physdatavalues_basic '(
-  "PR" "btbHR" "STi" "STii" "STiii" "PVC" "RR"
+  "HR" "btbHR" "STi" "STii" "STiii" "PVC" "RR"
   "NBPsys" "NBPdia" "NBPmean" "PRnbp"
   "ABPmean" "ABPsys" "ABPdia" "PRabp"
   "ARTsys" "ARTdia" "ARTmean" "PRart"
   "PAPmean" "PAPsys" "PAPdia" "PRpap"
   "CVPsys" "CVPdia" "CVPmean" "PRcvp"
   "Temp" "Trect" "Tblood" "Tcore" "Tesoph" "Tnaso" "Tamb"
-  "SpO2" "PRSpo2" "Perf" "sat_o2_freq"
-  "SpO2 l" "PRSpo2l" "Perf l"
-  "CO2et" "CO2min" "awRR"))
+  "SpO2" "PRspo2" "Perf" "sat_o2_freq"
+  "SpO2 l" "PRspo2l" "Perf l"
+  "CO2et" "CO2insp" "awRR"))
 (define ivue:waveform_basic '(
   "I" "II" "III" "aVR" "aVL" "AVF" "V" "ABP" "ART" "PAP" "CVP" "Pleth" "PLETHl" "CO2"))
 
 (define ivue:physdatavalues_aisys '(
   "RRaw" "SpRR"
-  "InsTi" "ExpTi" "I:E"
+  "InsTi" "ExpTi" "I:Ei" "I:Ee"
   "MnAwP" "PIP" "Pplat" "PEEP" "tPEEP"
   "TVexp" "TVin" "MVexp" "MVin" "SpMV"
-  "etAGT" "inAGT" "etHAL" "inHAL" "etISO" "inISO" "etENF" "inENF" "etSEV" "inSEV" "etDES" "inDES" "MAC"
-  "AccHAL" "AccISO" "AccENF" "AccSEV" "AccDES"  "AccN2O" "AccO2" "AccAIR"
-  "etCO2" "imCO2" "etO2" "inO2" "ΔO2" "fgO2" "fgAir"
-  "etN2O" "inN2O" "fgN2O"
+  "AGTet" "AGTinsp" "ISOet" "ISOinsp" "SEVet" "SEVinsp" "DESet" "DESinsp" "MAC"
+  "AccISO" "AccSEV" "AccDES" "AccN2O" "AccO2" "AccAir"
+  "CO2et" "CO2insp" "O2et" "O2insp" "ΔO2" "fgO2" "fgAir"
+  "N2Oet" "N2Oinsp" "fgN2O"
   "Cdyn" "Rdyn" "VCO2" "VO2" "VO2kg"
   "sTV" "sRRaw" "sIE" "sPltTi" "sPEEP" "sPmax" "sPin" "sfgO2"
   "sΔPEEP" "sAADel" "sTrgFl" "sTrgLv" "sEndFl" "sInsTi" "sSIMV" "sPSVbd" "sfgFl" "sAGT"))
-(define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "HAL" "ISO" "ENF" "SEV" "DES" "CO2"))
+(define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "ISO" "SEV" "DES" "CO2"))
 
 (define ivue:demographics '(
   "patient_given_name" "patient_middle_name" "patient_family_name" "patient_id" "patient_encounter_id"
