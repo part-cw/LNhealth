@@ -32,7 +32,7 @@
       ((fx= command_type CMD_CONFIRMED_SET)
         (ivueparser:parseCmdConfirmedSet (u8data-skip buf 8)))
       ((fx= command_type CMD_CONFIRMED_ACTION)
-        (ivueparser:parseCmdConfirmedAction (u8data-skip buf 8)))
+        (ivueparser:parseCmdConfirmedActionResult (u8data-skip buf 8)))
       (else
         (ivueparser:log 1 "ivueparser: unknown command_type: " command_type))
     )

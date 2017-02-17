@@ -22,6 +22,8 @@ end-of-c-declare
 ;; we keep two tables, one with unique physical ids, and one with hashed ids+labels.
 (define ivueparser:phystable1 (make-table init: #f))
 (define ivueparser:phystable2 (make-table init: #f))
+(define ivueparser:physecg '())
+(define ivueparser:physst '())
 
 ;; lookup the name of incoming data
 (define (ivueparser:findphys physio_id label)
@@ -49,7 +51,8 @@ end-of-c-declare
 ;; generate hash tables (at runtime)
 (define (ivueparser:buildphystable data)
   (let loop ((d data))
-    (if (> (length d) 0)
+    (if (fx= (length d) 0)
+      #f
       (let* ((label (list-ref (car d) 2))
              (physio_id  (list-ref (car d) 4))
              (h (ivueparser:hash label physio_id))
@@ -60,6 +63,12 @@ end-of-c-declare
           (log-error (string-append "ivueparser: duplicate hash for " name " ["
               (table-ref ivueparser:phystable2 h) "]" ))
           (table-set! ivueparser:phystable2 h name))
+        ;; get all ECG labels
+        (if (fx< (bitwise-xor label #x201FF) 256)
+          (set! ivueparser:physecg (append ivueparser:physecg (list name))))
+        (if (fx< (bitwise-xor label #x203FF) 256)
+          (set! ivueparser:physst (append ivueparser:physst (list name))))
+        ;;
         (loop (cdr d))))))
 
 ;; the following is an extract from the philips intellivue documentation (rev. E)
@@ -1261,6 +1270,9 @@ end-of-c-declare
 ;; undocumented
 ["PLTHpr" NLS_NOM_PULS_OXIM_PLETH_PRE_DUCTAL #x0002F1BC NOM_PULS_OXIM_PLETH_LEFT #xF1BC]
 ["PLTHpo" NLS_NOM_PULS_OXIM_PLETH_POST_DUCTAL #x0002F1D0 NOM_PULS_OXIM_PLETH_LEFT #xF1D0]
+;; Label Mapping Table
+["AWV" NLS_NOM_VOL_AWAY #x0002F0DF NOM_METRIC_NOS #xF0DF]
+["ST" NLS_NOM_ECG_AMPL_ST #x00020300 NOM_DIM_MILLI_M #x0300]
 
 ])
 

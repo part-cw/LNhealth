@@ -1,5 +1,5 @@
 ;; Philips Intellivue Parser
-;; Matthias Görges, 2016
+;; Matthias Görges, 2016-2017
 
 (define (ivueparser-set-defaultwaveformscaling! store)
   (for-each (lambda (l) (store-waveform-scale store (car l) (cdr l)))
@@ -14,6 +14,12 @@
       ("PLETHl" 0 4095 0. 1.)
       ("Pleth" 0 4095 0. 1.)
       ("Resp" 0 4095 -0.6 1.9))
+      ("CO2" 0 4000 -10 50)
+      ("AWV" 0 4000 -100 1100)
+      ("AWP" 0 4000 -10 50)
+      ("EEG" 0 4095 -62.5 62.5)
+      ("ST" 32768 32767 -163.84 163.835)
+      ("QT" 32768 32767 -81.92 81.9175)
    ))
 
 ;; Special network parsing
@@ -74,6 +80,18 @@
     (u8data-skip buf (fx+ len 6))
   ))
 
+(define (ivueparser:parseScaleRangeSpec16_getnames name)
+  (cond
+    ((string=? name "ECG")
+      ivueparser:physecg)
+    ((string=? name "ST")
+      ivueparser:physst)
+    ((string=? name "EEG")
+      (list "EEG L" "EEG R" "EEG1" "EEG2" "EEG3" "EEG4"))
+    (else
+      (list name))
+  ))
+
 (define (ivueparser:parseScaleRangeSpec16 handle_id buf)
   (let ((lower_absolute_value (ivueparser:parseFLOATType (subu8data buf 0 4)))
         (upper_absolute_value (ivueparser:parseFLOATType (subu8data buf 4 8)))
@@ -81,11 +99,13 @@
         (upper_scaled_value (u8data-u16 (subu8data buf 10 12)))
         (name (ivueparser:getname handle_id)))
     (if name
-      (store-waveform-scale ivueparser:store name
-        (if (not lower_absolute_value)
-          (list lower_scaled_value upper_scaled_value 0. 1.)
-          (list lower_scaled_value upper_scaled_value lower_absolute_value upper_absolute_value)
-        )
+      (let ((names (ivueparser:parseScaleRangeSpec16_getnames name)))
+        (for-each (lambda (n) (store-waveform-scale ivueparser:store n
+          (if (not lower_absolute_value)
+            (list lower_scaled_value upper_scaled_value 0. 1.)
+            (list lower_scaled_value upper_scaled_value lower_absolute_value upper_absolute_value)
+          )
+        )) names)
       )
       (ivueparser:log 1 "ivueparser: no waveform name for: " handle_id)
     )

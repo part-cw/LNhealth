@@ -2,6 +2,30 @@
 ;; Matthias Görges, 2016
 (include "parse_attributelist.scm")
 
+
+;; Parse Action Argument
+(define (ivueparser:parseActionArgument buf)
+  (let ((managed_object (ivueparser:parseManagedObjectId buf))
+        (scope (u8data-u32 (subu8data buf 6 10))) ;;Always 0
+        (action_type (u8data-u16 (subu8data buf 10 12)))
+        (len (u8data-u16 (subu8data buf 12 14))))
+    (if (fx= len (fx- (u8data-length buf) 14))
+      action_type
+      -1
+    )
+  ))
+
+(define (ivueparser:parseCmdConfirmedAction buf)
+  (let ((action_type (ivueparser:parseActionArgument buf)))
+    (cond
+      ((fx= action_type #x0c11)
+        (ivueparser:log 0 "ivueparser: demographics package:")
+      )
+      (else
+        (ivueparser:log 1 "ivueparser: unknown action_type: " action_type))
+    )
+  ))
+
 ;; Parse Confirmed Action
 (define (ivueparser:parseActionResult buf)
   (let ((managed_object (ivueparser:parseManagedObjectId buf))
@@ -13,7 +37,7 @@
     )
   ))
 
-(define (ivueparser:parseCmdConfirmedAction buf)
+(define (ivueparser:parseCmdConfirmedActionResult buf)
   (let ((action_type (ivueparser:parseActionResult buf)))
     (cond
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA)

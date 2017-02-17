@@ -29,7 +29,7 @@
   "SpO2 l" "PRspo2l" "Perf l"
   "CO2et" "CO2insp" "awRR"))
 (define ivue:waveform_basic '(
-  "I" "II" "III" "aVR" "aVL" "AVF" "V" "ABP" "ART" "PAP" "CVP" "Pleth" "PLETHl" "CO2"))
+  "I" "II" "III" "aVR" "aVL" "AVF" "V" "ABP" "ART" "PAP" "CVP" "Pleth" "PLETHl" "CO2" "EEG L"))
 
 (define ivue:physdatavalues_aisys '(
   "RRaw" "SpRR"
