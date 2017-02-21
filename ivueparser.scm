@@ -27,7 +27,8 @@
   "Temp" "Trect" "Tblood" "Tcore" "Tesoph" "Tnaso" "Tamb"
   "SpO2" "PRspo2" "Perf" "sat_o2_freq"
   "SpO2 l" "PRspo2l" "Perf l"
-  "CO2et" "CO2insp" "awRR"))
+  "CO2et" "CO2insp" "awRR"
+  "BIS" "SQI" "EMG"))
 (define ivue:waveform_basic '(
   "I" "II" "III" "aVR" "aVL" "AVF" "V" "ABP" "ART" "PAP" "CVP" "Pleth" "PLETHl" "CO2" "EEG L"))
 
