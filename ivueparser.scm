@@ -18,6 +18,7 @@
 
 ;; Some variable definitions for data export
 (define ivue:physdatavalues_basic '(
+  "ivue_timestamp"
   "HR" "btbHR" "STi" "STii" "STiii" "PVC" "RR"
   "NBPsys" "NBPdia" "NBPmean" "PRnbp"
   "ABPmean" "ABPsys" "ABPdia" "PRabp"
