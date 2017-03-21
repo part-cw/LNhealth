@@ -33,15 +33,6 @@ end-of-c-declare
           (table-ref ivueparser:phystable2 (ivueparser:hash label physio_id))))
     "lookuperror"))
 
-;; store incoming trend data
-;; 20101007: changed to use category "ivue"
-(define (ivueparser:setphys! store code label value)
-;;  (log-system "setphys: " code " " label "=" value "\n")
-  (let ((name (ivueparser:findphys code label)))
-    (if name (begin (store-set! store name value "ivue") #t)
-        (begin (if (> label 0) (log-warning (string-append "ivueparse: failed to lookup code="
-           (number->string code 16) " label=" (number->string label 16)))) #f))))
-
 ;; check if a physio_id is unique
 (define (ivueparser:uniquephysio_id? physio_id data)
   (let loop ((d (map (lambda (x) (list-ref x 4)) data))(n 0))
@@ -644,6 +635,7 @@ end-of-c-declare
 ["AGT2et" NLS_GASES_NAMES_CONC_AWAY_AGENT2 #x805A5402 NOM_CONC_AWAY_AGENT_ET #x538C]
 ["AGT2insp" NLS_GASES_NAMES_CONC_AWAY_AGENT2 #x805A5402 NOM_CONC_AWAY_AGENT_INSP #x5390]
 ["MAC" NLS_NOM_CONC_AWAY_MAC #x0002F099 NOM_CONC_AWAY_MAC #xF099]
+["MAC" NLS_NOM_CONC_AWAY_SUM_MAC #x0002F05D NOM_CONC_AWAY_SUM_MAC_ET #xF05D] ;; Not in manual
 ["MACet" NLS_NOM_CONC_AWAY_SUM_MAC #x0002F05D NOM_CONC_AWAY_SUM_MAC_ET #xF05E]
 ["MACinsp" NLS_NOM_CONC_AWAY_SUM_MAC #x0002F05D NOM_CONC_AWAY_SUM_MAC_INSP #xF05F]
 ["SVR" NLS_NOM_RES_VASC_SYS #x00024B28 NOM_RES_VASC_SYS #x4B28]
@@ -821,6 +813,7 @@ end-of-c-declare
 ["cktO2" NLS_NOM_VENT_CONC_AWAY_O2_CIRCUIT #x0002F8B8 NOM_VENT_CONC_AWAY_O2_CIRCUIT #xF8B8]
 ["MMV" NLS_NOM_VENT_VOL_MINUTE_AWAY_MAND #x000251CC NOM_VENT_VOL_MINUTE_AWAY_MAND #x51CC]
 ["RRaw" NLS_NOM_VENT_RESP_RATE #x00025022 NOM_AWAY_RESP_RATE #x5012]
+["RRaw" NLS_NOM_VENT_RESP_RATE #x00025022 NOM_AWAY_RESP_RATE #x5022] ;; Not in manual
 ["HFMVin" NLS_NOM_VOL_MINUTE_AWAY_INSP_HFV #x0002F8CD NOM_VOL_MINUTE_AWAY_INSP_HFV #xF8CD]
 ["DCO2" NLS_NOM_COEF_GAS_TRAN #x000251D4 NOM_COEF_GAS_TRAN #x51D4]
 ["SpTVex" NLS_NOM_VOL_AWAY_EXP_TIDAL_SPONT #x0002F8C2 NOM_VOL_AWAY_EXP_TIDAL_SPONT #xF8C2]
