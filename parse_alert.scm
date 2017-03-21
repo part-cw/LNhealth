@@ -24,7 +24,8 @@
         (managed_object (ivueparser:parseManagedObjectId (subu8data buf 8 14)))
         (alert_info_id (u8data-u16 (subu8data buf 14 16)))
         (len (u8data-u16 (subu8data buf 16 18))))
-    (let* ((name (table-ref ivueparser:phystable1 al_source "???"))
+    (let* ((name0 (ivueparser:findphys al_source (fx+ #x20000 al_source)))
+           (name (if name0 name0 "???"))
            (priostr (if (= al_type LOW_PRI_P_AL) "*" (if (= al_type MED_PRI_P_AL) "**"
                       (if (= al_type HI_PRI_P_AL) "***" ""))))
            (msg0 (car (table-ref ivueparser:alarmtable al_code '(""))))
