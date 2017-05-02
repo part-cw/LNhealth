@@ -74,7 +74,10 @@
          (vals (u8data->u8vector (subu8data buf 6 (fx+ 6 len))))
          (name (ivueparser:findphys physio_id (fx+ #x20000 physio_id))))
     (if name
-      (if (not (fx= physio_id #x302))
+      (if (and (not (fx= physio_id #x302))
+               (not (fx= physio_id #x301))
+               (not (fx= physio_id #x33D))
+               (not (fx= physio_id #x343)))
         (store-waveform-append ivueparser:store name (u16vector->list (u8vector->u16vector vals)))
         (ivueparser:log 2 "ivueparser: skipped illegal waveform id: " (number->string physio_id 16))
       )
