@@ -19,17 +19,21 @@
 ;; Some variable definitions for data export
 (define ivue:physdatavalues_basic '(
   "ivue_timestamp"
-  "HR" "btbHR" "STi" "STii" "STiii" "PVC" "RR"
+  "HR" "btbHR" "STi" "STii" "STiii" "STv" "PVC" "RR"
   "NBPsys" "NBPdia" "NBPmean" "PRnbp"
   "ABPmean" "ABPsys" "ABPdia" "PRabp"
   "ARTsys" "ARTdia" "ARTmean" "PRart"
   "PAPmean" "PAPsys" "PAPdia" "PRpap"
   "CVPsys" "CVPdia" "CVPmean" "PRcvp"
+  "Aosys" "Aodia" "Aomean" "PRao"
+  "RAPsys" "RAPdia" "RAPmean" "PRrap"
+  "LAPsys" "LAPdia" "LAPmean" "PRlap"
   "Temp" "Trect" "Tblood" "Tcore" "Tesoph" "Tnaso" "Tamb"
   "SpO2" "PRspo2" "Perf" "sat_o2_freq"
-  "SpO2 l" "PRspo2l" "Perf l"
+  "PerfPr" "PerfPo" "SpO2pr" "SpO2po"
+  "SpO2 l" "PRspo2l" "Perf l" "SpO2 r" "Perf r"
   "CO2et" "CO2insp" "awRR"
-  "BIS" "SQI" "EMG"))
+  "BIS" "SQI" "EMG" "SEF"))
 (define ivue:waveform_basic '(
   "I" "II" "III" "aVR" "aVL" "AVF" "V" "ABP" "ART" "PAP" "CVP" "Pleth" "PLETHl" "CO2" "EEG L"))
 
