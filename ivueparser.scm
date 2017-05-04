@@ -30,8 +30,10 @@
   "LAPsys" "LAPdia" "LAPmean" "PRlap"
   "Temp" "Trect" "Tblood" "Tcore" "Tesoph" "Tnaso" "Tamb"
   "SpO2" "PRspo2" "Perf" "sat_o2_freq"
-  "PerfPr" "PerfPo" "SpO2pr" "SpO2po"
-  "SpO2 l" "PRspo2l" "Perf l" "SpO2 r" "Perf r"
+  "SpO2 l" "PRspo2l" "Perf l"
+  "SpO2 r" "PRspo2r" "Perf r"
+  "SpO2pr" "PRspo2pr"  "PerfPr"
+  "SpO2po" "PRspo2po"  "PerfPo"
   "CO2et" "CO2insp" "awRR"
   "BIS" "SQI" "EMG" "SEF"))
 (define ivue:waveform_basic '(
