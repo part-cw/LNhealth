@@ -292,9 +292,10 @@
 
       (let ((spo2-val (store-ref or-name "spo2")))
 	(if spo2-val (glgui:draw-text-right (+ x 188) y_shift 37 24 (number->string (fix spo2-val)) num_24.fnt White))
-      )      
-      (let ((etco2-val (store-ref or-name "co2_et")))
-	(if etco2-val (glgui:draw-text-right (+ x 233) y_shift 37 24 (number->string (fix (* 7.5 etco2-val))) num_24.fnt Orange))
+      )
+      (let ((etco2-val (store-ref or-name "co2_et"))
+            (s5? (store-ref or-name "s5?")))
+        (if etco2-val (glgui:draw-text-right (+ x 233) y_shift 37 24 (number->string (fix (* (if s5? 7.6 1.) etco2-val))) num_24.fnt Orange))
       )
 
       ;; Place message popup windows to the right
@@ -1307,7 +1308,7 @@
   ;; Define scales for Waveforms
   (set! ECG_min (- 0.5))(set! ECG_max 2)
   (set! PLETH_min 0)(set! PLETH_max 10) ;;Why is the pleth not normalized to the range 0-1?
-  (set! CO2_min 0)(set! CO2_max (/ 60 7.5))
+  (set! CO2_min 0)(set! CO2_max 60)
   (set! ART_min 0)(set! ART_max 200)
 
   ;;Define traces to plot waveforms
@@ -1433,8 +1434,9 @@
       (let ((spo2-val (store-ref or-name "spo2")))
 	(glgui-widget-set! gui:waves spo2_value 'label (if spo2-val (number->string (fix spo2-val)) ""))
       )
-      (let ((etco2-val (store-ref or-name "co2_et")))
-	(glgui-widget-set! gui:waves etco2_value 'label (if etco2-val (number->string (fix (* 7.5 etco2-val))) ""))
+      (let ((etco2-val (store-ref or-name "co2_et"))
+            (s5? (store-ref or-name "s5?")))
+        (glgui-widget-set! gui:waves etco2_value 'label (if etco2-val (number->string (fix (* (if s5? 7.6 1.) etco2-val))) ""))
       )
       (let ((nibp-sys (store-ref or-name "nibp_sys")) (nibp-dia (store-ref or-name "nibp_dia"))
 	    (nibp-mean (store-ref or-name "nibp_mean")))
