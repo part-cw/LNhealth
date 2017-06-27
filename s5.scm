@@ -129,7 +129,8 @@
            (store-set! store "MonitorAlarm" '(0 "Connect" "Monitor"))
            16) (begin
            ;; try to purge any fragmented data
-           (s5:recv store dev) (if (> s5:retry 3) 0 1))))
+           (s5:recv store dev)
+           (if (> s5:retry (if (instance-refvar store instance "Waveforms" #f) 10 3)) 0 1))))
       )))
 
 (define (s5-run store instance)
@@ -158,10 +159,10 @@
 
          ;; 20130227: repeating waveform request
          (let ((wneeded (instance-refvar store instance "Waveforms" #f))
-               (wpresent (store-ref store "gotwaveforms?"))
+               (wpresent (store-timedref store "gotwaveforms?"))
                (wlast (instance-refvar store instance "LastWaveformRequest" 0.)))
            (if (and wneeded (not wpresent) (fl> (fl- ##now wlast) 10.)) (begin
-             (s5:log 2 "sending waveform request")
+             (s5:log 1 "sending waveform request")
              (let ((req (u8vector
                     #x48 0 0 0 0 0 0 0 0 0 0 0 0 0 1
                     0 0 0 0 0 0 #xff 0 0 0 0 0 0 0 0 0 0 0 0
