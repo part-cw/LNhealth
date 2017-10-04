@@ -52,3 +52,7 @@ DejaVuSans.ttf 14 'Salir' EXIT6
 DejaVuSans.ttf 16 'lluqsiy' EXIT7
 DejaVuSans.ttf 14 'Mistuña' EXIT8
 DejaVuSans.ttf 12 'Le rythme correspond-il//à celui du patient?' RR_MATCH9
+DejaVuSans.ttf 14 'Tentar de Novo' RETRY10
+DejaVuSans.ttf 14 'Frequência//Respiratória:' RRATE10
+DejaVuSans.ttf 12 'Respirações_///min' RRATE_UNIT10
+DejaVuSans.ttf 12 'A frequência da respiração// reflecte o paciente?' RR_MATCH10
