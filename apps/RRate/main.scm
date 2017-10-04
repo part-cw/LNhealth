@@ -42,23 +42,39 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define gui:lang #f)
 (define gui:langlist #f)
 (define language? #f)
+(define rrate:svsmode #f)
+
+(define (rrate-checksvsreg)
+  (svs-register-vitalsign VITALSIGN_RR)
+  (set! rrate:svsmode (= VITALSIGN_RR (svs-get-vitalsign)))
+)
+
+(define (rrate-sendvitalsign)
+  (if (and rrate:calc:medinterval rrate:svsmode)
+    (begin
+      (svs-pass-vitalsign (round (/ 60. rrate:calc:medinterval)) 100 VITALSIGN_RR)
+      (svs-finish)
+    )
+  )
+)
 
 ;; main loop
 (main
  (lambda (w h)
    (make-window 320 480)
    (glgui-orientation-set! GUI_PORTRAIT)
+   (rrate-checksvsreg)
    (set! gui (make-glgui))
    (set! gui:lang (make-glgui))
    (let ((w (glgui-width-get))
          (h (glgui-height-get)))
-     ;; Setup the menubar     
+     ;; Setup the menubar
      (glgui-menubar gui 0 (- h 44) w 44)
      (glgui-pixmap gui 8 (- h 32) RRATE.img)
      (glgui-widget-set! gui (glgui-label-wrapped gui 120 (- h 44) 200 39 
        (string-append "RRate " (system-appversion) "\nCopyright \302\251 2016\nUniversity of British Columbia") sans_10.fnt White)
        'align GUI_ALIGNRIGHT)
-     
+
      ;; Use the rrate module with no store (no saving data),
      ;; terminate if cancelled or exited and do nothing extra if RRate confirmed 
      (rrate-setup)
@@ -67,25 +83,36 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (begin
            (set! language? l)
            (local-index-set! l)
-           (rrate-init 0 0 w 433 #f terminate #f)
+           (rrate-init 0 0 w 433 #f terminate rrate-sendvitalsign)
          )
          ;; Language selection
          (let ((lanlist (rrate-setup-language-choices)))
            (glgui-widget-set! gui:lang (glgui-box gui:lang 10 10 (- w 20) (- h 64) (color:shuffle #xd7eaefff)) 'rounded #t)
            (glgui-label gui:lang 30 (- h 87) (- w 60) 23 "Select language" textEng_20.fnt Black)
-           (let loop ((i 0) (by (- h 137)))
+           (let loop ((i 0) (by (- h 157)))
              (if (fx< i (length lanlist))
-               (let* ((entry (list-ref lanlist i))
-                      (lindex (car entry))
-                      (button (glgui-button-string gui:lang 85 by 150 32 (cdr entry) textEng_20.fnt
+               (let* ((entryl (list-ref lanlist i))
+                      (lindexl (car entryl))
+                      (buttonl (glgui-button-string gui:lang 30 by 120 32 (cdr entryl) textEng_20.fnt
                                 (lambda (g wgt type mx my)
-                                  (settings-set! "Language" lindex)
+                                  (settings-set! "Language" lindexl)
                                   (set! language? #t)
-                                  (local-index-set! lindex)
-                                  (rrate-init 0 0 w 433 #f terminate #f)))))
-                 (glgui-widget-set! gui:lang button 'button-normal-color Black)
-                 (glgui-widget-set! gui:lang button 'button-selected-color Gray)
-                 (loop (+ i 1) (- by 46)))))
+                                  (local-index-set! lindexl)
+                                  (rrate-init 0 0 w 433 #f terminate rrate-sendvitalsign)))))
+                 (glgui-widget-set! gui:lang buttonl 'button-normal-color Black)
+                 (glgui-widget-set! gui:lang buttonl 'button-selected-color Gray)
+                 (if (fx< (+ i 1) (length lanlist))
+                   (let* ((entryr (list-ref lanlist (+ i 1)))
+                          (lindexr (car entryr))
+                          (buttonr (glgui-button-string gui:lang 170 by 120 32 (cdr entryr) textEng_20.fnt
+                                    (lambda (g wgt type mx my)
+                                      (settings-set! "Language" lindexr)
+                                      (set! language? #t)
+                                      (local-index-set! lindexr)
+                                      (rrate-init 0 0 w 433 #f terminate rrate-sendvitalsign)))))
+                   (glgui-widget-set! gui:lang buttonr 'button-normal-color Black)
+                   (glgui-widget-set! gui:lang buttonr 'button-selected-color Gray)))
+                 (loop (+ i 2) (- by 52)))))
          )
        )
      )
@@ -94,15 +121,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  (lambda (t x y)
    ;; Call RRate main loop
    (if language? (rrate-run t))
-   
+
    (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYESCAPE)) (terminate))
    (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYBACK))
      (terminate))
    (glgui-event (list (if language? rrate:gui gui:lang) gui) t x y)
-  )   
+  )
  (lambda () #t)
  (lambda () (glgui-suspend))
- (lambda () (glgui-resume))
+ (lambda () (rrate-checksvsreg) (glgui-resume))
 )
 
 ;; eof
