@@ -228,7 +228,7 @@
     (set! gui:overview (make-glgui))
 
     (let* ((x 0)
-	   (number-rows 8)
+	   (number-rows (if (> (glgui-height-get) (+ 480 (* 2 gui:row-height))) 10 8))
 	   (height (* number-rows gui:row-height))
 	   (y (- (glgui-height-get) gui:menu-height 16 3)))
       ;;Write Header Row
@@ -287,7 +287,7 @@
 	    (hr-src (store-ref or-name "hr_source"))
 	  )
 	(if hr-val (glgui:draw-text-right (+ x 143) y_shift 37 24 (number->string (fix hr-val)) num_24.fnt (if hr-src (cond 
-		((string=? hr-src "ECG1") Green)((string=? hr-src "PLETH") White)((string=? hr-src "BP1") Red)(else DarkGray)) Green)))
+		((string=? hr-src hr-str-s5) Green)((string=? hr-src spo2-str-s5) White)((string=? hr-src "BP1") Red)(else DarkGray)) Green)))
       )
 
       (let ((spo2-val (store-ref or-name "spo2")))
@@ -337,10 +337,14 @@
       ;;current is a float, which needs to be converted to INTEGER for list referencing
       (store-set! "main" "waveform-room-idx" (fix (glgui-widget-get g wgt 'current)))
       ;;clear the traces
-      (for-each (lambda (l) (gltrace:clear l)) (list ecg-trace pleth-trace co2-trace art-trace))
+      (for-each (lambda (l) (gltrace:clear l)) (list ecg-trace-s5 pleth-trace-s5 co2-trace-s5 art-trace-s5
+                                                     ecg-trace-ivue pleth-trace-ivue co2-trace-ivue art-trace-ivue))
       ;;clear the waveform stores
-      (let ((or-name (list-ref (store-ref "main" "myRooms") (store-ref "main" "waveform-room-idx"))))
-	(for-each (lambda (l) (store-clear! or-name l)) '("ECG1" "PLETH" "CO2" "INVP1"))
+      (let* ((or-name (list-ref (store-ref "main" "myRooms") (store-ref "main" "waveform-room-idx")))
+             (s5? (store-ref or-name "s5?")))
+	(for-each (lambda (l) (store-clear! or-name l)) (if s5?
+                                                      (list hr-str-s5 spo2-str-s5 etco2-str-s5 art-str-s5)
+                                                      (list hr-str-ivue spo2-str-ivue etco2-str-ivue art-str-ivue)))
       )
       (set! rupi:last-wave-request 0.)(set! rupi:last-wave-update 0.) ;; Force immediate redraw
       ;;Log which screen is used
@@ -1159,22 +1163,27 @@
   (set! LARGE_min 0)(set! LARGE_max 200)(set! SMALL_max 100)
 
   ;; Define trace data source names
-  (set! trend-source-names (list "hr_ecg" "pr" "spo2" "co2_et" 
-                         "nibp_sys" "nibp_dia" "nibp_mean" 
-                         "p1_sys" "p1_dia" "p1_mean" 
-                         "co2_rr" "bis" "temp1"
-                         "o2_et" "o2_fi" "n2o_et" "n2o_fi" "aa_et" "aa_fi"))
+  (set! trend-source-names-s5 (list "hr_ecg" "pr" "spo2" "co2_et"
+                                "nibp_sys" "nibp_dia" "nibp_mean"
+                                "p1_sys" "p1_dia" "p1_mean"
+                                "co2_rr" "bis" "temp1"
+                                "o2_et" "o2_fi" "n2o_et" "n2o_fi" "aa_et" "aa_fi"))
+  (set! trend-source-names-ivue (list "HR" "PRnbp" "SpO2" "CO2et"
+                                  "NBPsys" "NBPdia" "NBPmean"
+                                  "ABPsys" "ABPdia" "ABPmean"
+                                  "RR" "BIS" "Temp"
+                                  "O2et" "FIO2" "N2Oet" "N2Oinsp" "aa_et" "aa_fi"))
   ;;Define traces to plot trends
   (let ((trace-mode GLTRACE_SHIFT) (w 180) (h 200) (hsmall 100))
     (let loop ((i 0) (ret (list)))
-      (if (fx= i (length trend-source-names)) (set! trend-traces ret)
+      (if (fx= i (length trend-source-names-s5)) (set! trend-traces ret)
         (loop (fx+ i 1) (append ret (list (make-gltrace w (if (fx> i 12) hsmall h) trace-mode LARGE_min (if (fx> i 12) SMALL_max LARGE_max) LARGE_min (if (fx> i 12) SMALL_max LARGE_max)))))
       )
     )
   )
   (for-each (lambda (l) (gltrace:clear l)) trend-traces)
   ;; Define the trace label texts and colors
-  (set! trend-label-texts (list "HR" "PR" "SpO2" "etCO2" 
+  (set! trend-label-texts (list "HR" "PR" "SpO2" "etCO2"
                          "" "" "NIBPm" 
                          "" "" "ARTm" 
                          "RR" "BIS" "Temp"
@@ -1235,7 +1244,9 @@
 (define (load-trends or-name)
   (let* ((rupi (store-ref "main" "RupiClient" #f))
          (pin (store-ref "main" "Key"))
-         (data (rupi-cmd rupi "GETTRENDS" pin or-name)))
+         (data (rupi-cmd rupi "GETTRENDS" pin or-name))
+         (s5? (store-ref or-name "s5?"))
+         (trend-source-names (if s5? trend-source-names-s5 trend-source-names-ivue)))
     (if (list-notempty? data) (store-update-list or-name data))
     (for-each (lambda (l) (gltrace:clear l)) trend-traces)
     (let loop ((i 0))
@@ -1285,6 +1296,18 @@
 ;; -----------------------------------------------------------------------------
 ;;  WAVEFORM SCREEN RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
+
+;; Define waves
+(define hr-str-s5 "ECG1")
+(define spo2-str-s5 "PLETH")
+(define etco2-str-s5 "CO2")
+(define art-str-s5 "INVP1")
+(define hr-str-ivue "II")
+(define spo2-str-ivue "Pleth")
+(define etco2-str-ivue "CO2")
+(define art-str-ivue "ART")
+
+
 ;; Initialize the waveform gui parts
 (define gui:waves #f)	
 (define (init-gui-waves)
@@ -1307,26 +1330,31 @@
 
   ;; Define scales for Waveforms
   (set! ECG_min (- 0.5))(set! ECG_max 2)
-  (set! PLETH_min 0)(set! PLETH_max 10) ;;Why is the pleth not normalized to the range 0-1?
+  (set! PLETH_min 0)(set! PLETH_max 1)
   (set! CO2_min 0)(set! CO2_max 60)
   (set! ART_min 0)(set! ART_max 200)
 
   ;;Define traces to plot waveforms
   ;; make-gltrace width[number of points] height mode[OVERWRITE] y_min y_max y_min_value[for label] y_max_value[for label])
   (let ((trace-mode GLTRACE_OVERWRITE)) ;;was GLTRACE_RESET starts from scratch
-    (set! ecg-trace (make-gltrace 601 30 trace-mode ECG_min ECG_max ECG_min ECG_max))
-    (set! pleth-trace (make-gltrace 201 30 trace-mode PLETH_min PLETH_max PLETH_min PLETH_max))
-    (set! co2-trace (make-gltrace 201 30 trace-mode CO2_min CO2_max CO2_min CO2_max))
-    (set! art-trace (make-gltrace 201 30 trace-mode ART_min ART_max ART_min ART_max))
+    (set! ecg-trace-s5 (make-gltrace 601 30 trace-mode ECG_min ECG_max ECG_min ECG_max))
+    (set! pleth-trace-s5 (make-gltrace 201 30 trace-mode PLETH_min (* PLETH_max 10) PLETH_min PLETH_max))
+    (set! co2-trace-s5 (make-gltrace 201 30 trace-mode CO2_min (/ CO2_max 7.5) CO2_min (/ CO2_max 7.5)))
+    (set! art-trace-s5 (make-gltrace 201 30 trace-mode ART_min ART_max ART_min ART_max))
+    (set! ecg-trace-ivue (make-gltrace 600 30 trace-mode ECG_min ECG_max ECG_min ECG_max))
+    (set! pleth-trace-ivue (make-gltrace 300 30 trace-mode PLETH_min PLETH_max PLETH_min PLETH_max))
+    (set! co2-trace-ivue (make-gltrace 300 30 trace-mode CO2_min CO2_max CO2_min CO2_max))
+    (set! art-trace-ivue (make-gltrace 300 30 trace-mode ART_min ART_max ART_min ART_max))
   )
   ;; Clear the traces
-  (for-each (lambda (l) (gltrace:clear l)) (list ecg-trace pleth-trace co2-trace art-trace))
+  (for-each (lambda (l) (gltrace:clear l)) (list ecg-trace-s5 pleth-trace-s5 co2-trace-s5 art-trace-s5
+                                                 ecg-trace-ivue pleth-trace-ivue co2-trace-ivue art-trace-ivue))
 
   ;;Place the Trace Widgets
-  (set! ecg-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 20) 200 40 ecg-trace Green))    
-  (set! pleth-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 65) 200 40 pleth-trace White))  
-  (set! co2-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 110) 200 40 co2-trace Orange))  
-  (set! art-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 155) 200 40 art-trace Red))  
+  (set! ecg-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 20) 200 40 ecg-trace-ivue Green))
+  (set! pleth-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 65) 200 40 pleth-trace-ivue White))
+  (set! co2-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 110) 200 40 co2-trace-ivue Orange))
+  (set! art-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 155) 200 40 art-trace-ivue Red))
   
   ;; If I wanted labels to the side indicated low and high values the font needs to be set
   ;;(glgui-widget-set! gui:waves art_wave 'limfnt num_18.fnt)
@@ -1366,9 +1394,13 @@
     )
     (if (and ox (> (abs ox) 20))
       (begin
-	(for-each (lambda (l) (gltrace:clear l)) (list ecg-trace pleth-trace co2-trace art-trace))
-	(let ((or-name (list-ref rooms (store-ref "main" "waveform-room-idx"))))
-	  (for-each (lambda (l) (store-clear! or-name l)) '("ECG1" "PLETH" "CO2" "INVP1"))
+	(for-each (lambda (l) (gltrace:clear l)) (list ecg-trace-s5 pleth-trace-s5 co2-trace-s5 art-trace-s5
+                                                   ecg-trace-ivue pleth-trace-ivue co2-trace-ivue art-trace-ivue))
+	(let* ((or-name (list-ref rooms (store-ref "main" "waveform-room-idx")))
+           (s5? (store-ref or-name "s5?")))
+	  (for-each (lambda (l) (store-clear! or-name l)) (if s5?
+                                                        (list hr-str-s5 spo2-str-s5 etco2-str-s5 art-str-s5)
+                                                        (list hr-str-ivue spo2-str-ivue etco2-str-ivue art-str-ivue)))
 	)
 	(set! rupi:last-wave-request 0.)(set! rupi:last-wave-update 0.) ;; Force immediate redraw
 	(glgui-widget-set! g w 'offsetx #f); //Otherwise consecutive taps go there too
@@ -1383,40 +1415,83 @@
   (glgui-widget-set! gui:menu title 'label or-name)
   (glgui-widget-set! gui:waves-landscape location-landscape 'label or-name)
 
+  ;; Set trace source if switching between s5 and ivue
+  (let ((s5? (store-ref or-name "s5?"))
+        (ecg-trace (glgui-widget-get gui:waves ecg-wave 'trace)))
+    (if s5?
+      (if (eq? ecg-trace ecg-trace-ivue)
+        (begin
+          (glgui-widget-set! gui:waves ecg-wave 'trace ecg-trace-s5)
+          (glgui-widget-set! gui:waves pleth-wave 'trace pleth-trace-s5)
+          (glgui-widget-set! gui:waves co2-wave 'trace co2-trace-s5)
+          (glgui-widget-set! gui:waves art-wave 'trace art-trace-s5)
+          (glgui-widget-set! gui:waves-landscape ecg-wave-landscape 'trace ecg-trace-s5)
+          (glgui-widget-set! gui:waves-landscape pleth-wave-landscape 'trace pleth-trace-s5)
+          (glgui-widget-set! gui:waves-landscape co2-wave-landscape 'trace co2-trace-s5)
+          (glgui-widget-set! gui:waves-landscape art-wave-landscape 'trace art-trace-s5)
+        )
+      )
+      (if (eq? ecg-trace ecg-trace-s5)
+        (begin
+          (glgui-widget-set! gui:waves ecg-wave 'trace ecg-trace-ivue)
+          (glgui-widget-set! gui:waves pleth-wave 'trace pleth-trace-ivue)
+          (glgui-widget-set! gui:waves co2-wave 'trace co2-trace-ivue)
+          (glgui-widget-set! gui:waves art-wave 'trace art-trace-ivue)
+          (glgui-widget-set! gui:waves-landscape ecg-wave-landscape 'trace ecg-trace-ivue)
+          (glgui-widget-set! gui:waves-landscape pleth-wave-landscape 'trace pleth-trace-ivue)
+          (glgui-widget-set! gui:waves-landscape co2-wave-landscape 'trace co2-trace-ivue)
+          (glgui-widget-set! gui:waves-landscape art-wave-landscape 'trace art-trace-ivue)
+        )
+      )
+    )
+  )
+
   ;;Request new values
   (if (fl> (fl- ##now rupi:last-wave-update) rupi:wave-update-frequency)
-    (begin
+    (let ((s5? (store-ref or-name "s5?")))
       ;;Refill traces with values obtained from Server but split in smaller pieces
-      (waveform-add or-name "ECG1" ecg-trace rupi:wave-request-frequency rupi:wave-update-frequency)
-      (waveform-add or-name "PLETH" pleth-trace rupi:wave-request-frequency rupi:wave-update-frequency)
-      (waveform-add or-name "CO2" co2-trace rupi:wave-request-frequency rupi:wave-update-frequency)
-      (waveform-add or-name "INVP1" art-trace rupi:wave-request-frequency rupi:wave-update-frequency)
-      (gltrace-update ecg-trace) (gltrace-update pleth-trace) (gltrace-update co2-trace) (gltrace-update art-trace)
+      (waveform-add or-name (if s5? hr-str-s5 hr-str-ivue) (if s5? ecg-trace-s5 ecg-trace-ivue) rupi:wave-request-frequency rupi:wave-update-frequency)
+      (waveform-add or-name (if s5? spo2-str-s5 spo2-str-ivue) (if s5? pleth-trace-s5 pleth-trace-ivue) rupi:wave-request-frequency rupi:wave-update-frequency)
+      (waveform-add or-name (if s5? etco2-str-s5 etco2-str-ivue) (if s5? co2-trace-s5 co2-trace-ivue) rupi:wave-request-frequency rupi:wave-update-frequency)
+      (waveform-add or-name (if s5? art-str-s5 art-str-ivue) (if s5? art-trace-s5 art-trace-ivue) rupi:wave-request-frequency rupi:wave-update-frequency)
+      (gltrace-update (if s5? ecg-trace-s5 ecg-trace-ivue)) (gltrace-update (if s5? pleth-trace-s5 pleth-trace-ivue))
+      (gltrace-update (if s5? co2-trace-s5 co2-trace-ivue)) (gltrace-update (if s5? art-trace-s5 art-trace-ivue))
       ;; Update the timestamp
       (set! rupi:last-wave-update ##now)
     )
   )
   (if (fl> (fl- ##now rupi:last-wave-request) rupi:wave-request-frequency)
-    (begin
+    (let ((s5? (store-ref or-name "s5?")))
       (set! rupi:last-wave-request ##now)	
       ;; Request new data from network
       (let* ((rupi (store-ref "main" "RupiClient" #f))(pin (store-ref "main" "Key"))
 	      (data (rupi-cmd rupi "GETWAVES" pin or-name)))
 	(if (list-notempty? data) ;; Always a list
 	  (begin
-	    (waveform-add-rest or-name "ECG1" ecg-trace)
-	    (waveform-add-rest or-name "PLETH" pleth-trace)
-	    (waveform-add-rest or-name "CO2" co2-trace)
-	    (waveform-add-rest or-name "INVP1" art-trace)
+	    (waveform-add-rest or-name (if s5? hr-str-s5 hr-str-ivue) (if s5? ecg-trace-s5 ecg-trace-ivue))
+	    (waveform-add-rest or-name (if s5? spo2-str-s5 spo2-str-ivue) (if s5? pleth-trace-s5 pleth-trace-ivue))
+	    (waveform-add-rest or-name (if s5? etco2-str-s5 etco2-str-ivue) (if s5? co2-trace-s5 co2-trace-ivue))
+	    (waveform-add-rest or-name (if s5? art-str-s5 art-str-ivue) (if s5? art-trace-s5 art-trace-ivue))
 	    ;; Flush the local stores first then append the new data
 	    (store-update-data data)
-	    (for-each (lambda (l) (set-waveform-length or-name l)) '("ECG1" "PLETH" "CO2" "INVP1"))
-            (store-set! or-name "temp1" (rupi-cmd rupi "GETVALUE" pin or-name "temp1"))
-            (store-set! or-name "aa_et" (rupi-cmd rupi "GETVALUE" pin or-name "aa_et"))
-            (store-set! or-name "aa_name" (rupi-cmd rupi "GETVALUE" pin or-name "aa_name"))		
-            (store-set! or-name "p1_mean" (rupi-cmd rupi "GETVALUE" pin or-name "p1_mean"))		
-            (store-set! or-name "p1_dia" (rupi-cmd rupi "GETVALUE" pin or-name "p1_dia"))
-            (store-set! or-name "p1_sys" (rupi-cmd rupi "GETVALUE" pin or-name "p1_sys"))
+	    (for-each (lambda (l) (set-waveform-length or-name l)) (if s5?
+                                                                 (list hr-str-s5 spo2-str-s5 etco2-str-s5 art-str-s5)
+                                                                 (list hr-str-ivue spo2-str-ivue etco2-str-ivue art-str-ivue)))
+            (store-set! or-name "temp1" (rupi-cmd rupi "GETVALUE" pin or-name (if s5? "temp1" "Temp")))
+            (if s5?
+              (begin
+                (store-set! or-name "aa_et" (rupi-cmd rupi "GETVALUE" pin or-name (if s5? "aa_et" "AGTet")))
+                (store-set! or-name "aa_name" (rupi-cmd rupi "GETVALUE" pin or-name "aa_name"))
+              )
+              (begin
+                (store-set! or-name "ISOet" (rupi-cmd rupi "GETVALUE" pin or-name "ISOet"))
+                (store-set! or-name "DESet" (rupi-cmd rupi "GETVALUE" pin or-name "DESet"))
+                (store-set! or-name "SEVet" (rupi-cmd rupi "GETVALUE" pin or-name "SEVet"))
+              )
+            )
+            (store-set! or-name "p1_mean" (rupi-cmd rupi "GETVALUE" pin or-name (if s5? "p1_mean" "ABPmean")))
+            (store-set! or-name "p1_dia" (rupi-cmd rupi "GETVALUE" pin or-name (if s5? "p1_dia" "ABPdia")))
+            (store-set! or-name "p1_sys" (rupi-cmd rupi "GETVALUE" pin or-name (if s5? "p1_sys" "ABPsys")))
 	  )
 	)
       )
@@ -1427,11 +1502,12 @@
 	(glgui-widget-set! gui:waves hr_value 'label (if hr-val (number->string (fix hr-val)) ""))
 	(if hr-src
 	  (glgui-widget-set! gui:waves hr_value 'color (cond 
-	    ((string=? hr-src "ECG1") Green)((string=? hr-src "PLETH") White)((string=? hr-src "BP1") Red)(else DarkGray))
+	    ((string=? hr-src hr-str-s5) Green)((string=? hr-src spo2-str-s5) White)((string=? hr-src "BP1") Red)(else DarkGray))
 	  )
 	)
       )
-      (let ((spo2-val (store-ref or-name "spo2")))
+      (let ((spo2-val (store-ref or-name "spo2"))
+            (s5? (store-ref or-name "s5?")))
 	(glgui-widget-set! gui:waves spo2_value 'label (if spo2-val (number->string (fix spo2-val)) ""))
       )
       (let ((etco2-val (store-ref or-name "co2_et"))
@@ -1461,21 +1537,48 @@
 	)
       )
       (let ((temp-val (store-ref or-name "temp1")))
-	(glgui-widget-set! gui:waves temp_value 'label (if temp-val (number->string temp-val) ""))
-      )  
-      (let ((agent-val (store-ref or-name "aa_et")))
-	(glgui-widget-set! gui:waves agent_value 'label (if agent-val (number->string agent-val) ""))
+	(glgui-widget-set! gui:waves temp_value 'label (if temp-val (number->string (round-decimal temp-val 2)) ""))
       )
-      (let ((agent-name (store-ref or-name "aa_name")))
-	(if agent-name
-	  (let ((color (cond ((string=? agent-name "ISO") Purple)((string=? agent-name "DES") Blue)
-			    ((string=? agent-name "SEV") Yellow)((string=? agent-name "NONE") DarkGray)(else White)) ))
-	    (glgui-widget-set! gui:waves agent_name 'label agent-name)
-	    (glgui-widget-set! gui:waves agent_value 'color color)
-	    (glgui-widget-set! gui:waves agent_name 'color (if (string=? agent-name "NONE") Black color))
-	  )(glgui-widget-set! gui:waves agent_name 'label "")
-	)
-      )
+      (if s5?
+        (begin
+           (let ((agent-val (store-ref or-name "aa_et")))
+             (glgui-widget-set! gui:waves agent_value 'label (if agent-val (number->string agent-val) ""))
+           )
+           (let ((agent-name (store-ref or-name "aa_name")))
+             (if agent-name
+               (let ((color (cond ((string=? agent-name "ISO") Purple)((string=? agent-name "DES") Blue)
+                                  ((string=? agent-name "SEV") Yellow)((string=? agent-name "NONE") DarkGray)(else White)) ))
+                 (glgui-widget-set! gui:waves agent_name 'label agent-name)
+                 (glgui-widget-set! gui:waves agent_value 'color color)
+                 (glgui-widget-set! gui:waves agent_name 'color (if (string=? agent-name "NONE") Black color))
+               )
+               (glgui-widget-set! gui:waves agent_name 'label "")
+             )
+           )
+        )
+        (begin
+          (let* ((iso-et (store-ref or-name "ISOet"))
+                 (des-et (store-ref or-name "DESet"))
+                 (sev-et (store-ref or-name "SEVet"))
+                 (agent-val (cond ((and iso-et (> iso-et 0)) (number->string (round-decimal iso-et 2)))
+                                  ((and des-et (> des-et 0)) (number->string (round-decimal des-et 2)))
+                                  ((and sev-et (> sev-et 0)) (number->string (round-decimal sev-et 2)))
+                                  (else "")))
+                 (agent-name (cond ((and iso-et (> iso-et 0)) "ISO")
+                                   ((and des-et (> des-et 0)) "DES")
+                                   ((and sev-et (> sev-et 0)) "SEV")
+                                   (else ""))))
+            (glgui-widget-set! gui:waves agent_value 'label agent-val)
+            (let ((color (cond ((string=? agent-name "ISO") Purple) ((string=? agent-name "DES") Blue)
+                               ((string=? agent-name "SEV") Yellow) (else White))))
+              (glgui-widget-set! gui:waves agent_name 'label agent-name)
+              (glgui-widget-set! gui:waves agent_value 'color color)
+              (glgui-widget-set! gui:waves agent_name 'color color)
+              )
+            )
+          )
+          )
+
       ;; Update the labels in the landscape gui mode
       (if (orientation-landscape?) (begin
         (glgui-widget-set! gui:waves-landscape agent_name-landscape 'label (glgui-widget-get gui:waves agent_name 'label))
@@ -1567,10 +1670,10 @@
   (set! agent_name-landscape (glgui-label gui:waves-landscape 85 (- (glgui-width-get) 280) 60 24 "" ascii_24.fnt White))  
 
   ;;Place the Trace Widgets
-  (set! ecg-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 60) 350 40 ecg-trace Green))    
-  (set! pleth-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 105) 350 40 pleth-trace White))  
-  (set! co2-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 150) 350 40 co2-trace Orange))  
-  (set! art-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 195) 350 40 art-trace Red))  
+  (set! ecg-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 60) 350 40 ecg-trace-ivue Green))
+  (set! pleth-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 105) 350 40 pleth-trace-ivue White))
+  (set! co2-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 150) 350 40 co2-trace-ivue Orange))
+  (set! art-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 195) 350 40 art-trace-ivue Red))
   
   ;; Screen Indicator 
   (set! screenindicator-landscape (glgui-screenindicator gui:waves-landscape 0 5 (glgui-height-get) 20 White))
@@ -1592,7 +1695,7 @@
   (set! gui:rooms (make-glgui))
 
   (let* ((x 0)
-	 (number-rows 8)
+	 (number-rows (if (> (glgui-height-get) (+ 480 (* 2 gui:row-height))) 10 8))
 	 (height (* number-rows gui:row-height))
 	 (y (- (glgui-height-get) gui:menu-height 16 3)))
     ;;Header row
