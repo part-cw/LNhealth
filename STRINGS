@@ -16,4 +16,4 @@ cmss.ttf 16 "ART//mmHg" label_art
 cmss.ttf 16 "Temp//\$^{/circ}\$C" label_temp
 cmss.ttf 16 "Agent///%" label_agent
 
-cmss.ttf 12 "telePORT (c) 2011-2013 UBC \& BC Children's Hospital//CAUTION: NOT FOR CLINICAL USE !!!" copyright
+cmss.ttf 12 "telePORT (c) 2011-2017 UBC \& BC Children's Hospital//CAUTION: NOT FOR CLINICAL USE !!!" copyright

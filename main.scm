@@ -102,25 +102,34 @@
   )    
   
   ;; Message and *s as response
-  (set! login-text (glgui-label gui:login 50 (- (glgui-height-get) 150) 250 25 "Please enter your pin:" ascii_24.fnt White))
-  (set! login-pin (glgui-label gui:login 50 (- (glgui-height-get) 175) 250 25 "" ascii_24.fnt Green))
+  (set! login-text (glgui-label gui:login 50 (- (glgui-height-get) (if (screen-height-tall?) 170 150)) 250 25 "Please enter your pin:" ascii_24.fnt White))
+  (set! login-pin (glgui-label gui:login 50 (- (glgui-height-get) (if (screen-height-tall?) 200 175)) 250 25 "" ascii_24.fnt Green))
   ;; 10 keypad
   (let ((row 3) (col 1))
-    (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) 235 (* row 70)) 60 60 "0" num_40.fnt login-callback)
+    (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) (if (screen-height-tall?) 270 235) (* row 70)) 60 60 "0" num_40.fnt login-callback)
   )
   (let loop ((row 0))
     (if (<= row 2)
       (begin
 	(let loop2 ((col 0))
 	  (if (<= col 2)
-	    (begin 
-	      (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) 235 (* row 70)) 60 60 (number->string (+ (* row 3) col 1)) num_40.fnt login-callback)
+	    (begin
+	      (glgui-button-string gui:login (+ 50 (* col 70)) (- (glgui-height-get) (if (screen-height-tall?) 270 235) (* row 70)) 60 60 (number->string (+ (* row 3) col 1)) num_40.fnt login-callback)
 	      (loop2 (+ col 1))
 	    )
 	  )
 	)
 	(loop (+ row 1))
       )
+    )
+  )
+  ;; Button to go to server setup
+  (let* ((w 40) (x 8) (y 45))
+    (glgui-button gui:login x y w 40 setup-icon.img (lambda (g w t x y)
+                                                      (glgui-widget-set! gui:login login-pin 'label "")
+                                                      (store-set! "main" "Key" "")
+                                                      (glgui-widget-set! gui:popup popup-box 'callback #f)
+                                                      (set! mode MODE_SETUP))
     )
   )
   ;; Copyright Line
@@ -140,10 +149,9 @@
     (store-set! store "Key" (string-append login key))
     ;; Check if we reached pin length [Login isn't queried again so its rupi:pin-length - 1]
     (if (>= (string-length login) (- rupi:pin-length 1))
-      (if (not (string=? (store-ref store "Key") "9999"))
         (let* ((rc (rupi-client 0 rupi:key rupi:addr rupi:port))
                (login0 (store-ref store "Key"))
-               (login (if (and (string=? rupi:hostname "bcch.ece.ubc.ca") 
+               (login (if (and (string=? rupi:hostname "bcch.ece.ubc.ca")
                                (not (or (string=? login0 "9999") (string<? login0 "0005"))))
                   (begin (store-set! store "Key" "0000") "0000")
                   login0
@@ -153,7 +161,7 @@
                (success2 (rupi-cmd rc "LOGIN" login (number->string (system-buildepoch)) (host-name)))
                (success (if (rupi-valid? rc) success2
                  (rupi-cmd rc "LOGIN" login (number->string (system-buildepoch)) (host-name))
-               ))) 
+               )))
           (if success
             (begin ;;If pin is acceptable run the app
               (store-set! store "UserName" (car success))
@@ -208,15 +216,13 @@
           )
           (glgui-widget-set! gui:login login-pin 'label "")
         )
-        (begin
-          (glgui-widget-set! gui:login login-pin 'label "") 
-          (store-set! store "Key" "") 
-          (glgui-widget-set! gui:popup popup-box 'callback #f)
-          (set! mode MODE_SETUP)
-        )
-      )
     )
   )
+)
+
+
+(define (screen-height-tall?)
+  (> (glgui-height-get) (+ 480 (* 2 gui:row-height)))
 )
 
 ;; -----------------------------------------------------------------------------
@@ -228,7 +234,7 @@
     (set! gui:overview (make-glgui))
 
     (let* ((x 0)
-	   (number-rows (if (> (glgui-height-get) (+ 480 (* 2 gui:row-height))) 10 8))
+	   (number-rows (if (screen-height-tall?) 10 8))
 	   (height (* number-rows gui:row-height))
 	   (y (- (glgui-height-get) gui:menu-height 16 3)))
       ;;Write Header Row
@@ -1695,7 +1701,7 @@
   (set! gui:rooms (make-glgui))
 
   (let* ((x 0)
-	 (number-rows (if (> (glgui-height-get) (+ 480 (* 2 gui:row-height))) 10 8))
+	 (number-rows (if (screen-height-tall?) 10 8))
 	 (height (* number-rows gui:row-height))
 	 (y (- (glgui-height-get) gui:menu-height 16 3)))
     ;;Header row
