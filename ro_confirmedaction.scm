@@ -18,11 +18,37 @@
 (define (ivueparser:parseCmdConfirmedAction buf)
   (let ((action_type (ivueparser:parseActionArgument buf)))
     (cond
+      ((fx= action_type NOM_ACT_POLL_MDIB_DATA)
+        (ivueparser:parsePollMdibDataReq (u8data-skip buf 14)))
+      ((fx= action_type NOM_ACT_POLL_MDIB_DATA_EXT)
+        (ivueparser:parsePollMdibDataReqExt (u8data-skip buf 14)))
       ((fx= action_type #x0c11)
         (ivueparser:log 0 "ivueparser: demographics package:")
+        (ivueparser:log 0 (map (lambda (l) (number->string l 16))(u8vector->list (u8data->u8vector (u8data-skip buf 14)))))
       )
       (else
         (ivueparser:log 1 "ivueparser: unknown action_type: " action_type))
+    )
+  ))
+
+;; PollMdibDataReq
+(define (ivueparser:parsePollMdibDataReq buf)
+  (let ((poll_number (u8data-u16 (subu8data buf 0 2)))
+        (polled_obj_type (ivueparser:parseTYPE (subu8data buf 2 6)))
+        (polled_attr_grp (u8data-u16 (subu8data buf 6 8))))
+    #t
+  ))
+
+;; PollMdibDataReqExt
+(define (ivueparser:parsePollMdibDataReqExt buf)
+  (let* ((poll_number (u8data-u16 (subu8data buf 0 2)))
+         (polled_obj_type (ivueparser:parseTYPE (subu8data buf 2 6)))
+         (polled_attr_grp (u8data-u16 (subu8data buf 6 8)))
+         (context_id 0) ;; We don't know this
+         (poll_ext_attr (ivueparser:parseAttributeList context_id (u8data-skip buf 8))))
+    (if (fx= (u8data-length poll_ext_attr) 0)
+      #t
+      (ivueparser:log 1 "ivueparser: incomplete parse of PollMdibDataReqExt [" (u8data-length poll_ext_attr) "]")
     )
   ))
 
@@ -54,7 +80,7 @@
   (let ((poll_number (u8data-u16 (subu8data buf 0 2)))
         (rel_time_stamp (ivueparser:parseRelativeTime (subu8data buf 2 6)))
         ;;(abs_time_stamp (ivueparser:parseAbsoluteTime "poll_data_result_timestamp" (subu8data buf 6 14)))
-        ;;(polled_obj_type (ivueparser:parseTYPE ((subu8data buf 14 18))))
+        ;;(polled_obj_type (ivueparser:parseTYPE (subu8data buf 14 18)))
         (polled_attr_grp  (u8data-u16 (subu8data buf 18 20)))
         (poll_info_list (ivueparser:parsePollInfoList (u8data-skip buf 20))))
     (if (fx= (u8data-length poll_info_list) 0)
@@ -69,7 +95,7 @@
         (sequence_no (u8data-u16 (subu8data buf 2 4)))
         (rel_time_stamp (ivueparser:parseRelativeTime (subu8data buf 4 8)))
         ;;(abs_time_stamp (ivueparser:parseAbsoluteTime "poll_data_result_timestamp" (subu8data buf 8 16)))
-        ;;(polled_obj_type (ivueparser:parseTYPE ((subu8data buf 16 20))))
+        ;;(polled_obj_type (ivueparser:parseTYPE (subu8data buf 16 20)))
         (polled_attr_grp  (u8data-u16 (subu8data buf 20 22)))
         (poll_info_list (ivueparser:parsePollInfoList (u8data-skip buf 22))))
     (if (fx= (u8data-length poll_info_list) 0)

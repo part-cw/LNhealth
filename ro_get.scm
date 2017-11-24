@@ -8,7 +8,7 @@
          (attributeList (ivueparser:parseAttributeList context_id (u8data-skip buf 6))))
     (if (fx= (u8data-length attributeList) 0)
       #t
-      (ivueparser:log 1 "ivueparser: incomplete parse of CmdSet [" (u8data-length attributeList) "]")
+      (ivueparser:log 1 "ivueparser: incomplete parse of CmdGet [" (u8data-length attributeList) "]")
     )
   ))
 
