@@ -148,7 +148,10 @@
 ;; A generic Attribute String parser
 (define (ivueparser:parseAttrString label buf len)
   (let ((str (ivueparser:u8vector->string (u8data->u8vector (subu8data buf 0 len)))))
-    (store-set! ivueparser:store label str "ivue")
+    (if (fx> (string-length str) 0)
+      (store-set! ivueparser:store label str "ivue")
+      (store-clear! ivueparser:store label)
+    )
   ))
 
 ;; Timestamps
@@ -243,9 +246,12 @@
     ;; entering standby
     (if (and old_mode_op (fx= (bitwise-and old_mode_op OPMODE_STANDBY) 0)
              (fx= (bitwise-and mode_op OPMODE_STANDBY) OPMODE_STANDBY))
-      (begin
+      (let ((params (map car (store-listcat ivueparser:store "ivue")))
+            (keep (append ivue:demographics '("location" "CaseEndPending" "operation_mode"))))
         (store-set! ivueparser:store "CaseEndPending" #t "ivue")
         (store-clear! ivueparser:store "CaseStartPending")
+        ;; Cleanup old values but keep the stuff to write demographics file
+        (for-each (lambda (p) (if (not (member p keep)) (store-clearexpired! ivueparser:store 60 p))) params)
       )
     )
     ;; leaving standby
