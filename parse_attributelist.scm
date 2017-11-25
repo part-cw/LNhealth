@@ -120,10 +120,10 @@
       ;; And everything else
       ((fx= attribute_id NOM_ATTR_VAL_ENUM_OBS)
         (ivueparser:parseEnumObs val))
-      ((fx= attribute_id NOM_ATTR_ID_BED_LABEL)
-        (ivueparser:parseAttrString "location" val len))
       ((fx= attribute_id NOM_SAT_O2_TONE_FREQ)
         (ivueparser:parseSatToneFreq val))
+      ((fx= attribute_id #x0a1d)
+        (ivueparser:parse0a1d val))
       ((fx= attribute_id 62007)
         (ivueparser:log 3 "ivueparser: 62007: " (u8data-u32 (subu8data val 0 4))))
       (else
@@ -131,6 +131,18 @@
       )
     )
     (u8data-skip val len)
+  ))
+
+;; Magic loop thingy for parsing the demographics piece
+(define (ivueparser:parse0a1d buf)
+  (let ((count (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (let loop ((n 0)(p (u8data-skip buf 4)))
+      (if (fx= n count)
+        p
+        (loop (fx+ n 1) (ivueparser:parseObservationPoll p))
+      )
+    )
   ))
 
 ;; A generic Attribute String parser

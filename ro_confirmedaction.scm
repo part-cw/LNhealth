@@ -23,11 +23,23 @@
       ((fx= action_type NOM_ACT_POLL_MDIB_DATA_EXT)
         (ivueparser:parsePollMdibDataReqExt (u8data-skip buf 14)))
       ((fx= action_type #x0c11)
-        (ivueparser:log 0 "ivueparser: demographics package:")
-        (ivueparser:log 0 (map (lambda (l) (number->string l 16))(u8vector->list (u8data->u8vector (u8data-skip buf 14)))))
-      )
+        (ivueparser:parse0c11 (u8data-skip buf 14)))
       (else
         (ivueparser:log 1 "ivueparser: unknown action_type: " action_type))
+    )
+  ))
+
+;; Parsing the magic package, which contains the patient admission one
+(define (ivueparser:parse0c11 buf)
+  (let ((package_type (u8data-u16 (subu8data buf 0 2)))
+        (len (u8data-u16 (subu8data buf 2 4))))
+    (cond
+      ((fx= package_type 1)
+        (ivueparser:parseSingleContextPoll (u8data-skip buf 10)))
+      ((fx= package_type 2)
+        (ivueparser:parseSingleContextPoll (u8data-skip buf 8)))
+      (else
+        (ivueparser:log 1 "ivueparser: unknown 0xc11 package_type: " package_type))
     )
   ))
 
