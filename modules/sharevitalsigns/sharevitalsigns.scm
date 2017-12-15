@@ -102,6 +102,7 @@ end-of-c-declare
 (define VITALSIGN_RR 2)
 (define VITALSIGN_SPO2 4)
 (define VITALSIGN_TEMP 8)
+(define VITALSIGN_PO (bitwise-ior VITALSIGN_HR VITALSIGN_SPO2))
 
 ;; type definitions
 (c-define-type SVS_MSG char-string)
