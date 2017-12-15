@@ -1,0 +1,1 @@
+sharevitalsIntent=getIntent(); //collect intent that started app

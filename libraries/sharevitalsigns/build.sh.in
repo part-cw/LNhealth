@@ -1,0 +1,18 @@
+#!/bin/sh
+
+LIBNAME=sharevitalsigns
+
+echo " => Removing old library..."
+if [ -f @SYS_PREFIX@/lib/$LIBNAME.a ]; then
+  rm @SYS_PREFIX@/lib/$LIBNAME.a
+fi
+if [ -f @SYS_PREFIX@/lib/$LIBNAME.jar ]; then
+  rm @SYS_PREFIX@/lib/$LIBNAME.jar
+fi
+
+echo " => Installing..."
+cp $LIBNAME.jar @SYS_PREFIX@/lib/
+ar q @SYS_PREFIX@/lib/$LIBNAME.a $LIBNAME.jar
+cd "$here"
+
+echo " => All done."

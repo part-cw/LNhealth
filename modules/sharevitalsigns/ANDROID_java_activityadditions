@@ -1,0 +1,105 @@
+private void passVitalSign(float vital, int quality, int sign){
+  if (mSharevitals == null) return;
+  mSharevitals.saveVitalSign(sign,vital,quality);
+  Log.d("VitalSign","Added vital to structure:"+sign);
+}
+
+private void transmitVitalSign () {
+  Intent vitalintent = mSharevitals.prepareIntent();
+  Log.d("VitalSign","intent created for transmission");
+  if (getParent() == null) {
+    setResult(RESULT_OK, vitalintent);
+  } else {
+    getParent().setResult(Activity.RESULT_OK, vitalintent);
+  }
+  finish(); //finish has to be called after setResult()
+}
+
+private int getVitalSign() {
+  if (mSharevitals == null) return -1;
+  final int sign=mSharevitals.getVitalSignsRequested();
+  Log.d("VitalSign","reading vital requested:"+sign);
+  return sign;
+}
+
+private void registerVitalSigns(int sign) {
+  mSharevitals = new ShareVitalSigns(sign); //init SVS class
+  mSharevitals.ShareVitalSignsIntent = sharevitalsIntent;
+  
+  int check = mSharevitals.chkIntent();
+  if (check < 0) {
+    final String msg_toast1="This app does not support the requested Vital Sign. Error:"+check;
+    this.runOnUiThread(new Runnable () {
+      public void run() {Toast.makeText(getApplicationContext(), msg_toast1, Toast.LENGTH_SHORT).show();}
+    });
+
+    sharevitalsRequest=0;
+    setResult(RESULT_CANCELED);
+    finish();
+  } else if (check > 0) {
+    final String msg_toast2="Requested Vital Sign that will be provided: "+ getVitalSign();
+    this.runOnUiThread(new Runnable () {
+      public void run() {Toast.makeText(getApplicationContext(), msg_toast2, Toast.LENGTH_SHORT).show();}
+    });
+    sharevitalsRequest=1;
+  } else {
+   sharevitalsRequest=0;
+  }
+}
+
+private void requestVitalSigns(int sign) {
+  rSharevitals = new ShareVitalSigns();
+  try {
+    startActivityForResult(rSharevitals.measureVitalSigns(new ShareVitalSignsResultReceiver() {
+      @Override
+      public void onResult(float[] vital, int[] confidence) {
+      }
+    },sign),sign);
+  } catch (Exception e) {
+      Toast.makeText(this,String.format("No App providing "+sign+" found on device."),
+                     Toast.LENGTH_SHORT).show();
+  }
+}
+
+private int retrieveRequestedVitalSign(int sign) {
+  if (rSharevitals != null) {
+    final int result = (int) rSharevitals.svsData.getResultVIndex(sign);
+    return result;
+  } else {
+    return -1;
+  }
+}
+
+
+private void jConfirmationDialog(String msg, String ok, String cancel) {
+  final String msg_message=msg;
+  final String msg_ok=ok;
+  final String msg_cancel=cancel;
+  
+  transmitVitalSign();
+
+/*   
+  if (sharevitalsRequest > 0) {
+    this.runOnUiThread(new Runnable () {
+      public void run() {
+        AlertDialog.Builder alert = new AlertDialog.Builder(getApplicationContext()).setMessage(msg_message).setPositiveButton(msg_ok, new DialogInterface.OnClickListener() {
+          public void onClick(DialogInterface dialog, int id) { transmitVitalSign(); }
+        }).setNegativeButton(msg_cancel, new DialogInterface.OnClickListener() {
+          public void onClick(DialogInterface dialog, int id) { dialog.cancel(); }
+        });
+      alert.show();
+    } });
+  }
+*/
+}
+
+@Override
+public void onActivityResult(int requestCode, int resultCode, Intent data) {
+  if (rSharevitals.getResults(requestCode, resultCode, data)){ //process Intent data
+
+  } else {
+    rSharevitals.svsData.setResultVIndex(requestCode, -1);
+    Toast.makeText(this,String.format("WARNING: No valid vital sign obtained"),
+                   Toast.LENGTH_SHORT).show();
+  }
+}

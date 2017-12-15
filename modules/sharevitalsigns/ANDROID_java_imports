@@ -1,0 +1,5 @@
+import org.ecemgroup.sharevitalsigns.library.ShareVitalSigns;
+import org.ecemgroup.sharevitalsigns.library.ShareVitalSigns.ShareVitalSignsResultReceiver;
+import android.widget.Toast;
+import android.app.AlertDialog;
+import android.content.DialogInterface;

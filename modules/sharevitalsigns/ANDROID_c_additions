@@ -1,0 +1,74 @@
+// FFI for getting SharedVitalSigns data in and out of scheme
+void android_passVitalSign(float value, int qual, int sign){
+  JNIEnv *env = GetJNIEnv();
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "passVitalSign", "(FII)V");
+    (*env)->CallVoidMethod(env, globalObj, method, value, qual, sign);
+  }
+}
+
+void android_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel){
+  JNIEnv *env = GetJNIEnv();
+  jstring jmes = (*env)->NewStringUTF(env, msg_message);
+  jstring jok = (*env)->NewStringUTF(env, msg_ok);
+  jstring jcancel = (*env)->NewStringUTF(env, msg_cancel);
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "jConfirmationDialog", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+    (*env)->CallVoidMethod(env, globalObj, method, jmes, jok, jcancel);
+  }
+}
+
+int android_getVitalSign(){
+  JNIEnv *env = GetJNIEnv();
+  static int contype=1;
+  
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "getVitalSign", "()I");
+    contype = (*env)->CallIntMethod(env, globalObj, method);
+    return contype;
+  }
+  return contype;
+}
+
+int android_retrieveVitalSign(int sign){
+  JNIEnv *env = GetJNIEnv();
+  static int contype=1;
+
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "retrieveRequestedVitalSign", "(I)I");
+    contype = (*env)->CallIntMethod(env, globalObj, method, sign);
+    return contype;
+  }
+  return contype;
+}
+
+void android_finishVitalSign(){
+  JNIEnv *env = GetJNIEnv();
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "transmitVitalSign", "()V");
+    (*env)->CallVoidMethod(env, globalObj, method);
+  }
+}
+
+void android_registerVitalSign(int sign){
+  JNIEnv *env = GetJNIEnv();
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env,globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "registerVitalSigns", "(I)V");
+    (*env)->CallVoidMethod(env, globalObj, method, sign);
+  }
+}
+
+void android_requestVitalSign(int sign){
+  JNIEnv *env = GetJNIEnv();
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env,globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "requestVitalSigns", "(I)V");
+    (*env)->CallVoidMethod(env, globalObj, method, sign);
+  }
+}
