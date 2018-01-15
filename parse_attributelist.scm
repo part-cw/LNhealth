@@ -60,7 +60,7 @@
         (ivueparser:parsePatIdInt val len))
       ;; System Attibutes
       ((fx= attribute_id 61749) ;; BedLabel - connect Indicator
-        (ivueparser:parseAttrString "location" val len))
+        (ivueparser:parseAttrString "location_connect" val len))
       ((fx= attribute_id NOM_ATTR_ID_MODEL)
         (ivueparser:parseIdModel val))
       ((fx= attribute_id NOM_ATTR_MODE_OP)
@@ -174,11 +174,13 @@
         (hour (ivueparser:parseBCD (u8data-u8 (subu8data buf 4 5))))
         (minute (ivueparser:parseBCD (u8data-u8 (subu8data buf 5 6))))
         (second (ivueparser:parseBCD (u8data-u8 (subu8data buf 7 8)))))
-    (if (and century year month day hour minute second)
+    (if (and century year month day hour minute second
+             (not (fx= (u8data-u8 (subu8data buf 0 1)) 0)))
       (store-set! ivueparser:store label (flo (string->seconds
         (string-append century year month day "-" hour minute second) "%Y%m%d-%H%M%S"))
         "ivue"
       )
+      (store-clear! ivueparser:store label)
     )
   ))
 
