@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 |#
 
 ;; Module for measuring and confirming respiratory rate
-;; Christian Leth Petersen 2012, Dustin Dunsmuir 2016, Matthias Görges 2015
+;; Christian Leth Petersen 2012, Dustin Dunsmuir 2018, Matthias Görges 2015
 (define rrate:no-settings? #f)
 (define (rrate-use-settings use?) (set! rrate:no-settings? (not use?)))
 (define rrate:no-language? #f)
@@ -45,6 +45,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:muteheadset #f)
 (define (rrate-set-mute-headset mute?) (set! rrate:muteheadset mute?))
 (define (rrate-is-muted-headset) (and rrate:muteheadset (audioaux-headphonepresent)))
+;; Tap for one minute instead of applying consistency check algorithm
+(define rrate:oneminute #f)
+(define (rrate-set-oneminute oneminute?) (set! rrate:oneminute oneminute?))
 
 ;; Standard fonts, to switch back to if switching languages
 (define rrate:stfnt_12.fnt text_12.fnt)
@@ -254,6 +257,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:gui #f)
 (define rrate:cont #f)
 (define rrate:tapbg #f)
+(define rrate:timer #f)
 (define rrate:animationbg #f)
 (define rrate:cancelbutton #f)
 (define rrate:settingsbutton #f)
@@ -433,13 +437,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (set! rrate:starttime (car rrate:times)))
     
     ;; Change the colour of the icon for the most recent tap
-    (glgui-widget-set! rrate:cont (list-ref rrate:tapicons count) 'image dot_dark.img)
+    (if (not rrate:oneminute)
+      (glgui-widget-set! rrate:cont (list-ref rrate:tapicons count) 'image dot_dark.img))
     (set! count (+ count 1))
     
     ;; After first tap show cancel button
     (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden #f)
     
-    (if (fx>= count taplimit)
+    ;; Don't do check for ending if recording for one minute
+    (if (and (fx>= count taplimit) (not rrate:oneminute))
       ;; Get rate using taps from the <taplimit> most recent intervals and then make sure each is close enough to their median
       (let* ((tapintervals
                ;; Get a list of the intervals between the last <taplimit> taps
@@ -574,24 +580,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! rrate:cont rrate:trigger 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:tapbutton 'hidden stage2)
 ;;    (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:qualitybg_high 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:qualitybg_consistent 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:qualitybg_low 'hidden (not stage2))
+    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden (or (not stage2) rrate:oneminute))
+    (glgui-widget-set! rrate:cont rrate:qualitybg_high 'hidden (or (not stage2) rrate:oneminute))
+    (glgui-widget-set! rrate:cont rrate:qualitybg_consistent 'hidden (or (not stage2) rrate:oneminute))
+    (glgui-widget-set! rrate:cont rrate:qualitybg_low 'hidden (or (not stage2) rrate:oneminute))
     (glgui-widget-set! rrate:cont rrate:value 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:toplayer 'hidden (not stage2))
     (glgui-widget-set! rrate:cont rrate:tapbg 'hidden stage2)
+    (glgui-widget-set! rrate:cont rrate:timer 'hidden (or stage2 (not rrate:oneminute)))
     (glgui-widget-set! rrate:cont rrate:animationbg 'hidden (not stage2))
 
     ;; Reset skipping breath sound if going back to stage 1
     (if (not stage2)
       (set! rrate:skipbreath #f))
     
+    ;; Reset timer if going back to stage 1 and doing one minute tapping
+    (if (and rrate:oneminute (not stage2))
+      (glgui-widget-set! rrate:cont rrate:timer 'label "0:00"))
+    
     ;; Hide or show the tap icons
     (let loop ((ws rrate:tapicons))
        (if (> (length ws) 0) 
          (begin
-            (glgui-widget-set! rrate:cont (car ws) 'hidden stage2)
+            (glgui-widget-set! rrate:cont (car ws) 'hidden (or stage2 rrate:oneminute))
             (loop (cdr ws)))))
     
     ;; If going to the first stage, reset the taps
@@ -687,7 +698,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 )
 
 ;; Resets the taps by clearing the tap icons and the data quality
-;; and hiding the data quality and cancel button
+;; and hiding the data quality
 (define (rrate:reset-taps)
   
   ;; Clear tap data
@@ -716,6 +727,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #t)
   (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #t)
 
+  ;; Show timer clock
+  (if rrate:oneminute
+    (begin
+      (glgui-widget-set! rrate:cont rrate:timer 'hidden #f)
+      (glgui-widget-set! rrate:cont rrate:timer 'label "0:00")))
+  
   ;; Go back to stage 1 to try again
   (rrate:go-to-stage 1)
 ) 
@@ -781,6 +798,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    (set! rrate:tapbg (glgui-pixmap rrate:cont 0 43 stage1_bg.img w (cadr stage1_bg.img)))
  
+   ;; Timer for a one minute tapping session
+   (set! rrate:timer (glgui-label rrate:cont 40 70 (- w 80) 60 "0:00" numbers_56.fnt Black))
+   (glgui-widget-set! rrate:cont rrate:timer 'align GUI_ALIGNCENTER)
+   (glgui-widget-set! rrate:cont rrate:timer 'hidden (not rrate:oneminute))
+  
    (set! rrate:cancelbutton (glgui-button-local rrate:cont 12 6 145 32 "CANCEL" text_20.fnt
      (lambda (g . x)
        ;; Determine if there are any taps, if none then cancel out of module, otherwise just reset
@@ -790,6 +812,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            ;; Clear interval and scale values
            (set! rrate:calc:medinterval #f)
            (set! rrate:calc:yscale #f)
+           (set! rrate:starttime #f)
            (rrate:go-to-stage 1)
          )
        )
@@ -884,6 +907,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (if (fx< (length icons) 12)
          (dloop (+ tx tw) (append icons (list (glgui-pixmap rrate:cont tx ty dot_light.img))))
          (set! rrate:tapicons icons))))
+   ;; Don't show these if recording for one minute
+   (if rrate:oneminute
+     (for-each (lambda (t) (glgui-widget-set! rrate:cont t 'hidden #t)) rrate:tapicons))
   
    ;; Animated parts of the baby with ghosted parts on top
   (let* ((wspace (/ (- w (car top_layer.img)) 2))
@@ -1032,10 +1058,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    
    ;; If timer active and a minute since starting, going to animation
    (if rrate:starttime
-     (if (> (- (current-time-seconds) rrate:starttime) 60.0)
+     (if (>= (- (current-time-seconds) rrate:starttime) 60.0)
        (begin
          ;; If no median interval yet, then just use median of all taps
-         (if (not rrate:calc:medinterval)
+         (if (and (not rrate:calc:medinterval) (not rrate:oneminute))
            (begin
              (if (fx> (length rrate:times) 1)
                (let loop ((ts rrate:times) (diffs '()))
@@ -1063,12 +1089,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                  (if (>= medrate 140) rrate:popup:toofast rrate:popup:inconsistent)) (< medrate 200)
                )
              )
-           ))
-         ;; Show the quality feedback as a artificial horizon
-         (rrate:show-quality)
+           )
+           ;; If using full minute of taps, just count them
+           (if rrate:oneminute
+             (let* ((count (length rrate:times))
+                    (valstr (number->string count)))
+               (set! rrate:rate (fixnum->flonum count))
+               (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
+               (glgui-widget-set! rrate:cont rrate:value 'x (+ (if (fx= (string-length valstr) 3) 35 44) rrate:xoffset)))))
+         
+         (if (not rrate:oneminute)
+           ;; Show the quality feedback as a artificial horizon
+           (rrate:show-quality))
 
-         ;; Play the beep if the volume is turned on, otherwise if vibrating it will now have stopped
-         (rrate:fail-feedback)
+         ;; Play the chimes/beep if the volume is turned on, otherwise if vibrating it will now have stopped
+         (if rrate:oneminute
+           (rrate:success-feedback)
+           (rrate:fail-feedback))
 
          ;; Delay the breathing sounds during animation
          (set! rrate:skipbreath ##now)
@@ -1076,7 +1113,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          ;; Set animate offset
          (rrate:set-animate-offset)
          (set! rrate:starttime #f)
-         (glgui-modal-set! #t))))
+         (if rrate:oneminute
+           (rrate:go-to-stage 2)
+           (glgui-modal-set! #t)))
+       ;; Otherwise if recording for one minute, update timer
+       (if rrate:oneminute
+         (let* ((seconds (number->string (fix (- (current-time-seconds) rrate:starttime))))
+                (str (string-append (if (fx= (string-length seconds) 1) "0:0" "0:") seconds)))
+           (glgui-widget-set! rrate:cont rrate:timer 'label str)))))
 
   ;; Display either the main RRate page or the settings page
   (if (fx= t EVENT_REDRAW)
