@@ -1,4 +1,5 @@
 <intent-filter>
   <action android:name="org.ecemgroup.sharevitalsigns.MEASURE" />
+  <action android:name="org.ecemgroup.sharevitalsigns.MEASURE.RR" />
   <category android:name="android.intent.category.DEFAULT" />
 </intent-filter>
