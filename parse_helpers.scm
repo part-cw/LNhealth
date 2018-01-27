@@ -17,6 +17,37 @@
     )
   ))
 
+
+(define (u16vector->f32vector u16v)
+  (let* ((len (u16vector-length u16v))
+         (f32v (make-f32vector len)))
+    (let loop ((n 0))
+      (if (fx= n len)
+        f32v
+        (begin
+          (f32vector-set! f32v n (flo (u16vector-ref u16v n)))
+          (loop (fx+ n 1))
+        )
+      )
+    )
+  ))
+
+(define (ivueparser:paired_u8vector->f32vector u8v)
+  (let* ((len (u8vector-length u8v))
+         (len2 (fix (/ len 2)))
+         (f32v (make-f32vector len2)))
+    (let loop ((n 0) (n2 0))
+      (if (fx= n len)
+        f32v
+        (begin
+          (f32vector-set! f32v n2
+            (flo (bitwise-ior (arithmetic-shift (u8vector-ref u8v n) 8) (u8vector-ref u8v (fx+ n 1)))))
+          (loop (fx+ n 2) (fx+ n2 1))
+        )
+      )
+    )
+  ))
+
 (define (ivueparser:u8vector->string v)
   (let loop ((l (u8vector->list v)) (s '()))
     (if (fx= (length l) 0)
