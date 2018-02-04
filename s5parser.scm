@@ -856,6 +856,7 @@
     (store-set! store "dri_level" dri_level "s5")
     (store-set! store "plug_id" plug_id "s5") ;;Added for iFish-AA (we know these from Dave Kobayashi)
     (store-set! store "r_time" r_time "s5")
+    (store-setnew! store "s5?" #t "s5")
     (let loop ((n 0)(p subrecords)(srlist '())(done #f))
       (if (or done (fx= n 8)) (begin
 ;;        (for-each display (list "s5parser: type=" r_maintype " : "
