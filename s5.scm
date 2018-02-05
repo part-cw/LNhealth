@@ -95,7 +95,6 @@
             1) 0)))
       ((fx= runlevel 1)
          ;; ask for trends
-         ;;(instance-setvar! store instance "Update" .01)
          (store-clear! store "gotwaveforms?")
          (s5:send dev (u8vector #x31
               0 0 0 0 0
@@ -130,7 +129,7 @@
            16) (begin
            ;; try to purge any fragmented data
            (s5:recv store dev)
-           (if (> s5:retry (if (instance-refvar store instance "Waveforms" #f) 10 3)) 0 1))))
+           (if (> s5:retry (if (instance-refvar store instance "Waveforms" #f) 10 3)) 0 2))))
       )))
 
 (define (s5-run store instance)
