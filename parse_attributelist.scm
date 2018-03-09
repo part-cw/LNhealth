@@ -241,6 +241,8 @@
     (if (fx> label 0) (table-set! ivueparser:labellut obj_handle label))
   ))
 
+;; New idea based on case state - might need to be tested more fully first
+#|
 (define (ivueparser:parseModeOp buf)
   (let* ((phase_trend_var_ivue (list "HR" "SpO2" "CO2et"))
          (has-val (map (lambda (var) (> (store-timedref ivueparser:store var 0.) 5)) phase_trend_var_ivue))
@@ -269,8 +271,9 @@
       ((and (fx= cur-phase 2) (member #t has-no-val))
        (store-set! ivueparser:store "phase" 3)))
   ))
+|#
 
-#|(define (ivueparser:parseModeOp buf)
+(define (ivueparser:parseModeOp buf)
   (let ((mode_op (u8data-u16 (subu8data buf 0 2)))
         (old_mode_op (store-ref ivueparser:store "operation_mode" #f)))
     (store-set! ivueparser:store "operation_mode" mode_op "ivue")
@@ -293,7 +296,7 @@
         (store-set! ivueparser:store "CaseStartPending" #t "ivue")
       )
     )
-  ))|#
+  ))
 
 (define (ivueparser:parseSysId buf)
   (let* ((len (u8data-u16 (subu8data buf 0 2)))
