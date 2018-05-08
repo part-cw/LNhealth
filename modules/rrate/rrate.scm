@@ -48,6 +48,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Tap for one minute instead of applying consistency check algorithm
 (define rrate:oneminute #f)
 (define (rrate-set-oneminute oneminute?) (set! rrate:oneminute oneminute?))
+;; Turn on timestamp for button callback set to when button is pressed down
+(define rrate:timeonbuttondown? #f)
+(define (rrate-set-timeonbuttondown onbuttondown?) (set! rrate:timeonbuttondown? onbuttondown?))
 
 ;; Standard fonts, to switch back to if switching languages
 (define rrate:stfnt_12.fnt text_12.fnt)
@@ -425,8 +428,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (rrate:breath-feedback)))))
   ))
 
-(define (rrate:tapcb g wgt . x)
-  (let* ((now (time->seconds (current-time)))
+(define (rrate:tapcb g wgt time . x)
+  (let* ((now (if rrate:timeonbuttondown?
+                  time
+                  (time->seconds (current-time))))
          (count (length rrate:times))
          (taplimit (settings-ref "Taps" 4))
          (playbreath #t))
@@ -990,14 +995,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:trigger 'hidden #t)
      
    ;; Tap button
-   (set! rrate:tapbutton (glgui-button-local rrate:cont 3 165 (- w 6) (- h 165) "TAP_INHALATION" text_40.fnt
-     (lambda (g wgt . x)
-       (rrate:tapcb g wgt)
-     )
-   ))
+   ;; Callback is void because input-handle of button is overwritten below
+   (set! rrate:tapbutton (glgui-button-local rrate:cont 3 165 (- w 6) (- h 165) "TAP_INHALATION" text_40.fnt #f))
    (glgui-widget-set! rrate:cont rrate:tapbutton 'multiline #t)
    (glgui-widget-set! rrate:cont rrate:tapbutton 'button-normal-color (color-rgb 213 233 238))
    (glgui-widget-set! rrate:cont rrate:tapbutton 'button-selected-color (color-rgb 42 54 146))
+   (glgui-widget-set! rrate:cont rrate:tapbutton 'input-handle
+     (lambda (g wgt type mx my)
+       (let* ((x (glgui-widget-get-dyn g wgt 'x))
+              (y (glgui-widget-get-dyn g wgt 'y))
+              (w (glgui-widget-get-dyn g wgt 'w))
+              (h (glgui-widget-get-dyn g wgt 'h))
+              (armed (glgui-widget-get g wgt 'armed))
+              (time  (glgui-widget-get g wgt 'time))
+              (inside (and (> mx x) (< mx (+ x w)) (> my y) (< my (+ y h)))))
+          (cond
+            ((and (= type EVENT_BUTTON1DOWN) inside)
+               (glgui-widget-set! g wgt 'armed #t)
+               (glgui-widget-set! g wgt 'time (time->seconds (current-time))))
+            ((= type EVENT_BUTTON1UP)
+               (if (and armed inside) (begin
+               (rrate:tapcb g wgt time)))
+               (glgui-widget-set! g wgt 'armed #f))
+          )
+       inside
+   )))
      
    ;; Create popup background and message
    (set! rrate:popup:cont (glgui-container rrate:gui x y w h))
