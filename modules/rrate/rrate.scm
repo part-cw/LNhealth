@@ -67,7 +67,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Initialize the settings
   (settings-init (list (cons "Taps" 5)
                        (cons "Consistency" 13)
-                       (cons "VibrateSound" #f)))
+                       (cons "VibrateSound" #f)
+                       (cons "HOST" "")
+                       (cons "URL" "")
+                       (cons "TOKEN" "")
+                       (cons "FORM" "")
+                       (cons "EVENT" "")
+                       (cons "REDCAP_USE?" #f)))
 )
 
 ;; Settings page for configuring number of taps and consistency percent for threshold
@@ -78,6 +84,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:settings:tapslist #f)
 (define rrate:settings:consistency #f)
 (define rrate:settings:percentlist #f)
+(define rrate:settings:redcap #f)
+(define rrate:settings:redcap:boxcontainer #f)
+(define rrate:settings:redcap:focusedbox #f)
+(define rrate:settings:keypad #f)
 (define rrate:settings:backbutton #f)
 (define rrate:settings:nextbutton #f)
 
@@ -103,22 +113,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Black background behind everything
   (glgui-box rrate:settings:bg 0 0 w h Black)
   (glgui-pixmap rrate:settings:bg 0 43 settings_bg.img w (- h 43))
-  
+
   ;; Only show option for vibrating the phone with sound if on Android
   (set! rrate:settings:show_vibrate (string=? (system-platform) "android"))
-  
+
   ;; If not using the languages settings page, skip it
   (if rrate:no-language? (set! rrate:settings:page 1))
-  
+
   ;; Go back to previous settings page or out of settings completely
   (set! rrate:settings:backbutton (glgui-button rrate:settings:bg 12 6 100 32 left_arrow.img
     (lambda (g . x)
+      (if rrate:settings:keypad (set-keypad-hidden #t))
       (if (or (fx= rrate:settings:page 0) (and rrate:no-language? (fx= rrate:settings:page 1)))
         (set! rrate:settings:viewing #f)
         (set! rrate:settings:page (- rrate:settings:page 1))))))
   (glgui-widget-set! rrate:settings:bg rrate:settings:backbutton 'button-normal-color Green)
   (glgui-widget-set! rrate:settings:bg rrate:settings:backbutton 'button-selected-color DarkGreen)
-  
+
   ;; The first page of settings, the language
   (set! rrate:settings:language (glgui-container rrate:gui x y w h))
   (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 (- h (if rrate:settings:show_vibrate 285 380)) (- w 20) (if rrate:settings:show_vibrate 275 370) (color:shuffle #xd7eaefff)) 'rounded #t)
@@ -147,7 +158,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current cur)
       (if (fx> (- cur oldoff) listlengthdiff)
         (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset (- cur listlengthdiff)))))
-  
+
   ;; The second page of settings, number of taps
   (set! rrate:settings:taps (glgui-container rrate:gui x y w h))
 
@@ -173,7 +184,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'bgcol1 (color-fade White 0))
   (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'bgcol2 (color-fade White 0))
   (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'current 2)
-  
+
   ;; The third page of settings, consistency threshold
   (let ((leftx (+ (- w 320) 20)))
     (set! rrate:settings:consistency (glgui-container rrate:gui x y w h))
@@ -207,7 +218,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'bgcol1 (color-fade White 0))
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'bgcol2 (color-fade White 0))
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'current 4)
-  
+
+  ;; The fourth page of settings, REDCap info
+  (set! rrate:settings:redcap (glgui-container rrate:gui x y w h))
+  (glgui-widget-set! rrate:settings:redcap (glgui-box rrate:settings:redcap 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
+  (glgui-label-local rrate:settings:redcap 25 (- h 50) (- w 50) 30 "REDCAP" text_20.fnt Black)
+  (checkbox rrate:settings:redcap 25 (- h 70) (- w 50) "REDCAP_USE?"
+    (lambda (label checked? g wgt . xargs)
+      (settings-set! label checked?)
+      (set-boxcontainer-hidden (not checked?))
+      (if (not checked?) (set-keypad-hidden #t))))
+  (set! rrate:settings:redcap:boxcontainer (glgui-container rrate:settings:redcap 25 (- h 260) (- w 50) 180))
+  (let ((aftercharcb (lambda (label g wgt . xargs)
+          (settings-set! label (glgui-widget-get g wgt 'label))))
+        (onfocuscb (lambda (g wgt . xargs)
+          (set! rrate:settings:redcap:focusedbox wgt)
+          (set-keypad-hidden #f))))
+    (textboxes-hor rrate:settings:redcap:boxcontainer '("HOST" "URL") (- w 50) 140 #f onfocuscb)
+    (textboxes-ver rrate:settings:redcap:boxcontainer '("TOKEN") (- w 50) 90 #f onfocuscb)
+    (textboxes-hor rrate:settings:redcap:boxcontainer '("FORM" "EVENT") (- w 50) 40 #f onfocuscb))
+  (let ((uploadbutton (glgui-button-local rrate:settings:redcap:boxcontainer 0 0 (- w 50) 30 "UPLOAD" text_20.fnt
+          (lambda (g wgt . xargs)
+            #t))))
+   (glgui-widget-set! rrate:settings:redcap:boxcontainer uploadbutton 'button-normal-color Red)
+   (glgui-widget-set! rrate:settings:redcap:boxcontainer uploadbutton 'button-selected-color DarkRed))
+  (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 43 w 160 text_14.fnt))
+  (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn #t)
+  (set-boxcontainer-hidden (not (settings-ref "REDCAP_USE?")))
+  (set-keypad-hidden #t)
+
   ;; Show vibrate option on first page under language options
   (if rrate:settings:show_vibrate
     ;; Show checkbox for turning on and off vibration with sound (only Android)
@@ -227,11 +266,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                (begin
                  (settings-set! "VibrateSound" #t)
                  (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image checkedbox.img)))))))
-  
+
   ;; Go to the next page or finish settings
   (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg (- w 107) 6 100 32 right_arrow.img
     (lambda (g . x)
-      (if (fx= rrate:settings:page 2)
+      (if rrate:settings:keypad (set-keypad-hidden #t))
+      (if (fx= rrate:settings:page 3)
         ;; Leave the settings page
         (begin
           (set! rrate:settings:page (if rrate:no-language? 1 0))
@@ -240,7 +280,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-normal-color Green)
   (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-selected-color DarkGreen)
 )
-   
+
 ;; Setup list of languages choices in alphabetical order but with original indices
 (define (rrate-setup-language-choices)
   (set! rrate:settings:languagechoices '())
@@ -256,6 +296,110 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (set! rrate:settings:languagechoices (sort rrate:settings:languagechoices (lambda (a b) (string<=? (cdr a) (cdr b))))))))
   rrate:settings:languagechoices
 )
+
+;; Set keyboard visibility and defocus textbox if keypad is closed
+(define (set-keypad-hidden b)
+  (glgui-widget-set! rrate:settings:redcap rrate:settings:keypad 'hidden b)
+  (if (and b rrate:settings:redcap:focusedbox)
+      (begin (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:focusedbox 'focus #f)
+             (set! rrate:settings:redcap:focusedbox #f))))
+
+;; Set textboxes' container's visibility
+(define (set-boxcontainer-hidden b)
+  (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'hidden b))
+
+;; Helper function for drawing a checkbox with label
+;; g: parent GUI of checkbox
+;; x, y, w: (x, y) position of lower-left corner, width in pixels
+;; label: label shown next to checkbox
+;; callback: callback for checkbox toggle; takes a string (the label), a boolean (checkbox state),
+;;  followed by standard callback arguments
+;; Returns the pressable button part of the checkbox
+;; For the moment, font is fixed at text_14.fnt and checkbox dimensions are fixed accordingly
+(define (checkbox g x y w label callback)
+  (let* ((d 17) (b 1)
+         (d:inner (- d (* 2 b)))
+         (padding (* 3 b))
+         (d:button (- d (* 2 padding))))
+    (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black)
+    (glgui-box g x y d d Black)
+    (glgui-box g (+ x b) (+ y b) d:inner d:inner White)
+    (let* ((set-checkbutton! (lambda (g wgt checked?)
+              (let ((newcolour (if checked? Black White)))
+                (glgui-widget-set! g wgt 'value (if checked? 1 0))
+                (glgui-widget-set! g wgt 'button-normal-color newcolour)
+                (glgui-widget-set! g wgt 'button-selected-color newcolour))))
+           (cb (lambda (g wgt . xargs)
+              (let* ((newvalue (if (= 0 (glgui-widget-get g wgt 'value)) 1 0))
+                     (checked? (= 1 newvalue)))
+                (set-checkbutton! g wgt checked?)
+                (if callback (apply callback (append (list label checked? g wgt) xargs))))))
+           (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
+      (glgui-widget-set! g checkbutton 'solid-color #t)
+      (glgui-widget-set! g checkbutton 'rounded #f)
+      (set-checkbutton! g checkbutton (settings-ref label))
+      checkbutton)))
+
+;; Helper function for drawing an empty textbox with border and label above
+;; g: parent GUI of box
+;; x, y, w: (x, y) position of lower-left corner, width in pixels
+;; label: label shown above textbox
+;; aftercharcb: callback for keypress; takes a string (the label) followed by standard callback arguments
+;; onfocuscb: callback for focus obtained; takes standard callback arguments
+;; Returns the editable label part of the textbox
+;; For the moment, font is fixed at text_14.fnt and height is fixed accordingly
+(define (textbox g x y w label aftercharcb onfocuscb)
+  (let* ((h 23) (h:label 17) (b 1)
+         (x:inner (+ x b))
+         (y:inner (+ y b))
+         (w:inner (- w (* 2 b)))
+         (h:inner (- h (* 2 b))))
+    (glgui-label-local g x (+ y h) w h:label label text_14.fnt Black)
+    (glgui-box g x y w h Black)
+    (glgui-box g x:inner y:inner w:inner h:inner White)
+    (let ((inputlabel (glgui-inputlabel g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White)))
+      (glgui-widget-set! g inputlabel 'aftercharcb
+        (lambda args (if aftercharcb (apply aftercharcb (cons label args)))))
+      (glgui-widget-set! g inputlabel 'onfocuscb onfocuscb)
+      inputlabel)))
+
+;; Helper function for drawing textboxes vertically
+;; g: parent GUI of textboxes
+;; labels: list of labels for which to draw a textbox each
+;; width: width in pixels of parent GUI
+;; y: y-position of bottom of the textboxes
+;; aftercharcb, onfocuscb: see `textbox`
+(define (textboxes-ver g labels width y aftercharcb onfocuscb)
+  (let loop ((i 0))
+    (if (< i (length labels))
+        ;; 50 px = 10 for padding + 17 for the label + 23 for the textbox
+        (let* ((top (+ y (* 50 (length labels))))
+               (y:box (- top (* (+ i 1) 50))))
+          (textbox g 0 y:box width (list-ref labels i) aftercharcb onfocuscb)
+          (loop (+ i 1))))))
+
+;; Helper function for drawing textboxes horizontally
+;; g: parent GUI of textboxes
+;; labels: list of labels for which to draw a textbox each
+;; width: width in pixels of parent GUI
+;; y: y-position of bottom of the textboxes
+;; aftercharcb, onfocuscb: see `textbox`
+(define (textboxes-hor g labels width y aftercharcb onfocuscb)
+  (let loop ((i 0))
+    (if (< i (length labels))
+      ;; Add 4px of padding between each box
+      ;; First box has no offset and will be flush against the left side
+      ;; Last box is flush against the right side and needs 4px offset
+      ;; Other boxes need 2px padding on both sides so offset is 2px
+      (let* ((box-width (quotient width (length labels)))
+             (w (- box-width 4))
+             (x (+ (* i box-width)
+                   (cond
+                     ((zero? i) 0)
+                     ((< i (- (length labels) 1)) 2)
+                     (else 4)))))
+        (textbox g x y w (list-ref labels i) aftercharcb onfocuscb)
+        (loop (+ i 1))))))
 
 (define rrate:gui #f)
 (define rrate:cont #f)
@@ -283,6 +427,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:larm #f)
 (define rrate:mouth #f)
 (define rrate:trigger #f)
+(define rrate:redcapsave #f)
+(define rrate:redcapsave:ratelabel #f)
+(define rrate:redcapsave:timeslabel #f)
+(define rrate:redcapsave:keypad #f)
+(define rrate:redcapsave:studyidbox #f)
+(define rrate:redcapsave:backbutton #f)
+(define rrate:redcapsave:savebutton #f)
 ;;(define rrate:tapmessage #f)
 
 ;; The popup with error messages
@@ -358,6 +509,57 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (let ((pi (fl* 4. (flatan 1.))))
     (fl/ (fl* r 2. pi) 60.)))
 
+;; CDB for storing data to be uploaded to REDCap
+(define filepath (string-append (system-directory) (system-pathseparator) "data.cdb"))
+(define datatable #f)
+
+;; If a CDB exists, load it into datatable; otherwise, create empty table
+;; N.B. Should only be called once on init
+(define (rrate:loadcdb)
+  (if (file-exists? filepath)
+      (set! datatable (cdb->table filepath)))
+  (if (not (table? datatable))
+      (set! datatable (make-table))))
+
+;; Save datatable to cdb
+;; N.B. Should be called at least on exit
+(define (rrate:writecdb) (table->cdb datatable filepath))
+
+;; Save data to datatable
+;; rate: integral breathing rate in breaths/minute
+;; times: list of timestamps of taps in floats of seconds since epoch
+;; The table has format:
+;;  - key:   studyid
+;;  - value: `(,rrate ,now ,times)
+;;      where times is a string corresponding to the start time
+;;      followed by time elapsed since start for each tap, separated by semicolons
+;; This copies part of `init-rrate` from parts/apps/PneumOx/sandbox/main.sx
+(define (rrate:savedata studyid rrate times)
+  (table-set! datatable studyid
+    `(,rrate
+      ,(seconds->string (current-time-seconds) "%Y-%m-%d %H:%M:%S")
+      ,(let ((starttime (car times))
+             (nexttimes (cdr times))
+             (roundtostring (lambda (n) (number->string (round-decimal n 4)))))
+        (string-append
+          (seconds->string starttime "%Y-%m-%d %H:%M:%S")
+          (roundtostring (- starttime (floor starttime))) ";"
+          (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))))
+
+;; Get the next available study ID; return 1 if none used
+;; N.B. Will take O(n); if table is expected to be very large,
+;;  call this once and keep track of largest study ID in a variable
+(define (rrate:get-next-studyid)
+  (let ((studyid 0))
+    (table-for-each (lambda (k v)
+      (let ((key (string->number k)))
+        (if (> key studyid) (set! studyid key)))) datatable)
+    (number->string (+ studyid 1))))
+
+;; Erase all existing data
+;; N.B. Actual CDB file will not be written over until rrate:writecdb is called
+(define (rrate:erase-data) (set! datatable (make-table)))
+
 ;; Sets the offset of the animation so that it starts on inhalation right now
 (define (rrate:set-animate-offset)
   (let* ((freq (rate->afreq rrate:rate))
@@ -367,7 +569,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (pi32 (fl* 6. (flatan 1.)))
          ;; Determine offset to force tx to be 3pi/2
          (txoffset (- tx pi32)))
-    (set! rrate:animateoffset (/ txoffset freq)))) 
+    (set! rrate:animateoffset (/ txoffset freq))))
 
 ;; Animate the right arm, move up and down
 (define (rrate:animate-right-arm gui wgt)
@@ -410,7 +612,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! gui wgt 'x (- rrate:position:mouthx dx))
     (glgui-widget-set! gui wgt 'h (+ 16. (* dy 2.)))
     (glgui-widget-set! gui wgt 'y (- rrate:position:mouthy dy))
-    
+
     (if (< neww 25.5)
       ;; If mouth small, get ready for breathing sound
       (set! rrate:readysound #t)
@@ -440,15 +642,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     ;; If this is the first tap, set start time
     (if (fx= count 0)
       (set! rrate:starttime (car rrate:times)))
-    
+
     ;; Change the colour of the icon for the most recent tap
     (if (not rrate:oneminute)
       (glgui-widget-set! rrate:cont (list-ref rrate:tapicons count) 'image dot_dark.img))
     (set! count (+ count 1))
-    
+
     ;; After first tap show cancel button
     (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden #f)
-    
+
     ;; Don't do check for ending if recording for one minute
     (if (and (fx>= count taplimit) (not rrate:oneminute))
       ;; Get rate using taps from the <taplimit> most recent intervals and then make sure each is close enough to their median
@@ -465,26 +667,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
              (consistency (/ (settings-ref "Consistency" 12) 100))
              (percthreshold (* medinterval consistency))
              (yscale (/ 9.5 percthreshold)))
-         
+
          ;; Make sure that the difference between each interval and the median interval is not greater than the consistency threshold
          (if (not (member #f (map (lambda (interval) (<= (abs (- interval medinterval)) percthreshold)) tapintervals)))
            (let* ((medrate (/ 60. medinterval))
                   (valstr (if (> medinterval 0.) (number->string (fix (round medrate))) #f)))
-              
+
               ;; Don't play a breathing sound from this tap, and delay the breathing sounds during animation
               (set! playbreath #f)
               (set! rrate:skipbreath ##now)
-              
+
               ;; No longer tapping
               (set! rrate:starttime #f)
-             
+
               ;; Remember properties of respiratory rate calculated
               (set! rrate:calc:medinterval medinterval)
               (set! rrate:calc:yscale yscale)
-             
+
               ;; Show the quality feedback as a artificial horizon
               (rrate:show-quality)
-             
+
               ;; Set rate to be this median rate
               (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
               (glgui-widget-set! rrate:cont rrate:value 'x (+ (if (fx= (string-length valstr) 3) 35 44) rrate:xoffset))
@@ -492,7 +694,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
               ;; Set animate offset
               (rrate:set-animate-offset)
-             
+
               ;; Display message depending on if the rate is too fast
               (if (>= medrate 140)
                 (begin
@@ -523,7 +725,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                      (let ((valstr (number->string (fix (round rrate:rate)))))
                        (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
                        (glgui-widget-set! rrate:cont rrate:value 'x (+ (if (fx= (string-length valstr) 3) 35 44) rrate:xoffset)))
-                     
+
                      ;; Show message about error with taps and change number to red
                      (glgui-widget-set! rrate:cont rrate:value 'color Grey)
                      (rrate:show-popup (if (>= rrate:rate 140) rrate:popup:toofast rrate:popup:inconsistent) (< rrate:rate 200)))))
@@ -536,28 +738,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                ;; Set animate offset
                (rrate:set-animate-offset)
                (set! rrate:starttime #f)
-               
+
                (rrate:show-quality))))))
-    
+
     ;; Only play breath sound (or vibration) from tap if not going to animation (which itself will play breath sound)
     (if playbreath
       ;; Play breath sound or vibration
       (rrate:breath-feedback)))
 )
-  
+
 ;; Shows the quality feedback display which is an artificial horizon
 ;; with one dot per tap spaced equally horizontally but placed vertically
 ;; based on speed with higher dots being too fast and low dots being taps
 ;; that were too slow.
 (define (rrate:show-quality)
- 
+
   ;; Show quality lines
-  (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #f)) 
+  (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #f))
     (list rrate:qualitybg rrate:qualitybg_high rrate:qualitybg_consistent rrate:qualitybg_low))
-  
+
   ;; Put first dot on center line
   (glgui-widget-set! rrate:cont (car rrate:qualitydots) 'y 73)
-  
+
   ;; Scale y so that 20 percent to be the height of the green bar (19 pixels)
   (let dotloop ((qd (cdr rrate:qualitydots)) (ts rrate:times))
     (if (fx> (length ts) 1)
@@ -565,66 +767,77 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (glgui-widget-set! rrate:cont (car qd) 'y (max (min (+ (* -1 (- interval rrate:calc:medinterval) rrate:calc:yscale) 73) 100) 46))
         (dotloop (cdr qd) (cdr ts)))))
 )
-  
-;; Goes to the second stage which displays the RR and animation
-;; or goes back to the first stage which displays the tap icons.
-;; stage = 1 is first stage and stage = 2 is second stage
-(define (rrate:go-to-stage stage)
 
-  (let ((stage2 (fx= stage 2)))
-    (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden (or stage2 (not rrate:cancelproc)))
-    (glgui-widget-set! rrate:cont rrate:settingsbutton 'hidden (or stage2 rrate:no-settings?))
-    (glgui-widget-set! rrate:cont rrate:nobutton 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:confirm 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:rarm 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:body 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:dbody 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:larm 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:mouth 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:trigger 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:tapbutton 'hidden stage2)
-;;    (glgui-widget-set! rrate:cont rrate:tapmessage 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:qualitybg 'hidden (or (not stage2) rrate:oneminute))
-    (glgui-widget-set! rrate:cont rrate:qualitybg_high 'hidden (or (not stage2) rrate:oneminute))
-    (glgui-widget-set! rrate:cont rrate:qualitybg_consistent 'hidden (or (not stage2) rrate:oneminute))
-    (glgui-widget-set! rrate:cont rrate:qualitybg_low 'hidden (or (not stage2) rrate:oneminute))
-    (glgui-widget-set! rrate:cont rrate:value 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:toplayer 'hidden (not stage2))
-    (glgui-widget-set! rrate:cont rrate:tapbg 'hidden stage2)
-    (glgui-widget-set! rrate:cont rrate:timer 'hidden (or stage2 (not rrate:oneminute)))
-    (glgui-widget-set! rrate:cont rrate:animationbg 'hidden (not stage2))
+;; Goes to:
+;;  - the first  stage (1) which displays the tap icons;
+;;  - the second stage (2) which displays the RR and animation; or
+;;  - the third  stage (3) which displays the REDCap saving page.
+(define (rrate:go-to-stage stage)
+  (let ((stage1? (fx= stage 1))
+        (stage2? (fx= stage 2))
+        (stage3? (fx= stage 3)))
+    (glgui-widget-set! rrate:cont rrate:cancelbutton          'hidden (or (not stage1?) (not rrate:cancelproc)))
+    (glgui-widget-set! rrate:cont rrate:settingsbutton        'hidden (or (not stage1?) rrate:no-settings?))
+    (glgui-widget-set! rrate:cont rrate:nobutton              'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:confirm               'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:yesbutton             'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:rarm                  'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:body                  'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:dbody                 'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:larm                  'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:mouth                 'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:trigger               'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:tapbutton             'hidden (not stage1?))
+;;  (glgui-widget-set! rrate:cont rrate:tapmessage            'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:qualitybg             'hidden (or (not stage2?) rrate:oneminute))
+    (glgui-widget-set! rrate:cont rrate:qualitybg_high        'hidden (or (not stage2?) rrate:oneminute))
+    (glgui-widget-set! rrate:cont rrate:qualitybg_consistent  'hidden (or (not stage2?) rrate:oneminute))
+    (glgui-widget-set! rrate:cont rrate:qualitybg_low         'hidden (or (not stage2?) rrate:oneminute))
+    (glgui-widget-set! rrate:cont rrate:value                 'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:toplayer              'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:tapbg                 'hidden (not stage1?))
+    (glgui-widget-set! rrate:cont rrate:timer                 'hidden (or (not stage1?) (not rrate:oneminute)))
+    (glgui-widget-set! rrate:cont rrate:animationbg           'hidden (not stage2?))
+    (glgui-widget-set! rrate:cont rrate:redcapsave            'hidden (not stage3?))
+    (glgui-widget-set! rrate:cont rrate:redcapsave:backbutton 'hidden (not stage3?))
+    (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not stage3?))
+
+    ;; If leaving stage 3, hide keypad and defocus studyidbox
+    (if (not stage3?)
+      (begin
+        (if rrate:redcapsave:studyidbox (glgui-widget-set! rrate:redcapsave rrate:redcapsave:studyidbox 'focus #f))
+        (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #t)))
 
     ;; Reset skipping breath sound if going back to stage 1
-    (if (not stage2)
+    (if stage1?
       (set! rrate:skipbreath #f))
-    
+
     ;; Reset timer if going back to stage 1 and doing one minute tapping
-    (if (and rrate:oneminute (not stage2))
+    (if (and rrate:oneminute stage1?)
       (glgui-widget-set! rrate:cont rrate:timer 'label "0:00"))
-    
+
     ;; Hide or show the tap icons
     (let loop ((ws rrate:tapicons))
-       (if (> (length ws) 0) 
+       (if (> (length ws) 0)
          (begin
-            (glgui-widget-set! rrate:cont (car ws) 'hidden (or stage2 rrate:oneminute))
+            (glgui-widget-set! rrate:cont (car ws) 'hidden (or (not stage1?) rrate:oneminute))
             (loop (cdr ws)))))
-    
+
     ;; If going to the first stage, reset the taps
-    (if (not stage2)
+    (if stage1?
       (rrate:reset-taps)))
 )
-    
+
 ;; Displays the popup with the given message, which is rrate:popup:inconsistent, rrate:popup:toofast or rrate:popup:notenough
 ;; If ignore? is true, the ignore button is shown as an option
 (define (rrate:show-popup message ignore?)
- 
-  ;; Enter modal mode, which show the popup background and buttons 
+
+  ;; Enter modal mode, which show the popup background and buttons
   (glgui-modal-set! #t)
-  
+
   ;; Show the message
   (glgui-widget-set! rrate:popup:cont message 'hidden #f)
-  
+
   ;; Remember what the last error was
   (set! lasterror (cond
                      ((eq? message rrate:popup:toofast)
@@ -633,7 +846,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                         "Inconsistent")
                      (else
                         "Not enough taps")))
-        
+
    ;; If the ignore option is used, show this button, otherwise hide it and center the retry button
    (if ignore?
      (begin
@@ -642,17 +855,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (begin
         (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'hidden #t)
         (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x (+ 125 rrate:xoffset))))
-  
+
   ;; Hide the cancel button
   (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden #t)
 )
 
 ;; Hides the popup
 (define (rrate:hide-popup)
- 
+
   ;; Exits modal mode, which hides the popup background
   (glgui-modal-set! #f)
-  
+
   ;; Hide all the messages
   (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
@@ -705,10 +918,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Resets the taps by clearing the tap icons and the data quality
 ;; and hiding the data quality
 (define (rrate:reset-taps)
-  
+
   ;; Clear tap data
   (set! rrate:times '())
-  
+
   (let loop ((taps rrate:tapicons) (qd rrate:qualitydots))
      (if (fx> (length taps) 0)
        (begin
@@ -720,7 +933,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Resets the module, going back to the tap page and clearing all the taps
 (define (rrate-reset)
-  
+
   ;; Reset trend text colour
   (glgui-widget-set! rrate:cont rrate:value 'color rrate:textcolor)
 
@@ -737,10 +950,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (begin
       (glgui-widget-set! rrate:cont rrate:timer 'hidden #f)
       (glgui-widget-set! rrate:cont rrate:timer 'label "0:00")))
-  
+
   ;; Go back to stage 1 to try again
   (rrate:go-to-stage 1)
-) 
+)
 
 ;; Clears the RRate related values from the store
 (define (rrate-store-clear)
@@ -754,7 +967,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;M Cancel procedure is a procedure that gets called when the user cancels
 ;M when they haven't done any tapping yet. Done procedure is a procedure
 ;M that is called once the user confirms the rate. These procedures are
-;M all optional and are called with no arguments. Currently only the height 
+;M all optional and are called with no arguments. Currently only the height
 ;M is adapted to (best at 433, keep >= 402), keep x, y, or w as 0, 0, and 320.
 ;M @end deffn
 (define (rrate-init x y w h store cancelproc doneproc)
@@ -762,7 +975,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:store store)
    (set! rrate:cancelproc cancelproc)
    (set! rrate:doneproc doneproc)
-  
+   (rrate:loadcdb)
+
    (set! rrate:gui (make-glgui))
    (set! rrate:cont (glgui-container rrate:gui x y w h))
 
@@ -778,7 +992,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (set! text_14.fnt textEng_14.fnt)
        (set! text_20.fnt textEng_20.fnt)
        (set! text_40.fnt textEng_40.fnt)))
-  
+
    ;; Initialize the settings page and set the settings
    (rrate:setting-init x y w h)
    (let* ((taps (settings-ref "Taps" 5))
@@ -789,30 +1003,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'current (if pindex pindex 0))
      (if rrate:settings:show_vibrate
        (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image (if (settings-ref "VibrateSound") checkedbox.img uncheckedbox.img))))
-    
-   ;; initialize audio - must come before audiofile-load! 
+
+   ;; initialize audio - must come before audiofile-load!
    (audiofile-init)
 
    ;; Load sound effect
    (set! rrate:sound:breath (audiofile-load "breath"))
    (set! beep (audiofile-load "beep"))
    (set! chimes (audiofile-load "chimes"))
-    
+
    ;; Black background behind everything
    (glgui-box rrate:cont 0 0 w h Black)
 
    (set! rrate:tapbg (glgui-pixmap rrate:cont 0 43 stage1_bg.img w (cadr stage1_bg.img)))
- 
+
    ;; Timer for a one minute tapping session
    (set! rrate:timer (glgui-label rrate:cont 40 70 (- w 80) 60 "0:00" numbers_56.fnt Black))
    (glgui-widget-set! rrate:cont rrate:timer 'align GUI_ALIGNCENTER)
    (glgui-widget-set! rrate:cont rrate:timer 'hidden (not rrate:oneminute))
-  
+
    (set! rrate:cancelbutton (glgui-button-local rrate:cont 12 6 145 32 "CANCEL" text_20.fnt
      (lambda (g . x)
        ;; Determine if there are any taps, if none then cancel out of module, otherwise just reset
        (if (fx= (length rrate:times) 0)
-         (if rrate:cancelproc (rrate:cancelproc))
+         (begin
+           (rrate:writecdb)
+           (if rrate:cancelproc (rrate:cancelproc)))
          (begin
            ;; Clear interval and scale values
            (set! rrate:calc:medinterval #f)
@@ -826,7 +1042,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:cancelbutton 'button-normal-color Gold)
    (glgui-widget-set! rrate:cont rrate:cancelbutton 'button-selected-color Goldenrod)
    (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden (not rrate:cancelproc))
-     
+
    ;; Go to the settings page after cancelling the current tapping
    (set! rrate:settingsbutton (glgui-button rrate:cont (- w 107) 6 100 32 icon_setup.img
      (lambda (g . x)
@@ -840,7 +1056,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:settingsbutton 'button-normal-color LightGray)
    (glgui-widget-set! rrate:cont rrate:settingsbutton 'button-selected-color Gray)
    (if rrate:no-settings? (glgui-widget-set! rrate:cont rrate:settingsbutton 'hidden #t))
-     
+
    ;; Remove the confirm question and show the other buttons instead
    (set! rrate:nobutton (glgui-button-local rrate:cont 6 6 68 32 "NO" text_20.fnt
      (lambda (g . x)
@@ -859,7 +1075,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:nobutton 'button-normal-color Orange)
    (glgui-widget-set! rrate:cont rrate:nobutton 'button-selected-color DarkOrange)
    (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
-     
+
    (set! rrate:restartbutton (glgui-button-local rrate:cont 6 6 140 32 "RESTART" text_20.fnt
      (lambda (g . x)
        (rrate-reset)
@@ -868,12 +1084,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:restartbutton 'button-normal-color Green)
    (glgui-widget-set! rrate:cont rrate:restartbutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #t)
-     
+
    ;; Confirmation question about animation
    (set! rrate:confirm (glgui-label-local rrate:cont 79 2 (- w 75 72) 36
      "RR_MATCH" text_14.fnt White))
    (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
-     
+
    ;; Remove the confirm question and show the other buttons instead, run done procedure
    (set! rrate:yesbutton (glgui-button-local rrate:cont (- w 65 6) 6 65 32 "YES" text_20.fnt
      (lambda (g . x)
@@ -882,20 +1098,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
-       (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
-       (if rrate:cancelproc (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
-        (if rrate:doneproc (rrate:doneproc))
+
+       ;; Go to stage 3 if REDCap is enabled in settings
+       (if (settings-ref "REDCAP_USE?")
+        (begin
+          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:studyidbox 'label (rrate:get-next-studyid))
+          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:ratelabel 'label
+            (string-append
+              (local-get-text "RRATE") " "
+              (number->string (fix (round rrate:rate))) " "
+              (local-get-text "RRATE_UNIT")))
+          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:timeslabel 'label
+            (string-append
+              (local-get-text "TAPS") " "
+              (number->string (length rrate:times))))
+          (rrate:go-to-stage 3))
+        (begin
+          (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
+          (if rrate:cancelproc (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
+          (if rrate:doneproc (rrate:doneproc))))
      )
    ))
    (glgui-widget-set! rrate:cont rrate:yesbutton 'button-normal-color Green)
    (glgui-widget-set! rrate:cont rrate:yesbutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
-     
+
    (set! rrate:exitbutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "EXIT" text_20.fnt
      (lambda (g . x)
        ;; Prepare for next time
-       (rrate-reset)   
-       (if rrate:cancelproc 
+       (rrate-reset)
+       (rrate:writecdb)
+       (if rrate:cancelproc
          (rrate:cancelproc)
          (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #t)
        )
@@ -904,6 +1137,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:exitbutton 'button-normal-color Green)
    (glgui-widget-set! rrate:cont rrate:exitbutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #t)
+
+   ;; Back and Save buttons for REDCap save page
+   (set! rrate:redcapsave:backbutton (glgui-button-local rrate:cont 6 6 140 32 "BACK" text_20.fnt
+      (lambda (g . x) (rrate:go-to-stage 2))))
+   (glgui-widget-set! rrate:cont rrate:redcapsave:backbutton 'button-normal-color Green)
+   (glgui-widget-set! rrate:cont rrate:redcapsave:backbutton 'button-selected-color DarkGreen)
+   (glgui-widget-set! rrate:cont rrate:redcapsave:backbutton 'hidden #t)
+
+   (set! rrate:redcapsave:savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt
+     (lambda (g . x)
+       (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:studyidbox 'label) (store-ref rrate:store "RR") rrate:times)
+       (rrate:go-to-stage 2)
+       (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
+       (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
+       (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
+       (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
+       (if rrate:cancelproc (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
+       (if rrate:doneproc (rrate:doneproc)))))
+   (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'button-normal-color Green)
+   (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'button-selected-color DarkGreen)
+   (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden #t)
 
    ;; Dots that show how many taps have been done so far
    (let ((tw (/ (- w 20 (car dot_light.img)) 11))
@@ -915,7 +1169,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Don't show these if recording for one minute
    (if rrate:oneminute
      (for-each (lambda (t) (glgui-widget-set! rrate:cont t 'hidden #t)) rrate:tapicons))
-  
+
    ;; Animated parts of the baby with ghosted parts on top
   (let* ((wspace (/ (- w (car top_layer.img)) 2))
          (hspace (/ (- h (cadr top_layer.img) 92) 2))
@@ -977,7 +1231,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (set! rrate:qualitybg_low (glgui-label-local rrate:cont x 50 w1 h1 "SLOW" text_14.fnt Black GUI_ALIGNRIGHT GUI_ALIGNCENTER)))
    (for-each (lambda (w) (glgui-widget-set! rrate:cont w 'hidden #t))
      (list rrate:qualitybg_high rrate:qualitybg_consistent rrate:qualitybg_low))
- 
+
    ;; Make 12 quality dot icons for the taps
    (let ((tw (/ (- w 20 (car dot_light.img)) 11))
          (ty -20))
@@ -985,15 +1239,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (if (fx< (length icons) 12)
          (dloop (+ tx tw) (append icons (list (glgui-pixmap rrate:cont tx ty dot_dark.img))))
          (set! rrate:qualitydots icons))))
-        
+
    ;; Make invisible button for syncing animation
    (set! rrate:trigger (glgui-box rrate:cont 0 60 w (- h 60) (color-fade White 0)))
-   (glgui-widget-set! rrate:cont rrate:trigger 'callback 
+   (glgui-widget-set! rrate:cont rrate:trigger 'callback
       (lambda (g wgt . x)
         ;; Make animation start at inhalation again
         (rrate:set-animate-offset)))
    (glgui-widget-set! rrate:cont rrate:trigger 'hidden #t)
-     
+
    ;; Tap button
    ;; Callback is void because input-handle of button is overwritten below
    (set! rrate:tapbutton (glgui-button-local rrate:cont 3 165 (- w 6) (- h 165) "TAP_INHALATION" text_40.fnt #f))
@@ -1020,7 +1274,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           )
        inside
    )))
-     
+
+   ;; REDCap save page
+   (set! rrate:redcapsave (glgui-container rrate:cont x 43 w (- h 43)))
+   (glgui-box rrate:redcapsave x 0 w h White)
+   (glgui-label rrate:redcapsave 25 (- h 98) (- w 50) 30 (local-get-text "REDCAP_SAVE") text_20.fnt Black)
+   (set! rrate:redcapsave:ratelabel  (glgui-label rrate:redcapsave 25 (- h 123) (- w 50) 25 "" text_14.fnt Black))
+   (set! rrate:redcapsave:timeslabel (glgui-label rrate:redcapsave 25 (- h 148) (- w 50) 25 "" text_14.fnt Black))
+   (set! rrate:redcapsave:keypad (glgui-keypad rrate:redcapsave 0 0 w 200 text_14.fnt keypad:numeric))
+   (set! rrate:redcapsave:studyidbox (textbox rrate:redcapsave 25 (- h 198) (- w 50) "STUDY_ID"
+      (lambda (label g wgt . xargs)
+        (let ((studyid (glgui-widget-get rrate:redcapsave rrate:redcapsave:studyidbox 'label)))
+          (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not (string->number studyid)))))
+      (lambda (g wgt . xargs)
+        (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #f))))
+   (glgui-widget-set! rrate:cont rrate:redcapsave 'hidden #t)
+
    ;; Create popup background and message
    (set! rrate:popup:cont (glgui-container rrate:gui x y w h))
    (glgui-widget-set! rrate:gui rrate:popup:cont 'modal #t)
@@ -1046,7 +1315,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    ;; Make retry button with the same callback as the no button
    (set! rrate:popup:retrybutton (glgui-button-local rrate:popup:cont (+ 52 rrate:xoffset) (+ 125 rrate:yoffset) 139 32 "RETRY" text_20.fnt
-     (lambda (g wgt . x) 
+     (lambda (g wgt . x)
        (rrate:hide-popup)
        ;; Reset trend text colour
        (glgui-widget-set! rrate:cont rrate:value 'color rrate:textcolor)
@@ -1060,7 +1329,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'button-normal-color Green)
    (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'button-selected-color DarkGreen)
    (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'modal #t)
-     
+
    ;; Make Ignore button for rejecting retry, use same callback as Yes button for matching animation
    (set! rrate:popup:ignorebutton (glgui-button-local rrate:popup:cont (+ 198 rrate:xoffset) (+ 125 rrate:yoffset) 139 32 "IGNORE" text_20.fnt
      (lambda (g wgt . x)
@@ -1077,7 +1346,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Running procedure for the rrate module - should be called continuously when on the RRate page.
 ;; This checks if the page should time out, too long between taps.
 (define (rrate-run t)
-   
+
    ;; If timer active and a minute since starting, going to animation
    (if rrate:starttime
      (if (>= (- (current-time-seconds) rrate:starttime) 60.0)
@@ -1090,7 +1359,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                  (if (fx> (length ts) 1)
                    (loop (cdr ts) (append diffs (list (- (cadr ts) (car ts)))))
                    ;; At the end of the loop, compute median interval and determine scale from this
-                   (let ((consistency (/ (settings-ref "Consistency" 12) 100))) 
+                   (let ((consistency (/ (settings-ref "Consistency" 12) 100)))
                      (set! rrate:calc:medinterval (median diffs))
                      (set! rrate:calc:yscale (/ 9.5 (* rrate:calc:medinterval consistency))))))
                ;; If less than 2 taps, just set median to 60 seconds
@@ -1107,7 +1376,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                (set! rrate:rate medrate)
                ;; Show popup, and change RR colour to red for if we go to the animation page
                (glgui-widget-set! rrate:cont rrate:value 'color Grey)
-               (rrate:show-popup (if (fx< (length rrate:times) 4) rrate:popup:notenough 
+               (rrate:show-popup (if (fx< (length rrate:times) 4) rrate:popup:notenough
                  (if (>= medrate 140) rrate:popup:toofast rrate:popup:inconsistent)) (< medrate 200)
                )
              )
@@ -1119,7 +1388,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                (set! rrate:rate (fixnum->flonum count))
                (glgui-widget-set! rrate:cont rrate:value 'label (local-get-text valstr))
                (glgui-widget-set! rrate:cont rrate:value 'x (+ (if (fx= (string-length valstr) 3) 35 44) rrate:xoffset)))))
-         
+
          (if (not rrate:oneminute)
            ;; Show the quality feedback as a artificial horizon
            (rrate:show-quality))
@@ -1151,6 +1420,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (glgui-widget-set! rrate:gui rrate:settings:language 'hidden (or (not rrate:settings:viewing) (not (fx= rrate:settings:page 0))))
       (glgui-widget-set! rrate:gui rrate:settings:taps 'hidden (or (not rrate:settings:viewing) (not (fx= rrate:settings:page 1))))
       (glgui-widget-set! rrate:gui rrate:settings:consistency 'hidden (or (not rrate:settings:viewing) (not (fx= rrate:settings:page 2))))
+      (glgui-widget-set! rrate:gui rrate:settings:redcap 'hidden (or (not rrate:settings:viewing) (not (fx= rrate:settings:page 3))))
       (glgui-widget-set! rrate:gui rrate:cont 'hidden rrate:settings:viewing)))
 )
 

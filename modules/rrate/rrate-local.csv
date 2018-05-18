@@ -28,3 +28,16 @@ C_CONSISTENCY,C = Consistency Threshold,C = webikoma okukwatagana,[t],ተ = የ�
 M_pC,M + C,M + C,M + C,አ+ተ,M + C,M + C,M + C,M + C,M + R,M + C
 M,M,M,M,አ,M,M,M,M,M,M
 M_mC,M - C,M - C,M - C,አ-ተ,M - C,M - C,M - C,M - C,M - R,M - C
+REDCAP,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap
+HOST,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:
+URL,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:
+TOKEN,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:
+FORM,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:
+EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:
+UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap
+STUDY_ID,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:
+REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?
+BACK,Back,Back,Back,Back,Back,Back,Back,Back,Back,Back
+SAVE,Save,Save,Save,Save,Save,Save,Save,Save,Save,Save
+REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap
+TAPS,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:
