@@ -69,7 +69,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                        (cons "Consistency" 13)
                        (cons "VibrateSound" #f)
                        (cons "HOST" "")
-                       (cons "URL" "")
+                       (cons "URL" "/redcap/api/")
                        (cons "TOKEN" "")
                        (cons "FORM" "")
                        (cons "EVENT" "")
@@ -238,8 +238,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (textboxes-ver rrate:settings:redcap:boxcontainer '("TOKEN") (- w 50) 90 #f onfocuscb)
     (textboxes-hor rrate:settings:redcap:boxcontainer '("FORM" "EVENT") (- w 50) 40 #f onfocuscb))
   (let ((uploadbutton (glgui-button-local rrate:settings:redcap:boxcontainer 0 0 (- w 50) 30 "UPLOAD" text_20.fnt
-          (lambda (g wgt . xargs)
-            #t))))
+          (lambda (g wgt . xargs) (rrate:redcap-upload)))))
    (glgui-widget-set! rrate:settings:redcap:boxcontainer uploadbutton 'button-normal-color Red)
    (glgui-widget-set! rrate:settings:redcap:boxcontainer uploadbutton 'button-selected-color DarkRed))
   (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 43 w 160 text_14.fnt))
@@ -296,6 +295,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (set! rrate:settings:languagechoices (sort rrate:settings:languagechoices (lambda (a b) (string<=? (cdr a) (cdr b))))))))
   rrate:settings:languagechoices
 )
+
+;; Upload data to REDCap
+;; This uploads:
+;;  - the integral respiratory rate to variable "rrate_rate";
+;;  - when the save button was pressed to variable "rrate_time"; and
+;;  - as a string, the timestamp for the first tap,
+;;    then the time passed (s) since the first tap for each subsequent tap
+;;    to variable "rrate_taps"
+;; The given form will be set to "Complete" (2)
+;; TODO: Error handling
+(define (rrate:redcap-upload)
+  (let* ((host  (settings-ref "HOST" #f))
+         (url   (settings-ref "URL" #f))
+         (token (settings-ref "TOKEN" #f))
+         (event (settings-ref "EVENT" ""))
+         (form  (settings-ref "FORM" ""))
+         (form-complete  (string-append form "_complete")))
+    (redcap-url-set! url)
+    (table-for-each (lambda (recordno lst)
+      (let ((instance (number->string (redcap-get-next-instance host token recordno form)))
+            (data `(("rrate_rate"   . ,(car lst))
+                    ("rrate_time"   . ,(cadr lst))
+                    ("rrate_taps"   . ,(caddr lst))
+                    (,form-complete . "2"))))
+        (redcap-import-record host token recordno data 'event event 'instrument form 'instance instance))) rrate:datatable)))
 
 ;; Set keyboard visibility and defocus textbox if keypad is closed
 (define (set-keypad-hidden b)
@@ -431,7 +455,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:redcapsave:ratelabel #f)
 (define rrate:redcapsave:timeslabel #f)
 (define rrate:redcapsave:keypad #f)
-(define rrate:redcapsave:studyidbox #f)
+(define rrate:redcapsave:recordnobox #f)
 (define rrate:redcapsave:backbutton #f)
 (define rrate:redcapsave:savebutton #f)
 ;;(define rrate:tapmessage #f)
@@ -510,32 +534,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (fl/ (fl* r 2. pi) 60.)))
 
 ;; CDB for storing data to be uploaded to REDCap
-(define filepath (string-append (system-directory) (system-pathseparator) "data.cdb"))
-(define datatable #f)
+(define rrate:filepath (string-append (system-directory) (system-pathseparator) "data.cdb"))
+(define rrate:datatable #f)
 
 ;; If a CDB exists, load it into datatable; otherwise, create empty table
 ;; N.B. Should only be called once on init
 (define (rrate:loadcdb)
-  (if (file-exists? filepath)
-      (set! datatable (cdb->table filepath)))
-  (if (not (table? datatable))
-      (set! datatable (make-table))))
+  (if (file-exists? rrate:filepath)
+      (set! rrate:datatable (cdb->table rrate:filepath)))
+  (if (not (table? rrate:datatable))
+      (set! rrate:datatable (make-table))))
 
 ;; Save datatable to cdb
 ;; N.B. Should be called at least on exit
-(define (rrate:writecdb) (table->cdb datatable filepath))
+(define (rrate:writecdb) (table->cdb rrate:datatable rrate:filepath))
 
 ;; Save data to datatable
 ;; rate: integral breathing rate in breaths/minute
 ;; times: list of timestamps of taps in floats of seconds since epoch
 ;; The table has format:
-;;  - key:   studyid
-;;  - value: `(,rrate ,now ,times)
-;;      where times is a string corresponding to the start time
+;;  - key:   recordno
+;;  - value: `(,rrate ,now ,taps)
+;;      where taps is a string corresponding to the start time
 ;;      followed by time elapsed since start for each tap, separated by semicolons
 ;; This copies part of `init-rrate` from parts/apps/PneumOx/sandbox/main.sx
-(define (rrate:savedata studyid rrate times)
-  (table-set! datatable studyid
+(define (rrate:savedata recordno rrate times)
+  (table-set! rrate:datatable recordno
     `(,rrate
       ,(seconds->string (current-time-seconds) "%Y-%m-%d %H:%M:%S")
       ,(let ((starttime (car times))
@@ -546,19 +570,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (roundtostring (- starttime (floor starttime))) ";"
           (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))))
 
-;; Get the next available study ID; return 1 if none used
+;; Get the next available record number; return 1 if none used
 ;; N.B. Will take O(n); if table is expected to be very large,
-;;  call this once and keep track of largest study ID in a variable
-(define (rrate:get-next-studyid)
-  (let ((studyid 0))
+;;  call this once and keep track of largest record number in a variable
+(define (rrate:get-next-recordno)
+  (let ((recordno 0))
     (table-for-each (lambda (k v)
       (let ((key (string->number k)))
-        (if (> key studyid) (set! studyid key)))) datatable)
-    (number->string (+ studyid 1))))
+        (if (> key recordno) (set! recordno key)))) rrate:datatable)
+    (number->string (+ recordno 1))))
 
 ;; Erase all existing data
 ;; N.B. Actual CDB file will not be written over until rrate:writecdb is called
-(define (rrate:erase-data) (set! datatable (make-table)))
+(define (rrate:erase-data) (set! rrate:datatable (make-table)))
 
 ;; Sets the offset of the animation so that it starts on inhalation right now
 (define (rrate:set-animate-offset)
@@ -802,10 +826,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! rrate:cont rrate:redcapsave:backbutton 'hidden (not stage3?))
     (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not stage3?))
 
-    ;; If leaving stage 3, hide keypad and defocus studyidbox
+    ;; If leaving stage 3, hide keypad and defocus recordnobox
     (if (not stage3?)
       (begin
-        (if rrate:redcapsave:studyidbox (glgui-widget-set! rrate:redcapsave rrate:redcapsave:studyidbox 'focus #f))
+        (if rrate:redcapsave:recordnobox (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'focus #f))
         (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #t)))
 
     ;; Reset skipping breath sound if going back to stage 1
@@ -1102,7 +1126,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        ;; Go to stage 3 if REDCap is enabled in settings
        (if (settings-ref "REDCAP_USE?")
         (begin
-          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:studyidbox 'label (rrate:get-next-studyid))
+          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'label (rrate:get-next-recordno))
           (glgui-widget-set! rrate:redcapsave rrate:redcapsave:ratelabel 'label
             (string-append
               (local-get-text "RRATE") " "
@@ -1147,7 +1171,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    (set! rrate:redcapsave:savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt
      (lambda (g . x)
-       (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:studyidbox 'label) (store-ref rrate:store "RR") rrate:times)
+       (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
        (rrate:go-to-stage 2)
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
@@ -1282,10 +1306,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:redcapsave:ratelabel  (glgui-label rrate:redcapsave 25 (- h 123) (- w 50) 25 "" text_14.fnt Black))
    (set! rrate:redcapsave:timeslabel (glgui-label rrate:redcapsave 25 (- h 148) (- w 50) 25 "" text_14.fnt Black))
    (set! rrate:redcapsave:keypad (glgui-keypad rrate:redcapsave 0 0 w 200 text_14.fnt keypad:numeric))
-   (set! rrate:redcapsave:studyidbox (textbox rrate:redcapsave 25 (- h 198) (- w 50) "STUDY_ID"
+   (set! rrate:redcapsave:recordnobox (textbox rrate:redcapsave 25 (- h 198) (- w 50) "RECORD_NO"
       (lambda (label g wgt . xargs)
-        (let ((studyid (glgui-widget-get rrate:redcapsave rrate:redcapsave:studyidbox 'label)))
-          (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not (string->number studyid)))))
+        (let ((recordno (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label)))
+          (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not (string->number recordno)))))
       (lambda (g wgt . xargs)
         (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #f))))
    (glgui-widget-set! rrate:cont rrate:redcapsave 'hidden #t)

@@ -35,7 +35,7 @@ TOKEN,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:
 FORM,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:
 EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:
 UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap
-STUDY_ID,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:,Study Number:
+RECORD_NO,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:
 REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?
 BACK,Back,Back,Back,Back,Back,Back,Back,Back,Back,Back
 SAVE,Save,Save,Save,Save,Save,Save,Save,Save,Save,Save
