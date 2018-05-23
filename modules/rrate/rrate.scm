@@ -87,6 +87,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:settings:redcap #f)
 (define rrate:settings:redcap:boxcontainer #f)
 (define rrate:settings:redcap:focusedbox #f)
+(define rrate:settings:redcap:uploadbutton #f)
 (define rrate:settings:keypad #f)
 (define rrate:settings:backbutton #f)
 (define rrate:settings:nextbutton #f)
@@ -234,13 +235,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (onfocuscb (lambda (g wgt . xargs)
           (set! rrate:settings:redcap:focusedbox wgt)
           (set-keypad-hidden #f))))
-    (textboxes-hor rrate:settings:redcap:boxcontainer '("HOST" "URL") (- w 50) 140 #f onfocuscb)
-    (textboxes-ver rrate:settings:redcap:boxcontainer '("TOKEN") (- w 50) 90 #f onfocuscb)
-    (textboxes-hor rrate:settings:redcap:boxcontainer '("FORM" "EVENT") (- w 50) 40 #f onfocuscb))
-  (let ((uploadbutton (glgui-button-local rrate:settings:redcap:boxcontainer 0 0 (- w 50) 30 "UPLOAD" text_20.fnt
-          (lambda (g wgt . xargs) (rrate:redcap-upload)))))
-   (glgui-widget-set! rrate:settings:redcap:boxcontainer uploadbutton 'button-normal-color Red)
-   (glgui-widget-set! rrate:settings:redcap:boxcontainer uploadbutton 'button-selected-color DarkRed))
+    (textboxes-hor rrate:settings:redcap:boxcontainer '("HOST" "URL")   (- w 50) 140 aftercharcb onfocuscb)
+    (textboxes-ver rrate:settings:redcap:boxcontainer '("TOKEN")        (- w 50) 90  aftercharcb onfocuscb)
+    (textboxes-hor rrate:settings:redcap:boxcontainer '("FORM" "EVENT") (- w 50) 40  aftercharcb onfocuscb))
+  (set! rrate:settings:redcap:uploadbutton (glgui-button-local rrate:settings:redcap:boxcontainer 0 0 (- w 50) 30 "UPLOAD" text_20.fnt
+          (lambda (g wgt . xargs)
+            (if (not (rrate:redcap-upload))
+                (rrate:show-popup rrate:popup:redcap #f))
+            (set-uploadbutton-hidden))))
+  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'button-normal-color Red)
+  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'button-selected-color DarkRed)
+  (set-uploadbutton-hidden)
   (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 43 w 160 text_14.fnt))
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn #t)
   (set-boxcontainer-hidden (not (settings-ref "REDCAP_USE?")))
@@ -310,16 +315,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (url   (settings-ref "URL" #f))
          (token (settings-ref "TOKEN" #f))
          (event (settings-ref "EVENT" ""))
-         (form  (settings-ref "FORM" ""))
-         (form-complete  (string-append form "_complete")))
+         (form  (settings-ref "FORM" #f))
+         (success #t))
     (redcap-url-set! url)
-    (table-for-each (lambda (recordno lst)
-      (let ((instance (number->string (redcap-get-next-instance host token recordno form)))
-            (data `(("rrate_rate"   . ,(car lst))
-                    ("rrate_time"   . ,(cadr lst))
-                    ("rrate_taps"   . ,(caddr lst))
-                    (,form-complete . "2"))))
-        (redcap-import-record host token recordno data 'event event 'instrument form 'instance instance))) rrate:datatable)))
+    (table-for-each (lambda (recordno sessions)
+      (let* ((repeatable? (redcap-repeatable? host token))
+             (get-data (lambda (s) `(("rrate_rate" . ,(session-rate s))
+                                     ("rrate_time" . ,(session-time s))
+                                     ("rrate_taps" . ,(session-taps s)))))
+             (upload (lambda (session instrument instance)
+                (set! success (and success
+                  (redcap-import-record host token recordno (get-data session) 'event event 'instrument instrument 'instance instance))))))
+        (if repeatable?
+            (let loop ((i (- (length sessions) 1))
+                       (instance (redcap-get-next-instance host token recordno form)))
+              (upload (list-ref sessions i) form (number->string instance))
+              (if (> i 0) (loop (- i 1) (+ instance 1))))
+            (upload (car sessions) #f #f))))
+      rrate:datatable)
+    (if success (rrate:erase-data))
+    success))
+
+;; Set REDCap upload button visibility
+;; (It should really take a boolean parameter but the only time it's hidden is when the datatable is empty so I cheated a little)
+(define (set-uploadbutton-hidden)
+  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden (= (table-length rrate:datatable) 0)))
 
 ;; Set keyboard visibility and defocus textbox if keypad is closed
 (define (set-keypad-hidden b)
@@ -383,7 +403,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-box g x:inner y:inner w:inner h:inner White)
     (let ((inputlabel (glgui-inputlabel g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White)))
       (glgui-widget-set! g inputlabel 'aftercharcb
-        (lambda args (if aftercharcb (apply aftercharcb (cons label args)))))
+        (lambda args (if (procedure? aftercharcb) (apply aftercharcb (cons label args)))))
       (glgui-widget-set! g inputlabel 'onfocuscb onfocuscb)
       inputlabel)))
 
@@ -469,6 +489,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:popup:toofast #f)
 (define rrate:popup:retrybutton #f)
 (define rrate:popup:ignorebutton #f)
+(define rrate:popup:redcap #f)
 
 ;; The procedures for what to do when done with the module
 (define rrate:cancelproc #f)
@@ -534,8 +555,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (fl/ (fl* r 2. pi) 60.)))
 
 ;; CDB for storing data to be uploaded to REDCap
+;; The datatable will have the structure
+;;  - key: integer
+;;  - value: list of sessions
+;; While a session has the structure
+;;  (rrate: string, time: string, taps: string)
+;; where
+;;  rate is the integral breathing rate in breaths/minute as a string
+;;  time  is the timestamp in seconds since epoch of when save was triggered
+;;  taps  is a string corresponding to the start time
+;;    followed by time elapsed since start for each tap, separated by semicolons
 (define rrate:filepath (string-append (system-directory) (system-pathseparator) "data.cdb"))
 (define rrate:datatable #f)
+(define-structure session rate time taps)
 
 ;; If a CDB exists, load it into datatable; otherwise, create empty table
 ;; N.B. Should only be called once on init
@@ -550,25 +582,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (rrate:writecdb) (table->cdb rrate:datatable rrate:filepath))
 
 ;; Save data to datatable
-;; rate: integral breathing rate in breaths/minute
-;; times: list of timestamps of taps in floats of seconds since epoch
-;; The table has format:
-;;  - key:   recordno
-;;  - value: `(,rrate ,now ,taps)
-;;      where taps is a string corresponding to the start time
-;;      followed by time elapsed since start for each tap, separated by semicolons
 ;; This copies part of `init-rrate` from parts/apps/PneumOx/sandbox/main.sx
 (define (rrate:savedata recordno rrate times)
+  (let ((sessions (table-ref rrate:datatable recordno #f)))
   (table-set! rrate:datatable recordno
-    `(,rrate
-      ,(seconds->string (current-time-seconds) "%Y-%m-%d %H:%M:%S")
-      ,(let ((starttime (car times))
+      (cons (make-session
+        rrate
+        (seconds->string (current-time-seconds) "%Y-%m-%d %H:%M:%S")
+        (let ((starttime (car times))
              (nexttimes (cdr times))
              (roundtostring (lambda (n) (number->string (round-decimal n 4)))))
         (string-append
           (seconds->string starttime "%Y-%m-%d %H:%M:%S")
           (roundtostring (- starttime (floor starttime))) ";"
-          (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))))
+            (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))
+        (if sessions sessions '())))))
 
 ;; Get the next available record number; return 1 if none used
 ;; N.B. Will take O(n); if table is expected to be very large,
@@ -868,8 +896,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                         "Too fast")
                      ((eq? message rrate:popup:inconsistent)
                         "Inconsistent")
+                     ((eq? message rrate:popup:notenough)
+                        "Not enough taps")
                      (else
-                        "Not enough taps")))
+                        "Upload to REDCap failed")))
 
    ;; If the ignore option is used, show this button, otherwise hide it and center the retry button
    (if ignore?
@@ -1172,6 +1202,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:redcapsave:savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt
      (lambda (g . x)
        (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
+       (set-uploadbutton-hidden)
        (rrate:go-to-stage 2)
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
@@ -1332,6 +1363,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'modal #t)
    (set! rrate:popup:toofast (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
      "TAPS_TOO_FAST" text_20.fnt White))
+   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
+   (set! rrate:popup:redcap (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
+     "REDCAP_UPLOAD_FAILED" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
 
