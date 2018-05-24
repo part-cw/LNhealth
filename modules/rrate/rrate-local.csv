@@ -20,6 +20,7 @@ TAP_INHALATION,Tap on inhalation,Koona ku kigambo "okusika omukka",[t],[t],tuany
 TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,[t],የተዘበራረቀ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany aci beeric. theem det.,"Los toques son inconsistentes. Por favor, inténtelo de nuevo.","ch'aqwaypi mana samaq. ama hinachu kay, wakmanta qallariy","Limitanakaxa  janiwa walikiti. Mira suma,  wasitata lurañawa",Intervalles irréguliers. Réessayer,Toques são inconsistentes. Tente de novo.
 NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,[t],በቂ ያልሆነ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,akac tuany apeth. theem det.,"El número de toques es insuficiente. Por favor, inténtelo de nuevo","pisi chaqway. ama hinachu kay, wakmanta qallariy","Jani phuqata  limitanaka. Mira suma, wasitata lurañawa",Nombre d'intervalles insuffisant. Réessayer,Toques insuficientes. Tente de novo.
 TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,[t],በጣም ፈጣን ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany apuol apeidit. theem det.,"Los toques son demasiado rápidos. Por favor, inténtelo de nuevo","ch'aqwaykuna sinchiutqhay. ama hinachu kay, wakmanta qallariy","Limitaxa sinti k’ataki luratawa. Mira suma,  wasitata lurañawa",Intervalles trop courts. Réessayer,Toques muito rápidos. Tente de novo.
+REDCAP_UPLOAD_FAILED,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.,Upload to REDCap failed. Please make sure all your fields are correct and try again.
 RETRY,Retry,[t],[t],ደግመሽ ሞክሪው,baan theem,[t],[t],[t],Réessayer,[t]
 IGNORE,Ignore,[t],[t],ተይው,akac gaam,[t],[t],[t],Ignorer,Ignorar
 INCONSISTENT,Inconsistent,Tebikwatagana,[t],ተመሳሳይ ያልሆነ,aci yeic beeric,Inconsistente,mana unaypaq,jani wakisiri,Inconsistant,Inconsistente
@@ -28,3 +29,16 @@ C_CONSISTENCY,C = Consistency Threshold,C = webikoma okukwatagana,[t],ተ = የ�
 M_pC,M + C,M + C,M + C,አ+ተ,M + C,M + C,M + C,M + C,M + R,M + C
 M,M,M,M,አ,M,M,M,M,M,M
 M_mC,M - C,M - C,M - C,አ-ተ,M - C,M - C,M - C,M - C,M - R,M - C
+REDCAP,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap
+HOST,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:
+URL,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:
+TOKEN,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:
+FORM,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:
+EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:
+UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap
+RECORD_NO,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:
+REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?
+BACK,Back,Back,Back,Back,Back,Back,Back,Back,Back,Back
+SAVE,Save,Save,Save,Save,Save,Save,Save,Save,Save,Save
+REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap
+TAPS,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:
