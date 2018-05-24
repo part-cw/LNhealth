@@ -224,11 +224,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (set! rrate:settings:redcap (glgui-container rrate:gui x y w h))
   (glgui-widget-set! rrate:settings:redcap (glgui-box rrate:settings:redcap 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label-local rrate:settings:redcap 25 (- h 50) (- w 50) 30 "REDCAP" text_20.fnt Black)
+
   (checkbox rrate:settings:redcap 25 (- h 70) (- w 50) "REDCAP_USE?"
     (lambda (label checked? g wgt . xargs)
       (settings-set! label checked?)
       (set-boxcontainer-hidden (not checked?))
       (if (not checked?) (set-keypad-hidden #t))))
+
   (set! rrate:settings:redcap:boxcontainer (glgui-container rrate:settings:redcap 25 (- h 260) (- w 50) 180))
   (let ((aftercharcb (lambda (label g wgt . xargs)
           (settings-set! label (glgui-widget-get g wgt 'label))))
@@ -238,17 +240,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (textboxes-hor rrate:settings:redcap:boxcontainer '("HOST" "URL")   (- w 50) 140 aftercharcb onfocuscb)
     (textboxes-ver rrate:settings:redcap:boxcontainer '("TOKEN")        (- w 50) 90  aftercharcb onfocuscb)
     (textboxes-hor rrate:settings:redcap:boxcontainer '("FORM" "EVENT") (- w 50) 40  aftercharcb onfocuscb))
-  (set! rrate:settings:redcap:uploadbutton (glgui-button-local rrate:settings:redcap:boxcontainer 0 0 (- w 50) 30 "UPLOAD" text_20.fnt
-          (lambda (g wgt . xargs)
-            (if (not (rrate:redcap-upload))
-                (rrate:show-popup rrate:popup:redcap #f))
-            (set-uploadbutton-hidden))))
+  (set-boxcontainer-hidden (not (settings-ref "REDCAP_USE?")))
+
+  (set! rrate:settings:redcap:uploadbutton
+    (glgui-button-local rrate:settings:redcap:boxcontainer 0 0 (- w 50) 30 "UPLOAD" text_20.fnt
+      (lambda (g wgt . xargs)
+        (if (not (rrate:redcap-upload))
+            (rrate:show-popup rrate:popup:redcap #f))
+        (set-uploadbutton-hidden))))
   (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'button-normal-color Red)
   (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'button-selected-color DarkRed)
   (set-uploadbutton-hidden)
+
   (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 43 w 160 text_14.fnt))
-  (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn #t)
-  (set-boxcontainer-hidden (not (settings-ref "REDCAP_USE?")))
+  (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn defocus-focusedbox)
   (set-keypad-hidden #t)
 
   ;; Show vibrate option on first page under language options
@@ -341,18 +346,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (set-uploadbutton-hidden)
   (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden (= (table-length rrate:datatable) 0)))
 
-;; Set keyboard visibility and defocus textbox if keypad is closed
-(define (set-keypad-hidden b)
-  (glgui-widget-set! rrate:settings:redcap rrate:settings:keypad 'hidden b)
-  (if (and b rrate:settings:redcap:focusedbox)
-      (begin (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:focusedbox 'focus #f)
-             (set! rrate:settings:redcap:focusedbox #f))))
-
 ;; Set textboxes' container's visibility
 (define (set-boxcontainer-hidden b)
   (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'hidden b))
 
-;; Helper function for drawing a checkbox with label
+;; Set keyboard visibility and defocus textbox if keypad is closed
+(define (set-keypad-hidden b)
+  (glgui-widget-set! rrate:settings:redcap rrate:settings:keypad 'hidden b)
+  (if b (defocus-focusedbox)))
+
+;; Defocus currently focussed textbox
+(define (defocus-focusedbox)
+  (if rrate:settings:redcap:focusedbox
+      (begin (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:focusedbox 'focus #f)
+             (set! rrate:settings:redcap:focusedbox #f))))
+
+;; Draw checkbox with label
 ;; g: parent GUI of checkbox
 ;; x, y, w: (x, y) position of lower-left corner, width in pixels
 ;; label: label shown next to checkbox
@@ -377,14 +386,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (let* ((newvalue (if (= 0 (glgui-widget-get g wgt 'value)) 1 0))
                      (checked? (= 1 newvalue)))
                 (set-checkbutton! g wgt checked?)
-                (if callback (apply callback (append (list label checked? g wgt) xargs))))))
+                (if (procedure? callback) (apply callback (append (list label checked? g wgt) xargs))))))
            (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
       (glgui-widget-set! g checkbutton 'solid-color #t)
       (glgui-widget-set! g checkbutton 'rounded #f)
-      (set-checkbutton! g checkbutton (settings-ref label))
+      (set-checkbutton!  g checkbutton (settings-ref label))
       checkbutton)))
 
-;; Helper function for drawing an empty textbox with border and label above
+;; Draw empty textbox with border and label above
 ;; g: parent GUI of box
 ;; x, y, w: (x, y) position of lower-left corner, width in pixels
 ;; label: label shown above textbox
@@ -407,7 +416,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (glgui-widget-set! g inputlabel 'onfocuscb onfocuscb)
       inputlabel)))
 
-;; Helper function for drawing textboxes vertically
+;; Draw textboxes vertically
 ;; g: parent GUI of textboxes
 ;; labels: list of labels for which to draw a textbox each
 ;; width: width in pixels of parent GUI
@@ -422,7 +431,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (textbox g 0 y:box width (list-ref labels i) aftercharcb onfocuscb)
           (loop (+ i 1))))))
 
-;; Helper function for drawing textboxes horizontally
+;; Draw textboxes horizontally
 ;; g: parent GUI of textboxes
 ;; labels: list of labels for which to draw a textbox each
 ;; width: width in pixels of parent GUI
@@ -555,15 +564,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (fl/ (fl* r 2. pi) 60.)))
 
 ;; CDB for storing data to be uploaded to REDCap
-;; The datatable will have the structure
-;;  - key: integer
-;;  - value: list of sessions
+;; The datatable will have the (key -> value) structure
+;;  (recordno: integer -> sessions: session[])
 ;; While a session has the structure
 ;;  (rrate: string, time: string, taps: string)
 ;; where
 ;;  rate is the integral breathing rate in breaths/minute as a string
-;;  time  is the timestamp in seconds since epoch of when save was triggered
-;;  taps  is a string corresponding to the start time
+;;  time is the timestamp in seconds since epoch of when save was triggered
+;;  taps is a string corresponding to the start time
 ;;    followed by time elapsed since start for each tap, separated by semicolons
 (define rrate:filepath (string-append (system-directory) (system-pathseparator) "data.cdb"))
 (define rrate:datatable #f)
@@ -585,18 +593,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; This copies part of `init-rrate` from parts/apps/PneumOx/sandbox/main.sx
 (define (rrate:savedata recordno rrate times)
   (let ((sessions (table-ref rrate:datatable recordno #f)))
-  (table-set! rrate:datatable recordno
-      (cons (make-session
-        rrate
-        (seconds->string (current-time-seconds) "%Y-%m-%d %H:%M:%S")
-        (let ((starttime (car times))
-             (nexttimes (cdr times))
-             (roundtostring (lambda (n) (number->string (round-decimal n 4)))))
-        (string-append
-          (seconds->string starttime "%Y-%m-%d %H:%M:%S")
-          (roundtostring (- starttime (floor starttime))) ";"
-            (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))
-        (if sessions sessions '())))))
+    (table-set! rrate:datatable recordno
+        (cons (make-session
+                rrate
+                (seconds->string (current-time-seconds) "%Y-%m-%d %H:%M:%S")
+                (let ((starttime (car times))
+                     (nexttimes (cdr times))
+                     (roundtostring (lambda (n) (number->string (round-decimal n 4)))))
+                  (string-append
+                    (seconds->string starttime "%Y-%m-%d %H:%M:%S")
+                    (roundtostring (- starttime (floor starttime))) ";"
+                    (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))
+              (if sessions sessions '())))))
 
 ;; Get the next available record number; return 1 if none used
 ;; N.B. Will take O(n); if table is expected to be very large,
