@@ -32,12 +32,15 @@ M_mC,M - C,M - C,M - C,አ-ተ,M - C,M - C,M - C,M - C,M - R,M - C
 REDCAP,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap
 HOST,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:
 URL,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:
-TOKEN,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:,Token:
-FORM,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:,Form:
+TOKEN,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:
+FORM,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:
 EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:
 UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap
 RECORD_NO,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:
 REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?
+LONGITUDINAL?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?
+REP_EVENTS?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?
+REP_FORMS?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?
 BACK,Back,Back,Back,Back,Back,Back,Back,Back,Back,Back
 SAVE,Save,Save,Save,Save,Save,Save,Save,Save,Save,Save
 REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap

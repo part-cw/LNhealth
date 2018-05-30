@@ -73,7 +73,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                        (cons "TOKEN" "")
                        (cons "FORM" "")
                        (cons "EVENT" "")
-                       (cons "REDCAP_USE?" #f)))
+                       (cons "REDCAP_USE?" #f)
+                       (cons "LONGITUDINAL?" #f)
+                       (cons "REP_EVENTS?" #f)
+                       (cons "REP_FORMS?" #f)))
 )
 
 ;; Settings page for configuring number of taps and consistency percent for threshold
@@ -86,6 +89,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:settings:percentlist #f)
 (define rrate:settings:redcap #f)
 (define rrate:settings:redcap:boxcontainer #f)
+(define rrate:settings:redcap:textboxes '())
 (define rrate:settings:redcap:focusedbox #f)
 (define rrate:settings:redcap:uploadbutton #f)
 (define rrate:settings:keypad #f)
@@ -124,7 +128,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Go back to previous settings page or out of settings completely
   (set! rrate:settings:backbutton (glgui-button rrate:settings:bg 12 6 100 32 left_arrow.img
     (lambda (g . x)
-      (if rrate:settings:keypad (set-keypad-hidden #t))
       (if (or (fx= rrate:settings:page 0) (and rrate:no-language? (fx= rrate:settings:page 1)))
         (set! rrate:settings:viewing #f)
         (set! rrate:settings:page (- rrate:settings:page 1))))))
@@ -225,36 +228,114 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:redcap (glgui-box rrate:settings:redcap 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label-local rrate:settings:redcap 25 (- h 50) (- w 50) 30 "REDCAP" text_20.fnt Black)
 
-  (checkbox rrate:settings:redcap 25 (- h 70) (- w 50) "REDCAP_USE?"
+  (checkbox rrate:settings:redcap 25 (- h 65) (- w 50) "REDCAP_USE?"
     (lambda (label checked? g wgt . xargs)
       (settings-set! label checked?)
-      (set-boxcontainer-hidden (not checked?))
-      (if (not checked?) (set-keypad-hidden #t))))
+      (boxcontainer-hidden-set! (not checked?))
+      (if (not checked?) (keypad-hidden-set! #t))))
 
-  (set! rrate:settings:redcap:boxcontainer (glgui-container rrate:settings:redcap 25 (- h 260) (- w 50) 180))
-  (let ((aftercharcb (lambda (label g wgt . xargs)
-          (settings-set! label (glgui-widget-get g wgt 'label))))
-        (onfocuscb (lambda (g wgt . xargs)
-          (set! rrate:settings:redcap:focusedbox wgt)
-          (set-keypad-hidden #f))))
-    (textboxes-hor rrate:settings:redcap:boxcontainer '("HOST" "URL")   (- w 50) 140 aftercharcb onfocuscb)
-    (textboxes-ver rrate:settings:redcap:boxcontainer '("TOKEN")        (- w 50) 90  aftercharcb onfocuscb)
-    (textboxes-hor rrate:settings:redcap:boxcontainer '("FORM" "EVENT") (- w 50) 40  aftercharcb onfocuscb))
-  (set-boxcontainer-hidden (not (settings-ref "REDCAP_USE?")))
+  ;; The fields that appear when REDCap is enabled
+  ;; The settings, widgets, and behaviour are as follows:
+  ;;  - HOST:  string
+  ;;  - URL:   string
+  ;;  - TOKEN: string
+  ;;  - LONGITUDINAL?: boolean
+  ;;  - EVENT: string
+  ;;    * will only appear when LONGITUDINAL? is true
+  ;;  - REP_EVENTS?:   boolean
+  ;;    * will only appear when LONGITUDINAL? is true
+  ;;    * cannot be selected at the same time as REP_FORMS?
+  ;;  - REP_FORMS?:    boolean
+  ;;    * cannot be selected at the same time as REP_EVENTS?
+  ;;  - FORM:  string
+  ;;    * will only appear when REP_FORMS? is true
+  ;;  - upload button
+  ;;    * will only appear when datatable is nonempty
+  (letrec  ((height 380)
+            (x 25)
+            (width (- w (* 2 x)))
+            (boxcontainer-y -10)
+            (longitudinal? (settings-ref "LONGITUDINAL?"))
+            (repforms?     (settings-ref "REP_FORMS?"))
+            (forms-shift (if longitudinal? 80 0))
+            (uploadbutton-y (+ (if longitudinal? 0 80) (if repforms? 0 50)))
+            ;; Set setting with same name as label with text from label
+            (aftercharcb (lambda (label g wgt . xargs)
+              (settings-set! label (glgui-widget-get g wgt 'label))))
+            ;; Shift boxcontainer so that wgt is visible and show the keypad
+            (onfocuscb (lambda (wgt y h)
+              (boxcontainer-position-set! y h)
+              (set! rrate:settings:redcap:focusedbox wgt)
+              (keypad-hidden-set! #f)))
+            (noshift-onfocuscb (lambda (g wgt . xargs) (onfocuscb wgt -10 height)))
+            (shift-onfocuscb   (lambda (g wgt . xargs)
+              (let* ((widget-y (glgui-widget-get g wgt 'y))
+                     (y (- 210 boxcontainer-y widget-y))
+                     (h (+ 140 widget-y)))
+                (onfocuscb wgt y h))))
+            (boxcontainer (glgui-container rrate:settings:redcap x boxcontainer-y width height))
+            (event (textbox boxcontainer 0 (- height 230) width "EVENT" aftercharcb shift-onfocuscb))
+            (repevents (checkbox boxcontainer 0 (- height 260) width "REP_EVENTS?"
+              ;; Set setting given by label with checkbox state
+              ;; If checked, uncheck repeated forms because at most one can be selected,
+              ;;  update its setting, and hide form-related widgets
+              (lambda (label checked? g wgt . xargs)
+                (settings-set! label checked?)
+                (if (and checked? (settings-ref "REP_FORMS?"))
+                    (begin (widget-y-shift! boxcontainer uploadbutton -50)
+                           (settings-set! "REP_FORMS?" #f)
+                           (textbox-struct-hidden-set!   boxcontainer form     #t)
+                           (checkbox-struct-checked-set! boxcontainer repforms #f)
+                           (keypad-hidden-set! #t))))))
+            (form (textbox boxcontainer 0 (- height 260 forms-shift) width "FORM" aftercharcb shift-onfocuscb))
+            (repforms (checkbox boxcontainer 0 (- height 210 forms-shift) width "REP_FORMS?"
+              ;; Set setting given by label with checkbox state
+              ;; If checked, uncheck repeated events because at most one can be selected
+              ;;  and update its setting
+              (lambda (label checked? g wgt . xargs)
+                (settings-set! label checked?)
+                (textbox-struct-hidden-set! boxcontainer form (not checked?))
+                (widget-y-shift! boxcontainer uploadbutton (if checked? 50 -50))
+                (if checked? (begin (settings-set! "REP_EVENTS?" #f)
+                                    (checkbox-struct-checked-set! boxcontainer repevents #f))
+                             (keypad-hidden-set! #t)))))
+            (uploadbutton (glgui-button-local boxcontainer 0 uploadbutton-y width 30 "UPLOAD" text_20.fnt
+              (lambda xargs
+                (if (not (rrate:redcap-upload))
+                  (rrate:show-popup rrate:popup:redcap #f))
+                (uploadbutton-hidden-set!)))))
+    (set! rrate:settings:redcap:boxcontainer boxcontainer)
+    (glgui-widget-set! rrate:settings:redcap boxcontainer 'draggable_y #t)
+    (glgui-widget-set! rrate:settings:redcap boxcontainer 'drag_keep 10)
+    (set! rrate:settings:redcap:textboxes (append
+      (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- height 150) aftercharcb noshift-onfocuscb)
+      `(,event ,form)))
+    (checkbox boxcontainer 0 (- height 180) width "LONGITUDINAL?"
+      ;; Set setting given by label with checkbox state
+      ;; If unchecked, hide event-related widgets and shift widgets below it
+      (lambda (label checked? g wgt . xargs)
+        (settings-set! label checked?)
+        (textbox-struct-hidden-set!  boxcontainer event        (not checked?))
+        (checkbox-struct-hidden-set! boxcontainer repevents    (not checked?))
+        (checkbox-struct-y-shift!    boxcontainer repforms     (if checked? 80 -80))
+        (textbox-struct-y-shift!     boxcontainer form         (if checked? 80 -80))
+        (widget-y-shift!             boxcontainer uploadbutton (if checked? 80 -80))
+        (keypad-hidden-set! #t)))
+    (textbox-struct-hidden-set!  boxcontainer form      (not repforms?))
+    (textbox-struct-hidden-set!  boxcontainer event     (not longitudinal?))
+    (checkbox-struct-hidden-set! boxcontainer repevents (not longitudinal?))
+    (boxcontainer-hidden-set! (not (settings-ref "REDCAP_USE?")))
 
-  (set! rrate:settings:redcap:uploadbutton
-    (glgui-button-local rrate:settings:redcap:boxcontainer 0 0 (- w 50) 30 "UPLOAD" text_20.fnt
-      (lambda (g wgt . xargs)
-        (if (not (rrate:redcap-upload))
-            (rrate:show-popup rrate:popup:redcap #f))
-        (set-uploadbutton-hidden))))
-  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'button-normal-color Red)
-  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'button-selected-color DarkRed)
-  (set-uploadbutton-hidden)
+    (set! rrate:settings:redcap:uploadbutton uploadbutton)
+    (glgui-widget-set! boxcontainer uploadbutton 'solid-color #t)
+    (glgui-widget-set! boxcontainer uploadbutton 'button-normal-color Red)
+    (glgui-widget-set! boxcontainer uploadbutton 'button-selected-color DarkRed)
+    (uploadbutton-hidden-set!))
 
-  (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 43 w 160 text_14.fnt))
-  (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn defocus-focusedbox)
-  (set-keypad-hidden #t)
+  (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 0 w 210 text_14.fnt))
+  (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn hideonreturn)
+  (glgui-widget-set! rrate:gui rrate:settings:keypad 'bgcolor DarkGrey)
+  (keypad-hidden-set! #t)
 
   ;; Show vibrate option on first page under language options
   (if rrate:settings:show_vibrate
@@ -279,7 +360,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Go to the next page or finish settings
   (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg (- w 107) 6 100 32 right_arrow.img
     (lambda (g . x)
-      (if rrate:settings:keypad (set-keypad-hidden #t))
       (if (fx= rrate:settings:page 3)
         ;; Leave the settings page
         (begin
@@ -313,53 +393,92 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;  - as a string, the timestamp for the first tap,
 ;;    then the time passed (s) since the first tap for each subsequent tap
 ;;    to variable "rrate_taps"
-;; The given form will be set to "Complete" (2)
-;; TODO: Error handling
 (define (rrate:redcap-upload)
-  (let* ((host  (settings-ref "HOST" #f))
-         (url   (settings-ref "URL" #f))
-         (token (settings-ref "TOKEN" #f))
-         (event (settings-ref "EVENT" ""))
-         (form  (settings-ref "FORM" #f))
-         (success #t))
+  (let* ((success #t)
+         (longitudinal?      (settings-ref "LONGITUDINAL?"))
+         (repeatable-events? (settings-ref "REP_EVENTS?"))
+         (repeatable-forms?  (settings-ref "REP_FORMS?"))
+         (repeatable? (or (and longitudinal? repeatable-events?) repeatable-forms?))
+         (host  (settings-ref "HOST"))
+         (url   (settings-ref "URL"))
+         (token (settings-ref "TOKEN"))
+         (event (if longitudinal?     (settings-ref "EVENT") #f))
+         (form  (if repeatable-forms? (settings-ref "FORM")  #f))
+         (get-data (lambda (s) `(("rrate_rate" . ,(session-rate s))
+                                 ("rrate_time" . ,(session-time s))
+                                 ("rrate_taps" . ,(session-taps s)))))
+         (upload (lambda (recordno session instrument instance)
+                    (set! success (and success
+                      (redcap-import-record host token recordno (get-data session) 'event event 'instrument instrument 'instance instance))))))
     (redcap-url-set! url)
-    (table-for-each (lambda (recordno sessions)
-      (let* ((repeatable? (redcap-repeatable? host token))
-             (get-data (lambda (s) `(("rrate_rate" . ,(session-rate s))
-                                     ("rrate_time" . ,(session-time s))
-                                     ("rrate_taps" . ,(session-taps s)))))
-             (upload (lambda (session instrument instance)
-                (set! success (and success
-                  (redcap-import-record host token recordno (get-data session) 'event event 'instrument instrument 'instance instance))))))
+    (table-for-each
+      (lambda (recordno sessions)
         (if repeatable?
             (let loop ((i (- (length sessions) 1))
-                       (instance (redcap-get-next-instance host token recordno form)))
-              (upload (list-ref sessions i) form (number->string instance))
-              (if (> i 0) (loop (- i 1) (+ instance 1))))
-            (upload (car sessions) #f #f))))
+                       (instance (redcap-get-next-instance-index host token recordno 'form form 'event event)))
+              (if instance
+                  (upload recordno (list-ref sessions i) form (number->string instance))
+                  (set! success #f))
+              (if (and success (> i 0))
+                  (loop (- i 1) (+ instance 1))))
+            (upload recordno (car sessions) #f #f)))
       rrate:datatable)
     (if success (rrate:erase-data))
     success))
 
 ;; Set REDCap upload button visibility
 ;; (It should really take a boolean parameter but the only time it's hidden is when the datatable is empty so I cheated a little)
-(define (set-uploadbutton-hidden)
+(define (uploadbutton-hidden-set!)
   (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden (= (table-length rrate:datatable) 0)))
 
 ;; Set textboxes' container's visibility
-(define (set-boxcontainer-hidden b)
+(define (boxcontainer-hidden-set! b)
   (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'hidden b))
 
-;; Set keyboard visibility and defocus textbox if keypad is closed
-(define (set-keypad-hidden b)
-  (glgui-widget-set! rrate:settings:redcap rrate:settings:keypad 'hidden b)
-  (if b (defocus-focusedbox)))
+;; Set keyboard visibility and call hideonreturn callback
+(define (keypad-hidden-set! b)
+  (glgui-widget-set! rrate:gui rrate:settings:keypad 'hidden b)
+  (if b ((glgui-widget-get rrate:gui rrate:settings:keypad 'hideonreturn))))
 
-;; Defocus currently focussed textbox
-(define (defocus-focusedbox)
-  (if rrate:settings:redcap:focusedbox
-      (begin (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:focusedbox 'focus #f)
-             (set! rrate:settings:redcap:focusedbox #f))))
+;; Shift widget down by `shift` pixels
+(define (widget-y-shift! g wgt shift)
+  (glgui-widget-set! g wgt 'y (- (glgui-widget-get g wgt 'y) shift)))
+
+;; Callback for keypad on return
+(define (hideonreturn)
+  (boxcontainer-position-set! -10 380)
+  (focusedbox-next!))
+
+;; Set boxcontainer position to reveal correct part of boxcontainer
+(define (boxcontainer-position-set! y h)
+  (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'yofs y)
+  (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'h h))
+
+;; Shift focus to next empty textbox
+(define (focusedbox-next!)
+  (let* ((curr-box rrate:settings:redcap:focusedbox)
+         (textbox-input-eq? (lambda (box i) (eq? curr-box (textbox-struct-input box))))
+         (curr-index (find-index textbox-input-eq? rrate:settings:redcap:textboxes))
+         (textbox-next? (lambda (box i)
+            (and curr-index (> i curr-index)
+                 (not (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input box) 'hidden))
+                 (string=? "" (string-trim (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input box) 'label))))))
+         (next-index (find-index textbox-next? rrate:settings:redcap:textboxes)))
+    (if curr-box (glgui-widget-set! rrate:settings:redcap:boxcontainer curr-box 'focus #f))
+    (if next-index
+        (let* ((next-box (textbox-struct-input (list-ref rrate:settings:redcap:textboxes next-index)))
+               (next-box-cb (glgui-widget-get rrate:settings:redcap:boxcontainer next-box 'onfocuscb)))
+          (set! rrate:settings:redcap:focusedbox next-box)
+          (glgui-widget-set! rrate:settings:redcap:boxcontainer next-box 'focus #t)
+          (next-box-cb rrate:settings:redcap:boxcontainer next-box))
+        (set! rrate:settings:redcap:focusedbox #f))))
+
+;; Find first index in list given predicate, or #f if not found
+(define (find-index pred lst)
+  (let loop ((p pred) (l lst) (i 0))
+    (cond ((eq? l '()) #f)
+          ((p (car l) i) i)
+          (else (loop p (cdr l) (+ i 1))))))
 
 ;; Draw checkbox with label
 ;; g: parent GUI of checkbox
@@ -367,31 +486,59 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; label: label shown next to checkbox
 ;; callback: callback for checkbox toggle; takes a string (the label), a boolean (checkbox state),
 ;;  followed by standard callback arguments
-;; Returns the pressable button part of the checkbox
+;; Returns a checkbox-struct
 ;; For the moment, font is fixed at text_14.fnt and checkbox dimensions are fixed accordingly
+(define-structure checkbox-struct outer inner button label)
+
 (define (checkbox g x y w label callback)
-  (let* ((d 17) (b 1)
-         (d:inner (- d (* 2 b)))
-         (padding (* 3 b))
-         (d:button (- d (* 2 padding))))
-    (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black)
-    (glgui-box g x y d d Black)
-    (glgui-box g (+ x b) (+ y b) d:inner d:inner White)
-    (let* ((set-checkbutton! (lambda (g wgt checked?)
-              (let ((newcolour (if checked? Black White)))
-                (glgui-widget-set! g wgt 'value (if checked? 1 0))
-                (glgui-widget-set! g wgt 'button-normal-color newcolour)
-                (glgui-widget-set! g wgt 'button-selected-color newcolour))))
-           (cb (lambda (g wgt . xargs)
-              (let* ((newvalue (if (= 0 (glgui-widget-get g wgt 'value)) 1 0))
-                     (checked? (= 1 newvalue)))
-                (set-checkbutton! g wgt checked?)
-                (if (procedure? callback) (apply callback (append (list label checked? g wgt) xargs))))))
-           (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
-      (glgui-widget-set! g checkbutton 'solid-color #t)
-      (glgui-widget-set! g checkbutton 'rounded #f)
-      (set-checkbutton!  g checkbutton (settings-ref label))
-      checkbutton)))
+  (letrec  ((d 17) (b 1)
+            (d:inner (- d (* 2 b)))
+            (padding (* 3 b))
+            (d:button (- d (* 2 padding)))
+            (label-widget (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black))
+            (outer (glgui-box g x y d d Black))
+            (inner (glgui-box g (+ x b) (+ y b) d:inner d:inner White))
+            (cb (lambda (g . xargs)
+                   (let* ((newvalue (if (= 0 (glgui-widget-get g checkbutton 'value)) 1 0))
+                          (checked? (= 1 newvalue)))
+                      (checkbox-checked-set! g checkbutton checked?)
+                      (if (procedure? callback) (apply callback (append (list label checked? g checkbutton) xargs))))))
+            (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
+    (glgui-widget-set! g inner 'callback cb)
+    (glgui-widget-set! g label-widget 'enableinput #t)
+    (glgui-widget-set! g label-widget 'onfocuscb
+      (lambda (g wgt . xargs)
+        (cb g)
+        (glgui-widget-set! g wgt 'focus #f)))
+    (glgui-widget-set! g checkbutton 'solid-color #t)
+    (glgui-widget-set! g checkbutton 'rounded #f)
+    (checkbox-checked-set! g checkbutton (settings-ref label))
+    (make-checkbox-struct outer inner checkbutton label-widget)))
+
+(define (checkbox-struct-hidden-set! g s b)
+  (glgui-widget-set! g (checkbox-struct-outer  s) 'hidden b)
+  (glgui-widget-set! g (checkbox-struct-inner  s) 'hidden b)
+  (glgui-widget-set! g (checkbox-struct-button s) 'hidden b)
+  (glgui-widget-set! g (checkbox-struct-label  s) 'hidden b))
+
+(define (checkbox-struct-y-shift! g s shift)
+  (let ((outer  (checkbox-struct-outer  s))
+        (inner  (checkbox-struct-inner  s))
+        (button (checkbox-struct-button s))
+        (label  (checkbox-struct-label  s)))
+    (widget-y-shift! g outer  shift)
+    (widget-y-shift! g inner  shift)
+    (widget-y-shift! g button shift)
+    (widget-y-shift! g label  shift)))
+
+(define (checkbox-checked-set! g c b)
+  (let ((newcolour (if b Black White)))
+    (glgui-widget-set! g c 'value (if b 1 0))
+    (glgui-widget-set! g c 'button-normal-color newcolour)
+    (glgui-widget-set! g c 'button-selected-color newcolour)))
+
+(define (checkbox-struct-checked-set! g s b)
+  (checkbox-checked-set! g (checkbox-struct-button s) b))
 
 ;; Draw empty textbox with border and label above
 ;; g: parent GUI of box
@@ -399,37 +546,83 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; label: label shown above textbox
 ;; aftercharcb: callback for keypress; takes a string (the label) followed by standard callback arguments
 ;; onfocuscb: callback for focus obtained; takes standard callback arguments
-;; Returns the editable label part of the textbox
+;; Returns a textbox-struct
 ;; For the moment, font is fixed at text_14.fnt and height is fixed accordingly
+(define-structure textbox-struct outer inner input label)
+
 (define (textbox g x y w label aftercharcb onfocuscb)
   (let* ((h 23) (h:label 17) (b 1)
          (x:inner (+ x b))
          (y:inner (+ y b))
          (w:inner (- w (* 2 b)))
-         (h:inner (- h (* 2 b))))
-    (glgui-label-local g x (+ y h) w h:label label text_14.fnt Black)
-    (glgui-box g x y w h Black)
-    (glgui-box g x:inner y:inner w:inner h:inner White)
-    (let ((inputlabel (glgui-inputlabel g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White)))
-      (glgui-widget-set! g inputlabel 'aftercharcb
-        (lambda args (if (procedure? aftercharcb) (apply aftercharcb (cons label args)))))
-      (glgui-widget-set! g inputlabel 'onfocuscb onfocuscb)
-      inputlabel)))
+         (h:inner (- h (* 2 b)))
+         (outer (glgui-box g x y w h Black))
+         (inner (glgui-box g x:inner y:inner w:inner h:inner White))
+         (lbwgt (glgui-label-local g x (+ y h) w h:label label text_14.fnt Black))
+         (input (input-label g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White)))
+    (glgui-widget-set! g input 'aftercharcb
+      (lambda args (if (procedure? aftercharcb) (apply aftercharcb (cons label args)))))
+    (glgui-widget-set! g input 'onfocuscb onfocuscb)
+    (make-textbox-struct outer inner input lbwgt)))
 
+;; Workaround for https://github.com/part-cw/lambdanative/issues/197
+;; Adds 'armed field for triggering focus
+(define (input-label g x y w h label font fgcolour bgcolour)
+  (let* ((input (glgui-inputlabel g x y w h label font fgcolour bgcolour))
+         (old-input-handler (glgui-widget-get g input 'input-handle))
+         (new-input-handler (lambda (g wgt type mx my)
+            (let* ((x         (glgui-widget-get g wgt 'x))
+                   (y         (glgui-widget-get g wgt 'y))
+                   (w         (glgui-widget-get g wgt 'w))
+                   (h         (glgui-widget-get g wgt 'h))
+                   (focus     (glgui-widget-get g wgt 'focus))
+                   (onfocuscb (glgui-widget-get g wgt 'onfocuscb))
+                   (armed     (glgui-widget-get g wgt 'armed))
+                   (inside (and (fx> mx x) (fx< mx (fx+ x w 5)) (fx> my y) (fx< my (fx+ y h)))))
+              (old-input-handler g wgt type mx my)
+              (cond ((fx= type EVENT_BUTTON1DOWN) (glgui-widget-set! g wgt 'armed inside))
+                    ((fx= type EVENT_BUTTON1UP)   (glgui-widget-set! g wgt 'armed #f)
+                      (if (and inside armed)
+                          (begin (glgui-widget-setglobal! g 'focus #f)
+                                 (glgui-widget-set! g wgt 'focus #t)
+                                 (if (and (procedure? onfocuscb) (not focus)) (onfocuscb g wgt type mx my))))))
+              inside))))
+    (glgui-widget-set! g input 'enableinput #f)
+    (glgui-widget-set! g input 'armed #f)
+    (glgui-widget-set! g input 'input-handle new-input-handler)
+    input))
+
+(define (textbox-struct-hidden-set! g s b)
+  (glgui-widget-set! g (textbox-struct-outer s) 'hidden b)
+  (glgui-widget-set! g (textbox-struct-inner s) 'hidden b)
+  (glgui-widget-set! g (textbox-struct-input s) 'hidden b)
+  (glgui-widget-set! g (textbox-struct-label s) 'hidden b))
+
+(define (textbox-struct-y-shift! g s shift)
+  (let ((outer (textbox-struct-outer s))
+        (inner (textbox-struct-inner s))
+        (input (textbox-struct-input s))
+        (label (textbox-struct-label s)))
+    (widget-y-shift! g outer shift)
+    (widget-y-shift! g inner shift)
+    (widget-y-shift! g input shift)
+    (widget-y-shift! g label shift)))
 ;; Draw textboxes vertically
 ;; g: parent GUI of textboxes
 ;; labels: list of labels for which to draw a textbox each
 ;; width: width in pixels of parent GUI
 ;; y: y-position of bottom of the textboxes
 ;; aftercharcb, onfocuscb: see `textbox`
+;; Returns a list of textbox-struct in the order of the labels
 (define (textboxes-ver g labels width y aftercharcb onfocuscb)
-  (let loop ((i 0))
-    (if (< i (length labels))
+  (let loop ((i (- (length labels) 1)) (textboxes '()))
+    (if (>= i 0)
         ;; 50 px = 10 for padding + 17 for the label + 23 for the textbox
         (let* ((top (+ y (* 50 (length labels))))
                (y:box (- top (* (+ i 1) 50))))
-          (textbox g 0 y:box width (list-ref labels i) aftercharcb onfocuscb)
-          (loop (+ i 1))))))
+          (loop (- i 1)
+                (cons (textbox g 0 y:box width (list-ref labels i) aftercharcb onfocuscb) textboxes)))
+        textboxes)))
 
 ;; Draw textboxes horizontally
 ;; g: parent GUI of textboxes
@@ -437,22 +630,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; width: width in pixels of parent GUI
 ;; y: y-position of bottom of the textboxes
 ;; aftercharcb, onfocuscb: see `textbox`
+;; Returns a list of textbox-struct in the order of the labels
 (define (textboxes-hor g labels width y aftercharcb onfocuscb)
-  (let loop ((i 0))
-    (if (< i (length labels))
-      ;; Add 4px of padding between each box
-      ;; First box has no offset and will be flush against the left side
-      ;; Last box is flush against the right side and needs 4px offset
-      ;; Other boxes need 2px padding on both sides so offset is 2px
-      (let* ((box-width (quotient width (length labels)))
-             (w (- box-width 4))
-             (x (+ (* i box-width)
-                   (cond
-                     ((zero? i) 0)
-                     ((< i (- (length labels) 1)) 2)
-                     (else 4)))))
-        (textbox g x y w (list-ref labels i) aftercharcb onfocuscb)
-        (loop (+ i 1))))))
+  (let loop ((i (- (length labels) 1)) (textboxes '()))
+    (if (>= i 0)
+        ;; Add 4px of padding between each box
+        ;; First box has no offset and will be flush against the left side
+        ;; Last box is flush against the right side and needs 4px offset
+        ;; Other boxes need 2px padding on both sides so offset is 2px
+        (let* ((box-width (quotient width (length labels)))
+               (w (- box-width 4))
+               (x (+ (* i box-width)
+                     (cond ((zero? i) 0)
+                           ((< i (- (length labels) 1)) 2)
+                           (else 4)))))
+          (loop (- i 1)
+                (cons (textbox g x y w (list-ref labels i) aftercharcb onfocuscb) textboxes)))
+        textboxes)))
 
 (define rrate:gui #f)
 (define rrate:cont #f)
@@ -575,6 +769,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;    followed by time elapsed since start for each tap, separated by semicolons
 (define rrate:filepath (string-append (system-directory) (system-pathseparator) "data.cdb"))
 (define rrate:datatable #f)
+(define rrate:recordno #f)
 (define-structure session rate time taps)
 
 ;; If a CDB exists, load it into datatable; otherwise, create empty table
@@ -592,6 +787,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Save data to datatable
 ;; This copies part of `init-rrate` from parts/apps/PneumOx/sandbox/main.sx
 (define (rrate:savedata recordno rrate times)
+  (set! rrate:recordno recordno)
   (let ((sessions (table-ref rrate:datatable recordno #f)))
     (table-set! rrate:datatable recordno
         (cons (make-session
@@ -606,15 +802,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                     (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))
               (if sessions sessions '())))))
 
-;; Get the next available record number; return 1 if none used
-;; N.B. Will take O(n); if table is expected to be very large,
-;;  call this once and keep track of largest record number in a variable
+;; Get the next record number
+;; If no saves have been performed yet, do not provide a preset record number
+;; If a save has been performed,
+;;    if the project has repeatable events or instruments,
+;;      provide the same record number as last time;
+;;    otherwise, increment to the next record number.
 (define (rrate:get-next-recordno)
-  (let ((recordno 0))
-    (table-for-each (lambda (k v)
-      (let ((key (string->number k)))
-        (if (> key recordno) (set! recordno key)))) rrate:datatable)
-    (number->string (+ recordno 1))))
+  (if rrate:recordno
+      (number->string
+        (+ (string->number rrate:recordno)
+           (if (or (settings-ref "REP_FORMS?")
+                   (settings-ref "REP_EVENTS?"))
+               0 1)))
+      ""))
 
 ;; Erase all existing data
 ;; N.B. Actual CDB file will not be written over until rrate:writecdb is called
@@ -1210,7 +1411,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:redcapsave:savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt
      (lambda (g . x)
        (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
-       (set-uploadbutton-hidden)
+       (uploadbutton-hidden-set!)
        (rrate:go-to-stage 2)
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
@@ -1344,13 +1545,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-label rrate:redcapsave 25 (- h 98) (- w 50) 30 (local-get-text "REDCAP_SAVE") text_20.fnt Black)
    (set! rrate:redcapsave:ratelabel  (glgui-label rrate:redcapsave 25 (- h 123) (- w 50) 25 "" text_14.fnt Black))
    (set! rrate:redcapsave:timeslabel (glgui-label rrate:redcapsave 25 (- h 148) (- w 50) 25 "" text_14.fnt Black))
-   (set! rrate:redcapsave:keypad (glgui-keypad rrate:redcapsave 0 0 w 200 text_14.fnt keypad:numeric))
-   (set! rrate:redcapsave:recordnobox (textbox rrate:redcapsave 25 (- h 198) (- w 50) "RECORD_NO"
+   (set! rrate:redcapsave:keypad (glgui-keypad rrate:cont 0 0 w 210 text_14.fnt keypad:numeric))
+   (glgui-widget-set! rrate:cont rrate:redcapsave:keypad 'bgcolor DarkGrey)
+   (glgui-widget-set! rrate:cont rrate:redcapsave:keypad 'hidden #t)
+   (glgui-widget-set! rrate:cont rrate:redcapsave:keypad 'hideonreturn
+      (lambda () (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'focus #f)))
+   (set! rrate:redcapsave:recordnobox (textbox-struct-input (textbox rrate:redcapsave 25 (- h 198) (- w 50) "RECORD_NO"
       (lambda (label g wgt . xargs)
         (let ((recordno (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label)))
           (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not (string->number recordno)))))
       (lambda (g wgt . xargs)
-        (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #f))))
+        (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #f)))))
    (glgui-widget-set! rrate:cont rrate:redcapsave 'hidden #t)
 
    ;; Create popup background and message
