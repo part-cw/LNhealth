@@ -251,8 +251,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;;    * will only appear when REP_FORMS? is true
   ;;  - upload button
   ;;    * will only appear when datatable is nonempty
-  (letrec  ((height 380)
-            (x 25)
+  (letrec  ((x 25)
+            (height 380)
             (width (- w (* 2 x)))
             (boxcontainer-y -10)
             (longitudinal? (settings-ref "LONGITUDINAL?"))
@@ -305,8 +305,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                   (rrate:show-popup rrate:popup:redcap #f))
                 (uploadbutton-hidden-set!)))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
-    (glgui-widget-set! rrate:settings:redcap boxcontainer 'draggable_y #t)
-    (glgui-widget-set! rrate:settings:redcap boxcontainer 'drag_keep 10)
+    (glgui-widget-set! rrate:settings:redcap boxcontainer 'draggable_y? #t)
+    (glgui-widget-set! rrate:settings:redcap boxcontainer 'drag_keep 300)
+    (glgui-widget-set! rrate:settings:redcap boxcontainer 'input-handle dearming-container-input-drag)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- height 150) aftercharcb noshift-onfocuscb)
       `(,event ,form)))
@@ -402,7 +403,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (host  (settings-ref "HOST"))
          (url   (settings-ref "URL"))
          (token (settings-ref "TOKEN"))
-         (event (if longitudinal?     (settings-ref "EVENT") #f))
+         (event (if longitudinal?     (settings-ref "EVENT") ""))
          (form  (if repeatable-forms? (settings-ref "FORM")  #f))
          (get-data (lambda (s) `(("rrate_rate" . ,(session-rate s))
                                  ("rrate_time" . ,(session-time s))
@@ -480,6 +481,49 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           ((p (car l) i) i)
           (else (loop p (cdr l) (+ i 1))))))
 
+;; Workaround to de-arm subwidgets of a draggable container when it's being dragged
+;;  by manually triggering subwidget input handlers on button up outside of subwidget
+;;  so that e.g. armed buttons will de-arm and revert back to its normal colour
+(define (dearming-container-input-drag g wgt type mx my)
+  (let ((handled  (glgui:container-input-drag g wgt type mx my))
+        (dragged? (glgui-widget-get g wgt 'dragged?)))
+    (if dragged?
+        (for-each (lambda (subwgt)
+          (let ((x (glgui-widget-get wgt subwgt 'x))
+                (y (glgui-widget-get wgt subwgt 'y))
+                (armed   (glgui-widget-get wgt subwgt 'armed))
+                (handler (glgui-widget-get wgt subwgt 'input-handle)))
+            (if (and armed (procedure? handler)) (handler wgt subwgt EVENT_BUTTON1UP x y))))
+          (glgui-get wgt 'widget-list)))
+    handled))
+
+;; Workaround for https://github.com/part-cw/lambdanative/issues/197
+;; Adds 'armed field for triggering focus
+;; Returns a label that behaves the same as one with 'enableinput set to true
+(define (armable-label g base-label)
+  (let* ((old-handler (glgui-widget-get g base-label 'input-handle))
+         (new-handler (lambda (g wgt type mx my)
+            (let* ((x         (glgui-widget-get g wgt 'x))
+                   (y         (glgui-widget-get g wgt 'y))
+                   (w         (glgui-widget-get g wgt 'w))
+                   (h         (glgui-widget-get g wgt 'h))
+                   (focus     (glgui-widget-get g wgt 'focus))
+                   (onfocuscb (glgui-widget-get g wgt 'onfocuscb))
+                   (armed     (glgui-widget-get g wgt 'armed))
+                   (inside (and (fx> mx x) (fx< mx (fx+ x w 5)) (fx> my y) (fx< my (fx+ y h)))))
+              (old-handler g wgt type mx my)
+              (cond ((fx= type EVENT_BUTTON1DOWN) (glgui-widget-set! g wgt 'armed inside))
+                    ((fx= type EVENT_BUTTON1UP)   (glgui-widget-set! g wgt 'armed #f)
+                      (if (and inside armed)
+                          (begin (glgui-widget-setglobal! g 'focus #f)
+                                 (glgui-widget-set! g wgt 'focus #t)
+                                 (if (and (procedure? onfocuscb) (not focus)) (onfocuscb g wgt type mx my))))))
+              inside))))
+    (glgui-widget-set! g base-label 'enableinput #f)
+    (glgui-widget-set! g base-label 'armed #f)
+    (glgui-widget-set! g base-label 'input-handle new-handler)
+    base-label))
+
 ;; Draw checkbox with label
 ;; g: parent GUI of checkbox
 ;; x, y, w: (x, y) position of lower-left corner, width in pixels
@@ -495,7 +539,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (d:inner (- d (* 2 b)))
             (padding (* 3 b))
             (d:button (- d (* 2 padding)))
-            (label-widget (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black))
+            (label-widget (armable-label g (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black)))
             (outer (glgui-box g x y d d Black))
             (inner (glgui-box g (+ x b) (+ y b) d:inner d:inner White))
             (cb (lambda (g . xargs)
@@ -505,7 +549,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                       (if (procedure? callback) (apply callback (append (list label checked? g checkbutton) xargs))))))
             (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
     (glgui-widget-set! g inner 'callback cb)
-    (glgui-widget-set! g label-widget 'enableinput #t)
     (glgui-widget-set! g label-widget 'onfocuscb
       (lambda (g wgt . xargs)
         (cb g)
@@ -559,38 +602,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (outer (glgui-box g x y w h Black))
          (inner (glgui-box g x:inner y:inner w:inner h:inner White))
          (lbwgt (glgui-label-local g x (+ y h) w h:label label text_14.fnt Black))
-         (input (input-label g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White)))
+         (input (armable-label g (glgui-inputlabel g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White))))
     (glgui-widget-set! g input 'aftercharcb
       (lambda args (if (procedure? aftercharcb) (apply aftercharcb (cons label args)))))
     (glgui-widget-set! g input 'onfocuscb onfocuscb)
     (make-textbox-struct outer inner input lbwgt)))
-
-;; Workaround for https://github.com/part-cw/lambdanative/issues/197
-;; Adds 'armed field for triggering focus
-(define (input-label g x y w h label font fgcolour bgcolour)
-  (let* ((input (glgui-inputlabel g x y w h label font fgcolour bgcolour))
-         (old-input-handler (glgui-widget-get g input 'input-handle))
-         (new-input-handler (lambda (g wgt type mx my)
-            (let* ((x         (glgui-widget-get g wgt 'x))
-                   (y         (glgui-widget-get g wgt 'y))
-                   (w         (glgui-widget-get g wgt 'w))
-                   (h         (glgui-widget-get g wgt 'h))
-                   (focus     (glgui-widget-get g wgt 'focus))
-                   (onfocuscb (glgui-widget-get g wgt 'onfocuscb))
-                   (armed     (glgui-widget-get g wgt 'armed))
-                   (inside (and (fx> mx x) (fx< mx (fx+ x w 5)) (fx> my y) (fx< my (fx+ y h)))))
-              (old-input-handler g wgt type mx my)
-              (cond ((fx= type EVENT_BUTTON1DOWN) (glgui-widget-set! g wgt 'armed inside))
-                    ((fx= type EVENT_BUTTON1UP)   (glgui-widget-set! g wgt 'armed #f)
-                      (if (and inside armed)
-                          (begin (glgui-widget-setglobal! g 'focus #f)
-                                 (glgui-widget-set! g wgt 'focus #t)
-                                 (if (and (procedure? onfocuscb) (not focus)) (onfocuscb g wgt type mx my))))))
-              inside))))
-    (glgui-widget-set! g input 'enableinput #f)
-    (glgui-widget-set! g input 'armed #f)
-    (glgui-widget-set! g input 'input-handle new-input-handler)
-    input))
 
 (define (textbox-struct-hidden-set! g s b)
   (glgui-widget-set! g (textbox-struct-outer s) 'hidden b)
