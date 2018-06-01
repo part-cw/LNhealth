@@ -30,11 +30,11 @@ Busra-R.ttf 14 'M = ពេលវេលាចន្លោះមេដ្យាន
 Busra-R.ttf 14 'C = កម្រិតភាពសមស្រប' C_CONSISTENCY3 Script=Khmer
 Busra-R.ttf 14 'ធម្មតា' CONSISTENTD3 Script=Khmer
 Busra-R.ttf 14 'មិនសមស្រប' INCONSISTENT3 Script=Khmer
-AbyssinicaSIL-R.ttf 40 'ወደ ውጭ//ሲተነፍለ ንኪ' TAP_INHALATION4 Script=Amharic
+Busra-R.ttf 40 'ចុចពេល//ដកដង្ហើមចូល' TAP_INHALATION4 Script=Khmer
 DejaVuSans.ttf 14 'aci tade' NO5
 DejaVuSans.ttf 14 'ee tade' YES5
 DejaVuSans.ttf 12 'thueny//tene weei//alongthinic' TAP_TO_SYNC5
-AbyssinicaSIL-R.ttf 12 'አተነፋፈሱን//ለማመሳሰል//ወደ ውጭ//በሚተነፍስበት ግዜ ንኪ' TAP_TO_SYNC4 Script=Amharic
+DejaVuSans.ttf 12 'thueny//tene weei//alongthinic' TAP_TO_SYNC4
 DejaVuSans.ttf 14 'Volver a intentar' RETRY6
 DejaVuSans.ttf 12 'wakmanta yanay' RETRY7
 DejaVuSans.ttf 12 'Wasitampi  lurañawa' RETRY8

@@ -251,31 +251,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;;    * will only appear when REP_FORMS? is true
   ;;  - upload button
   ;;    * will only appear when datatable is nonempty
-  (letrec  ((x 25)
-            (height 380)
+  (letrec  ((x 25) (boxcontainer-y 63)
+            (frame-height 300) (content-height 390)
             (width (- w (* 2 x)))
-            (boxcontainer-y -10)
             (longitudinal? (settings-ref "LONGITUDINAL?"))
             (repforms?     (settings-ref "REP_FORMS?"))
             (forms-shift (if longitudinal? 80 0))
-            (uploadbutton-y (+ (if longitudinal? 0 80) (if repforms? 0 50)))
-            ;; Set setting with same name as label with text from label
+            (uploadbutton-y (- frame-height (+ 250 (if longitudinal? 80 0) (if repforms? 50 0))))
             (aftercharcb (lambda (label g wgt . xargs)
               (settings-set! label (glgui-widget-get g wgt 'label))))
-            ;; Shift boxcontainer so that wgt is visible and show the keypad
-            (onfocuscb (lambda (wgt y h)
-              (boxcontainer-position-set! y h)
+            (onfocuscb (lambda (wgt)
               (set! rrate:settings:redcap:focusedbox wgt)
               (keypad-hidden-set! #f)))
-            (noshift-onfocuscb (lambda (g wgt . xargs) (onfocuscb wgt -10 height)))
+            (noshift-onfocuscb (lambda (g wgt . xargs)
+              (glgui-framed-container-ofs-reset! rrate:settings:redcap g)
+              (onfocuscb wgt)))
             (shift-onfocuscb   (lambda (g wgt . xargs)
-              (let* ((widget-y (glgui-widget-get g wgt 'y))
-                     (y (- 210 boxcontainer-y widget-y))
-                     (h (+ 140 widget-y)))
-                (onfocuscb wgt y h))))
-            (boxcontainer (glgui-container rrate:settings:redcap x boxcontainer-y width height))
-            (event (textbox boxcontainer 0 (- height 230) width "EVENT" aftercharcb shift-onfocuscb))
-            (repevents (checkbox boxcontainer 0 (- height 260) width "REP_EVENTS?"
+              (boxcontainer-position-set! wgt)
+              (onfocuscb wgt)))
+            (boxcontainer (glgui-framed-container rrate:settings:redcap x boxcontainer-y width frame-height width content-height))
+            (event     (textbox  boxcontainer 0 (- frame-height 230) width "EVENT" aftercharcb shift-onfocuscb))
+            (repevents (checkbox boxcontainer 0 (- frame-height 260) width "REP_EVENTS?"
               ;; Set setting given by label with checkbox state
               ;; If checked, uncheck repeated forms because at most one can be selected,
               ;;  update its setting, and hide form-related widgets
@@ -287,8 +283,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                            (textbox-struct-hidden-set!   boxcontainer form     #t)
                            (checkbox-struct-checked-set! boxcontainer repforms #f)
                            (keypad-hidden-set! #t))))))
-            (form (textbox boxcontainer 0 (- height 260 forms-shift) width "FORM" aftercharcb shift-onfocuscb))
-            (repforms (checkbox boxcontainer 0 (- height 210 forms-shift) width "REP_FORMS?"
+            (form     (textbox  boxcontainer 0 (- frame-height 260 forms-shift) width "FORM" aftercharcb shift-onfocuscb))
+            (repforms (checkbox boxcontainer 0 (- frame-height 210 forms-shift) width "REP_FORMS?"
               ;; Set setting given by label with checkbox state
               ;; If checked, uncheck repeated events because at most one can be selected
               ;;  and update its setting
@@ -305,13 +301,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                   (rrate:show-popup rrate:popup:redcap #f))
                 (uploadbutton-hidden-set!)))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
-    (glgui-widget-set! rrate:settings:redcap boxcontainer 'draggable_y? #t)
-    (glgui-widget-set! rrate:settings:redcap boxcontainer 'drag_keep 300)
-    (glgui-widget-set! rrate:settings:redcap boxcontainer 'input-handle dearming-container-input-drag)
     (set! rrate:settings:redcap:textboxes (append
-      (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- height 150) aftercharcb noshift-onfocuscb)
+      (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) aftercharcb noshift-onfocuscb)
       `(,event ,form)))
-    (checkbox boxcontainer 0 (- height 180) width "LONGITUDINAL?"
+    (checkbox boxcontainer 0 (- frame-height 180) width "LONGITUDINAL?"
       ;; Set setting given by label with checkbox state
       ;; If unchecked, hide event-related widgets and shift widgets below it
       (lambda (label checked? g wgt . xargs)
@@ -434,26 +427,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Set textboxes' container's visibility
 (define (boxcontainer-hidden-set! b)
-  (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'hidden b))
+  (glgui-framed-container-hidden-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer b))
+
+;; Set boxcontainer scroll position to reveal wgt
+(define (boxcontainer-position-set! wgt)
+(let* ((widget-y  (glgui-widget-get rrate:settings:redcap:boxcontainer wgt 'y))
+       (content   (glgui-widget-get rrate:settings:redcap rrate:settings:redcap:boxcontainer 'content))
+       (content-y (glgui-widget-get rrate:settings:redcap content 'yofs)))
+  (glgui-framed-container-ofs-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer (- 157 (- widget-y content-y)) 'yofs)))
+
+;; Shift widget down by `shift` pixels
+(define (widget-y-shift! g wgt shift)
+  (glgui-widget-set! g wgt 'y (- (glgui-widget-get g wgt 'y) shift)))
 
 ;; Set keyboard visibility and call hideonreturn callback
 (define (keypad-hidden-set! b)
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'hidden b)
   (if b ((glgui-widget-get rrate:gui rrate:settings:keypad 'hideonreturn))))
 
-;; Shift widget down by `shift` pixels
-(define (widget-y-shift! g wgt shift)
-  (glgui-widget-set! g wgt 'y (- (glgui-widget-get g wgt 'y) shift)))
-
 ;; Callback for keypad on return
 (define (hideonreturn)
-  (boxcontainer-position-set! -10 380)
+  (if (not (glgui-framed-container-position-valid? rrate:settings:redcap rrate:settings:redcap:boxcontainer))
+    (glgui-framed-container-ofs-reset! rrate:settings:redcap rrate:settings:redcap:boxcontainer))
   (focusedbox-next!))
-
-;; Set boxcontainer position to reveal correct part of boxcontainer
-(define (boxcontainer-position-set! y h)
-  (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'yofs y)
-  (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'h h))
 
 ;; Shift focus to next empty textbox
 (define (focusedbox-next!)
@@ -466,7 +462,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                  (string=? "" (string-trim (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input box) 'label))))))
          (next-index (find-index textbox-next? rrate:settings:redcap:textboxes)))
     (if curr-box (glgui-widget-set! rrate:settings:redcap:boxcontainer curr-box 'focus #f))
-    (if next-index
+    (if (and next-index (settings-ref "REDCAP_USE?"))
         (let* ((next-box (textbox-struct-input (list-ref rrate:settings:redcap:textboxes next-index)))
                (next-box-cb (glgui-widget-get rrate:settings:redcap:boxcontainer next-box 'onfocuscb)))
           (set! rrate:settings:redcap:focusedbox next-box)
