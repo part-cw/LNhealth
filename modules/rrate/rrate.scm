@@ -251,12 +251,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;;    * will only appear when REP_FORMS? is true
   ;;  - upload button
   ;;    * will only appear when datatable is nonempty
-  (letrec  ((x 25) (boxcontainer-y 63)
-            (frame-height 300) (content-height 390)
-            (width (- w (* 2 x)))
+  (letrec  ((x 25) (boxcontainer-y 53) (frame-height 310) (width (- w (* 2 x)))
             (longitudinal? (settings-ref "LONGITUDINAL?"))
             (repforms?     (settings-ref "REP_FORMS?"))
+            (uploadbutton-hidden? (= (table-length rrate:datatable) 0))
             (forms-shift (if longitudinal? 80 0))
+            (content-height (+ 230 (if longitudinal? 80 0) (if repforms? 50 0) (if uploadbutton-hidden? 0 30)))
             (uploadbutton-y (- frame-height (+ 250 (if longitudinal? 80 0) (if repforms? 50 0))))
             (aftercharcb (lambda (label g wgt . xargs)
               (settings-set! label (glgui-widget-get g wgt 'label))))
@@ -292,6 +292,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 (settings-set! label checked?)
                 (textbox-struct-hidden-set! boxcontainer form (not checked?))
                 (widget-y-shift! boxcontainer uploadbutton (if checked? 50 -50))
+                (glgui-framed-container-content-grow rrate:settings:redcap boxcontainer (if checked? 50 -50) 'h)
                 (if checked? (begin (settings-set! "REP_EVENTS?" #f)
                                     (checkbox-struct-checked-set! boxcontainer repevents #f))
                              (keypad-hidden-set! #t)))))
@@ -299,7 +300,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (lambda xargs
                 (if (not (rrate:redcap-upload))
                   (rrate:show-popup rrate:popup:redcap #f))
-                (uploadbutton-hidden-set!)))))
+                (uploadbutton-hidden-set! #t)))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) aftercharcb noshift-onfocuscb)
@@ -314,6 +315,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (checkbox-struct-y-shift!    boxcontainer repforms     (if checked? 80 -80))
         (textbox-struct-y-shift!     boxcontainer form         (if checked? 80 -80))
         (widget-y-shift!             boxcontainer uploadbutton (if checked? 80 -80))
+        (glgui-framed-container-content-grow rrate:settings:redcap boxcontainer (if checked? 80 -80) 'h)
         (keypad-hidden-set! #t)))
     (textbox-struct-hidden-set!  boxcontainer form      (not repforms?))
     (textbox-struct-hidden-set!  boxcontainer event     (not longitudinal?))
@@ -324,7 +326,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! boxcontainer uploadbutton 'solid-color #t)
     (glgui-widget-set! boxcontainer uploadbutton 'button-normal-color Red)
     (glgui-widget-set! boxcontainer uploadbutton 'button-selected-color DarkRed)
-    (uploadbutton-hidden-set!))
+    (uploadbutton-hidden-set! uploadbutton-hidden?))
 
   (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 0 w 210 text_14.fnt))
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn hideonreturn)
@@ -421,9 +423,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     success))
 
 ;; Set REDCap upload button visibility
-;; (It should really take a boolean parameter but the only time it's hidden is when the datatable is empty so I cheated a little)
-(define (uploadbutton-hidden-set!)
-  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden (= (table-length rrate:datatable) 0)))
+(define (uploadbutton-hidden-set! b)
+  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden b))
 
 ;; Set textboxes' container's visibility
 (define (boxcontainer-hidden-set! b)
@@ -1423,7 +1424,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:redcapsave:savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt
      (lambda (g . x)
        (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
-       (uploadbutton-hidden-set!)
+       (uploadbutton-hidden-set! #f)
        (rrate:go-to-stage 2)
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
