@@ -264,7 +264,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (set! rrate:settings:redcap:focusedbox wgt)
               (keypad-hidden-set! #f)))
             (noshift-onfocuscb (lambda (g wgt . xargs)
-              (glgui-framed-container-ofs-reset! rrate:settings:redcap g)
+              (glgui-framed-container-content-ofs-reset! rrate:settings:redcap g)
               (onfocuscb wgt)))
             (shift-onfocuscb   (lambda (g wgt . xargs)
               (boxcontainer-position-set! wgt)
@@ -427,14 +427,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Set textboxes' container's visibility
 (define (boxcontainer-hidden-set! b)
-  (glgui-framed-container-hidden-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer b))
+  (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'hidden b))
 
 ;; Set boxcontainer scroll position to reveal wgt
 (define (boxcontainer-position-set! wgt)
 (let* ((widget-y  (glgui-widget-get rrate:settings:redcap:boxcontainer wgt 'y))
        (content   (glgui-widget-get rrate:settings:redcap rrate:settings:redcap:boxcontainer 'content))
        (content-y (glgui-widget-get rrate:settings:redcap content 'yofs)))
-  (glgui-framed-container-ofs-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer (- 157 (- widget-y content-y)) 'yofs)))
+  (glgui-framed-container-content-ofs-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer (- 157 (- widget-y content-y)) 'yofs)))
 
 ;; Shift widget down by `shift` pixels
 (define (widget-y-shift! g wgt shift)
@@ -447,8 +447,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Callback for keypad on return
 (define (hideonreturn)
-  (if (not (glgui-framed-container-position-valid? rrate:settings:redcap rrate:settings:redcap:boxcontainer))
-    (glgui-framed-container-ofs-reset! rrate:settings:redcap rrate:settings:redcap:boxcontainer))
+  (if (not (glgui-framed-container-content-position-valid? rrate:settings:redcap rrate:settings:redcap:boxcontainer))
+    (glgui-framed-container-content-ofs-reset! rrate:settings:redcap rrate:settings:redcap:boxcontainer))
   (focusedbox-next!))
 
 ;; Shift focus to next empty textbox
