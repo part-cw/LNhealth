@@ -45,3 +45,5 @@ BACK,Back,Back,Back,Back,Back,Back,Back,Back,Back,Back
 SAVE,Save,Save,Save,Save,Save,Save,Save,Save,Save,Save
 REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap
 TAPS,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:
+ONEMIN,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.
+CHECK,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.

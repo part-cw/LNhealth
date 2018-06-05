@@ -68,6 +68,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (settings-init (list (cons "Taps" 5)
                        (cons "Consistency" 13)
                        (cons "VibrateSound" #f)
+                       (cons "OneMinute" #f)
                        (cons "HOST" "")
                        (cons "URL" "/redcap/api/")
                        (cons "TOKEN" "")
@@ -122,48 +123,109 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Only show option for vibrating the phone with sound if on Android
   (set! rrate:settings:show_vibrate (string=? (system-platform) "android"))
 
-  ;; If not using the languages settings page, skip it
-  (if rrate:no-language? (set! rrate:settings:page 1))
-
   ;; Go back to previous settings page or out of settings completely
   (set! rrate:settings:backbutton (glgui-button rrate:settings:bg 12 6 100 32 left_arrow.img
     (lambda (g . x)
-      (if (or (fx= rrate:settings:page 0) (and rrate:no-language? (fx= rrate:settings:page 1)))
-        (set! rrate:settings:viewing #f)
-        (set! rrate:settings:page (- rrate:settings:page 1))))))
+      (cond ((fx= rrate:settings:page 0)
+              (set! rrate:settings:viewing #f))
+            ((and rrate:oneminute (fx= rrate:settings:page 3))
+              (set! rrate:settings:page 0))
+            (else
+              (set! rrate:settings:page (- rrate:settings:page 1)))))))
   (glgui-widget-set! rrate:settings:bg rrate:settings:backbutton 'button-normal-color Green)
   (glgui-widget-set! rrate:settings:bg rrate:settings:backbutton 'button-selected-color DarkGreen)
 
-  ;; The first page of settings, the language
+  ;; The first page of settings: the language, vibrate, and type
   (set! rrate:settings:language (glgui-container rrate:gui x y w h))
-  (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 (- h (if rrate:settings:show_vibrate 285 380)) (- w 20) (if rrate:settings:show_vibrate 275 370) (color:shuffle #xd7eaefff)) 'rounded #t)
-  (glgui-label rrate:settings:language 30 (- h 50) (- w 60) 23 "Select language" text_20.fnt Black)
-  (rrate-setup-language-choices)
-  (let ((oldoff (if rrate:settings:languagelist (fix (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'offset)) 0)))
-    (set! rrate:settings:languagelist (glgui-list rrate:settings:language 50 (- h (if rrate:settings:show_vibrate 285 380)) 165 (if rrate:settings:show_vibrate 230 325) 46
-      (map (lambda (lan)
-             (lambda (g wgt bx by bw bh selected?)
-               (glgui:draw-pixmap-center (+ bx 5) (+ by 8) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-               (glgui:draw-text-left (+ bx 42) (+ by 11) (- bw 52) 23 (cdr lan) text_20.fnt Black)))
-           rrate:settings:languagechoices)
-      (lambda (g wgt type mx my)
-        ;; Save the new settings
-        (let* ((cur (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'current))
-               (lindex (car (list-ref rrate:settings:languagechoices cur))))
-          (settings-set! "Language" lindex)
-          (local-index-set! lindex)
-          (rrate-init x y w h rrate:store rrate:cancelproc rrate:doneproc)))))
-    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'autohidebar #t)
-    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol1 (color:shuffle #xc0d1d5ff))
-    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol2 (color:shuffle #xd7eaefff))
-    (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset oldoff)
-    (let ((cur (list-pos rrate:settings:languagechoices (assoc (settings-ref "Language" 1) rrate:settings:languagechoices)))
-          (listlengthdiff (if rrate:settings:show_vibrate 4 6)))
-      (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current cur)
-      (if (fx> (- cur oldoff) listlengthdiff)
-        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset (- cur listlengthdiff)))))
 
-  ;; The second page of settings, number of taps
+  ;; Group all the positioning math here for readability
+  (let* ((margin 10) (common-w (- w (* 2 margin))) (bottom 43)
+         (languages-h (if rrate:settings:show_vibrate 230 280))
+         (languages-y (- h (+ margin languages-h)))
+         (label-margin (+ margin 15))
+         (label-h 25)
+         (label-w (- w (* 2 label-margin)))
+         (label-y (- h (+ label-margin label-h)))
+         (languages-list-w 165)
+         (languages-list-h (- languages-h label-h label-margin))
+         (languages-list-margin (/ (- common-w languages-list-w) 2))
+         (languages-list-entry-h 45)
+         (no-language-shift-h (+ margin languages-h))
+         (vibrate-h 40)
+         (vibrate-y (- h margin vibrate-h (if rrate:no-language? 0 no-language-shift-h)))
+         (types-list-h 80)
+         (types-y (+ margin bottom))
+         (types-h (+ types-list-h (if rrate:no-language? no-language-shift-h 0)))
+         (types-list-y (+ types-y (if rrate:no-language? no-language-shift-h 0)))
+         (types-list-margin (+ margin 10))
+         (types-list-w (- w (* 2 types-list-margin)))
+         (types-list-entry-h (/ types-list-h 2)))
+    ;; Show languages
+    (if (not rrate:no-language?)
+      (let ((oldoff (if rrate:settings:languagelist (fix (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'offset)) 0)))
+        (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language margin languages-y common-w languages-h (color:shuffle #xd7eaefff)) 'rounded #t)
+        (glgui-label rrate:settings:language label-margin label-y label-w label-h "Select language." text_20.fnt Black)
+        (rrate-setup-language-choices)
+        (set! rrate:settings:languagelist (glgui-list rrate:settings:language languages-list-margin languages-y languages-list-w languages-list-h languages-list-entry-h
+          (map (lambda (lang)
+                 (lambda (g wgt bx by bw bh selected?)
+                   (glgui:draw-pixmap-center (+ bx 5) (+ by 7) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+                   (glgui:draw-text-left (+ bx 42) (+ by 8) (- bw 52) 23 (cdr lang) text_20.fnt Black)))
+               rrate:settings:languagechoices)
+          (lambda (g wgt type mx my)
+            ;; Save the new settings
+            (let* ((cur (glgui-widget-get rrate:settings:language rrate:settings:languagelist 'current))
+                   (lindex (car (list-ref rrate:settings:languagechoices cur))))
+              (settings-set! "Language" lindex)
+              (local-index-set! lindex)
+              (rrate-init x y w h rrate:store rrate:cancelproc rrate:doneproc)))))
+        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'autohidebar #t)
+        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol1 (color:shuffle #xc0d1d5ff))
+        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'bgcol2 (color:shuffle #xd7eaefff))
+        (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset oldoff)
+        (let ((cur (list-pos rrate:settings:languagechoices (assoc (settings-ref "Language" 1) rrate:settings:languagechoices)))
+              (listlengthdiff (if rrate:settings:show_vibrate 4 6)))
+          (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'current cur)
+          (if (fx> (- cur oldoff) listlengthdiff)
+            (glgui-widget-set! rrate:settings:language rrate:settings:languagelist 'offset (- cur listlengthdiff))))))
+
+    ;; Show vibrate option
+    (if rrate:settings:show_vibrate
+      ;; Show checkbox for turning on and off vibration with sound (only Android)
+      (begin
+        (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language margin vibrate-y common-w vibrate-h (color:shuffle #xd7eaefff)) 'rounded #t)
+        (glgui-label rrate:settings:language 62 (+ vibrate-y (- (/ vibrate-h 2) 15)) (- w 105) label-h (local-get-text "VIBRATE_SOUND") text_20.fnt Black)
+        (set! rrate:settings:vibrate_box (glgui-pixmap rrate:settings:language 20 (+ vibrate-y (- (/ vibrate-h 2) 15)) checkedbox.img))
+        (set! rrate:settings:vibrate_trigger (glgui-box rrate:settings:language 7 (+ vibrate-y (- (/ vibrate-h 2) 25)) (- w 52) 50 (color-fade White 0)))
+        (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_trigger 'callback
+            (lambda (g . x)
+               (if (settings-ref "VibrateSound")
+                 (begin
+                   (settings-set! "VibrateSound" #f)
+                   (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image uncheckedbox.img))
+                 (begin
+                   (settings-set! "VibrateSound" #t)
+                   (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image checkedbox.img)))))))
+
+    ;; Show one minute/consistency check radio buttons
+    (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language margin types-y common-w types-h (color:shuffle #xd7eaefff)) 'rounded #t)
+    (let ((typeslist (glgui-list rrate:settings:language types-list-margin types-list-y types-list-w types-list-h types-list-entry-h
+            (map (lambda (n) (lambda (g wgt bx by bw bh selected?)
+              (glgui:draw-pixmap-center bx (+ by 2) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
+              (glgui:draw-text-left (+ bx 42) (+ by 3) 250 23 (local-get-text n) text_20.fnt Black)))
+              '("CHECK" "ONEMIN"))
+            ;; Save the setting
+            (lambda (g wgt type mx my)
+              (let* ((oneminute? (eq? 1 (glgui-widget-get g wgt 'current))))
+                (settings-set! "OneMinute" oneminute?)
+                (rrate-set-oneminute oneminute?))))))
+      (rrate-set-oneminute (settings-ref "OneMinute"))
+      (glgui-widget-set! rrate:settings:language typeslist 'autohidebar #t)
+      (glgui-widget-set! rrate:settings:language typeslist 'bgcol1 (color-fade White 0))
+      (glgui-widget-set! rrate:settings:language typeslist 'bgcol2 (color-fade White 0))
+      (glgui-widget-set! rrate:settings:language typeslist 'current (if rrate:oneminute 1 0))))
+
+  ;; The second page of settings: number of taps
   (set! rrate:settings:taps (glgui-container rrate:gui x y w h))
 
   ;; Setting for how many taps are needed
@@ -189,7 +251,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'bgcol2 (color-fade White 0))
   (glgui-widget-set! rrate:settings:taps rrate:settings:tapslist 'current 2)
 
-  ;; The third page of settings, consistency threshold
+  ;; The third page of settings: consistency threshold
   (let ((leftx (+ (- w 320) 20)))
     (set! rrate:settings:consistency (glgui-container rrate:gui x y w h))
     (glgui-widget-set! rrate:settings:consistency (glgui-box rrate:settings:consistency 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
@@ -223,7 +285,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'bgcol2 (color-fade White 0))
   (glgui-widget-set! rrate:settings:consistency rrate:settings:percentlist 'current 4)
 
-  ;; The fourth page of settings, REDCap info
+  ;; The fourth page of settings: REDCap info
   (set! rrate:settings:redcap (glgui-container rrate:gui x y w h))
   (glgui-widget-set! rrate:settings:redcap (glgui-box rrate:settings:redcap 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label-local rrate:settings:redcap 25 (- h 50) (- w 50) 30 "REDCAP" text_20.fnt Black)
@@ -328,40 +390,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! boxcontainer uploadbutton 'button-selected-color DarkRed)
     (uploadbutton-hidden-set! uploadbutton-hidden?))
 
+  ;; Keypad for REDCap
   (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 0 w 210 text_14.fnt))
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn hideonreturn)
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'bgcolor DarkGrey)
   (keypad-hidden-set! #t)
 
-  ;; Show vibrate option on first page under language options
-  (if rrate:settings:show_vibrate
-    ;; Show checkbox for turning on and off vibration with sound (only Android)
-    (let ((vbottom 53)
-          ;; Put below language options
-          (vh (- h 348)))
-      (glgui-widget-set! rrate:settings:language (glgui-box rrate:settings:language 10 vbottom (- w 20) vh (color:shuffle #xd7eaefff)) 'rounded #t)
-      (glgui-label rrate:settings:language 95 (+ vbottom (- (/ vh 2) 15)) (- w 105) 25 (local-get-text "VIBRATE_SOUND") text_20.fnt Black)
-      (set! rrate:settings:vibrate_box (glgui-pixmap rrate:settings:language 55 (+ vbottom (- (/ vh 2) 15)) checkedbox.img))
-      (set! rrate:settings:vibrate_trigger (glgui-box rrate:settings:language 42 (+ vbottom (- (/ vh 2) 25)) (- w 52) 50 (color-fade White 0)))
-      (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_trigger 'callback
-          (lambda (g . x)
-             (if (settings-ref "VibrateSound")
-               (begin
-                 (settings-set! "VibrateSound" #f)
-                 (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image uncheckedbox.img))
-               (begin
-                 (settings-set! "VibrateSound" #t)
-                 (glgui-widget-set! rrate:settings:language rrate:settings:vibrate_box 'image checkedbox.img)))))))
-
   ;; Go to the next page or finish settings
   (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg (- w 107) 6 100 32 right_arrow.img
     (lambda (g . x)
-      (if (fx= rrate:settings:page 3)
-        ;; Leave the settings page
-        (begin
-          (set! rrate:settings:page (if rrate:no-language? 1 0))
-          (set! rrate:settings:viewing #f))
-        (set! rrate:settings:page (+ rrate:settings:page 1))))))
+      (cond ((fx= rrate:settings:page 3)
+              ;; Leave the settings page
+              (set! rrate:settings:page 0)
+              (set! rrate:settings:viewing #f))
+            ((and rrate:oneminute (fx= rrate:settings:page 0))
+              (set! rrate:settings:page 3))
+            (else
+              (set! rrate:settings:page (+ rrate:settings:page 1)))))))
   (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-normal-color Green)
   (glgui-widget-set! rrate:settings:bg rrate:settings:nextbutton 'button-selected-color DarkGreen)
 )
@@ -477,22 +522,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (cond ((eq? l '()) #f)
           ((p (car l) i) i)
           (else (loop p (cdr l) (+ i 1))))))
-
-;; Workaround to de-arm subwidgets of a draggable container when it's being dragged
-;;  by manually triggering subwidget input handlers on button up outside of subwidget
-;;  so that e.g. armed buttons will de-arm and revert back to its normal colour
-(define (dearming-container-input-drag g wgt type mx my)
-  (let ((handled  (glgui:container-input-drag g wgt type mx my))
-        (dragged? (glgui-widget-get g wgt 'dragged?)))
-    (if dragged?
-        (for-each (lambda (subwgt)
-          (let ((x (glgui-widget-get wgt subwgt 'x))
-                (y (glgui-widget-get wgt subwgt 'y))
-                (armed   (glgui-widget-get wgt subwgt 'armed))
-                (handler (glgui-widget-get wgt subwgt 'input-handle)))
-            (if (and armed (procedure? handler)) (handler wgt subwgt EVENT_BUTTON1UP x y))))
-          (glgui-get wgt 'widget-list)))
-    handled))
 
 ;; Workaround for https://github.com/part-cw/lambdanative/issues/197
 ;; Adds 'armed field for triggering focus
