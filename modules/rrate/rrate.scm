@@ -127,7 +127,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (set! rrate:settings:backbutton (glgui-button rrate:settings:bg 12 6 100 32 left_arrow.img
     (lambda (g . x)
       (cond ((fx= rrate:settings:page 0)
-              (set! rrate:settings:viewing #f))
+              (set! rrate:settings:viewing #f)
+              (rrate:go-to-stage 1))
             ((and rrate:oneminute (fx= rrate:settings:page 3))
               (set! rrate:settings:page 0))
             (else
@@ -402,7 +403,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (cond ((fx= rrate:settings:page 3)
               ;; Leave the settings page
               (set! rrate:settings:page 0)
-              (set! rrate:settings:viewing #f))
+              (set! rrate:settings:viewing #f)
+              (rrate:go-to-stage 1))
             ((and rrate:oneminute (fx= rrate:settings:page 0))
               (set! rrate:settings:page 3))
             (else
