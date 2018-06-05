@@ -94,6 +94,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:settings:redcap:focusedbox #f)
 (define rrate:settings:redcap:uploadbutton #f)
 (define rrate:settings:keypad #f)
+(define rrate:settings:copied-toast #f)
 (define rrate:settings:backbutton #f)
 (define rrate:settings:nextbutton #f)
 
@@ -397,6 +398,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'bgcolor DarkGrey)
   (keypad-hidden-set! #t)
 
+  ;; Toast message for copying
+  (set! rrate:settings:copied-toast (glgui-label-wrapped rrate:gui (/ (- w 70) 2) 60 75 20 "Copied!" text_14.fnt White (color-fade DimGrey 0.9)))
+  (glgui-widget-set! rrate:gui rrate:settings:copied-toast 'rounded #t)
+  (glgui-widget-set! rrate:gui rrate:settings:copied-toast 'showstart #t)
+  (glgui-widget-set! rrate:gui rrate:settings:copied-toast 'hidden #t)
+  (glgui-widget-set! rrate:gui rrate:settings:copied-toast 'align GUI_ALIGNCENTER)
+
   ;; Go to the next page or finish settings
   (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg (- w 107) 6 100 32 right_arrow.img
     (lambda (g . x)
@@ -525,8 +533,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           ((p (car l) i) i)
           (else (loop p (cdr l) (+ i 1))))))
 
+(define (show-copied-toast) (glgui-widget-set! rrate:gui rrate:settings:copied-toast 'hidden #f))
+(define (hide-copied-toast) (glgui-widget-set! rrate:gui rrate:settings:copied-toast 'hidden #t))
+
 ;; Workaround for https://github.com/part-cw/lambdanative/issues/197
 ;; Adds 'armed field for triggering focus
+;; Adds 'longpress-mutex field for capturing one-second longpress "events"
 ;; Returns a label that behaves the same as one with 'enableinput set to true
 (define (armable-label g base-label)
   (let* ((old-handler (glgui-widget-get g base-label 'input-handle))
@@ -535,20 +547,47 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                    (y         (glgui-widget-get g wgt 'y))
                    (w         (glgui-widget-get g wgt 'w))
                    (h         (glgui-widget-get g wgt 'h))
+                   (text      (glgui-widget-get g wgt 'label))
                    (focus     (glgui-widget-get g wgt 'focus))
                    (onfocuscb (glgui-widget-get g wgt 'onfocuscb))
                    (armed     (glgui-widget-get g wgt 'armed))
-                   (inside (and (fx> mx x) (fx< mx (fx+ x w 5)) (fx> my y) (fx< my (fx+ y h)))))
+                   (longpress-mutex  (glgui-widget-get g wgt 'longpress-mutex))
+                   (inside (and (fx> mx x) (fx< mx (fx+ x w 5)) (fx> my y) (fx< my (fx+ y h))))
+                   (future-time (lambda (seconds) (seconds->time (+ seconds (time->seconds (current-time))))))
+                   (make-longpress-thread (lambda () (thread-start! (make-thread (lambda ()
+                      (if (mutex-lock!   longpress-mutex (future-time 1))
+                          (mutex-unlock! longpress-mutex)
+                          (begin
+                            (glgui-widget-set! g wgt 'longpressed #t)
+                            (if (string=? text "")
+                                (glgui-widget-set! g wgt 'label (clipboard-paste))
+                                (begin (clipboard-copy text)
+                                       (show-copied-toast)
+                                       (thread-sleep! (future-time 2))
+                                       (hide-copied-toast))))))))))
+                   (start-longpress (lambda ()
+                      (mutex-lock! longpress-mutex)
+                      (make-longpress-thread)))
+                   (cancel-longpress (lambda ()
+                      (mutex-unlock! longpress-mutex))))
               (old-handler g wgt type mx my)
-              (cond ((fx= type EVENT_BUTTON1DOWN) (glgui-widget-set! g wgt 'armed inside))
-                    ((fx= type EVENT_BUTTON1UP)   (glgui-widget-set! g wgt 'armed #f)
-                      (if (and inside armed)
+              (cond ((fx= type EVENT_BUTTON1DOWN)
+                      (glgui-widget-set! g wgt 'armed inside)
+                      (if inside (start-longpress)))
+                    ((fx= type EVENT_BUTTON1UP)
+                      (cancel-longpress)
+                      (if (and inside armed (not (glgui-widget-get g wgt 'longpressed)))
                           (begin (glgui-widget-setglobal! g 'focus #f)
                                  (glgui-widget-set! g wgt 'focus #t)
-                                 (if (and (procedure? onfocuscb) (not focus)) (onfocuscb g wgt type mx my))))))
+                                 (if (and (procedure? onfocuscb) (not focus)) (onfocuscb g wgt type mx my))))
+                      (glgui-widget-set! g wgt 'armed #f)
+                      (glgui-widget-set! g wgt 'longpressed #f))
+                    (else (cancel-longpress)))
               inside))))
     (glgui-widget-set! g base-label 'enableinput #f)
     (glgui-widget-set! g base-label 'armed #f)
+    (glgui-widget-set! g base-label 'longpressed #f)
+    (glgui-widget-set! g base-label 'longpress-mutex  (make-mutex))
     (glgui-widget-set! g base-label 'input-handle new-handler)
     base-label))
 
