@@ -1203,7 +1203,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (rrate:reset-taps)))
 )
 
-;; Displays the popup with the given message, which is rrate:popup:inconsistent, rrate:popup:toofast or rrate:popup:notenough
+;; Displays the popup with the given message, which is rrate:popup:inconsistent, rrate:popup:toofast, rrate:popup:notenough, or rrate:popup:redcap
 ;; If ignore? is true, the ignore button is shown as an option
 (define (rrate:show-popup message ignore?)
 
@@ -1247,6 +1247,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'hidden #t)
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap 'hidden #t)
 )
 
 ;; Give feedback that a breath has been tapped or during the animation
@@ -1694,8 +1695,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
    (set! rrate:popup:redcap (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
      "REDCAP_UPLOAD_FAILED" text_20.fnt White))
-   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
-   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap 'hidden #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap 'modal #t)
 
    ;; Popup buttons
 
