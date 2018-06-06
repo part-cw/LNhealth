@@ -540,9 +540,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (thread-sleep! (future-time 1))
     (glgui-widget-set! rrate:gui rrate:settings:toast 'hidden #t)))
 
-;; Workaround for https://github.com/part-cw/lambdanative/issues/197
 ;; Adds 'armed field for triggering focus
-;; Adds 'longpress-mutex field for capturing one-second longpress "events"
+;;  Workaround for https://github.com/part-cw/lambdanative/issues/197
+;; Adds copy (when label is not empty) and paste (when label is empty) on longpress
+;;  On button down, the main thread locks longpress-mutex and creates a new thread.
+;;  This thread will try to lock the mutex; if it fails to do so within 1 second,
+;;  it will copy/paste into the label.
+;;  Meanwhile, the main thread unlocks the mutex only if there is another event.
+;;    If the event is a motion event, it will only unlock if the motion is greater
+;;    than 10 px from where button down occurred, since on mobile, tiny motion events
+;;    may be unintentionally triggered by the finger.
+;;  By unlocking the mutex, if the longpress thread is still waiting for the mutex,
+;;  (i.e. 1 second has not yet elapsed), then it will lock and immediately unlock it,
+;;  then NOT copy or paste, since less than 1 second has elapsed between the press
+;;  and a second event that presumably indicates that the press was not a longpress.
+;;  The longpress thread will also set longpressed to true so that the main thread
+;;  will not trigger a focus on the label and bring up the keypad as a result.
 ;; Returns a label that behaves the same as one with 'enableinput set to true
 (define (armable-label g base-label)
   (let* ((old-handler (glgui-widget-get g base-label 'input-handle))
