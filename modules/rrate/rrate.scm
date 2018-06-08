@@ -540,87 +540,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (thread-sleep! (future-time 1))
     (glgui-widget-set! rrate:gui rrate:settings:toast 'hidden #t)))
 
-;; Adds 'armed field for triggering focus
-;;  Workaround for https://github.com/part-cw/lambdanative/issues/197
-;; Adds copy (when label is not empty) and paste (when label is empty) on longpress
-;;  On button down, the main thread locks longpress-mutex and creates a new thread.
-;;  This thread will try to lock the mutex; if it fails to do so within 1 second,
-;;  it will copy/paste into the label.
-;;  Meanwhile, the main thread unlocks the mutex only if there is another event.
-;;    If the event is a motion event, it will only unlock if the motion is greater
-;;    than 10 px from where button down occurred, since on mobile, tiny motion events
-;;    may be unintentionally triggered by the finger.
-;;  By unlocking the mutex, if the longpress thread is still waiting for the mutex,
-;;  (i.e. 1 second has not yet elapsed), then it will lock and immediately unlock it,
-;;  then NOT copy or paste, since less than 1 second has elapsed between the press
-;;  and a second event that presumably indicates that the press was not a longpress.
-;;  The longpress thread will also set longpressed to true so that the main thread
-;;  will not trigger a focus on the label and bring up the keypad as a result.
-;; Returns a label that behaves the same as one with 'enableinput set to true
-(define (armable-label g base-label)
-  (let* ((old-handler (glgui-widget-get g base-label 'input-handle))
-         (new-handler (lambda (g wgt type mx my)
-            (let* ((x         (glgui-widget-get g wgt 'x))
-                   (y         (glgui-widget-get g wgt 'y))
-                   (w         (glgui-widget-get g wgt 'w))
-                   (h         (glgui-widget-get g wgt 'h))
-                   (old-mx    (glgui-widget-get g wgt 'old-mx))
-                   (old-my    (glgui-widget-get g wgt 'old-my))
-                   (text      (glgui-widget-get g wgt 'label))
-                   (focus     (glgui-widget-get g wgt 'focus))
-                   (onfocuscb (glgui-widget-get g wgt 'onfocuscb))
-                   (armed     (glgui-widget-get g wgt 'armed))
-                   (copypastable     (glgui-widget-get g wgt 'copypastable))
-                   (longpress-mutex  (glgui-widget-get g wgt 'longpress-mutex))
-                   (inside   (and (fx> mx x) (fx< mx (fx+ x w 5)) (fx> my y) (fx< my (fx+ y h))))
-                   (distance (if (and old-mx old-my) (sqrt (+ (square (- old-mx mx)) (square (- old-my my)))) 0))
-                   (future-time (lambda (seconds) (seconds->time (+ seconds (time->seconds (current-time))))))
-                   (make-longpress-thread (lambda () (thread-start! (make-thread (lambda ()
-                      (if (mutex-lock!   longpress-mutex (future-time 1))
-                          (mutex-unlock! longpress-mutex)
-                          (if copypastable (begin
-                            (glgui-widget-set! g wgt 'longpressed #t)
-                            (if (string=? text "")
-                                (begin (glgui-widget-set! g wgt 'label (clipboard-paste))
-                                       (show-toast "Pasted!" 2))
-                                (begin (clipboard-copy text)
-                                       (show-toast "Copied!" 2)))))))))))
-                   (start-longpress (lambda ()
-                      (mutex-lock! longpress-mutex)
-                      (make-longpress-thread)))
-                   (cancel-longpress (lambda ()
-                      (mutex-unlock! longpress-mutex))))
-              (old-handler g wgt type mx my)
-              (cond ((fx= type EVENT_BUTTON1DOWN)
-                      (glgui-widget-set! g wgt 'armed inside)
-                      (glgui-widget-set! g wgt 'old-mx mx)
-                      (glgui-widget-set! g wgt 'old-my my)
-                      (if inside (start-longpress)))
-                    ((fx= type EVENT_BUTTON1UP)
-                      (cancel-longpress)
-                      (if (and inside armed (not (glgui-widget-get g wgt 'longpressed)))
-                          (begin (glgui-widget-setglobal! g 'focus #f)
-                                 (glgui-widget-set! g wgt 'focus #t)
-                                 (if (and (procedure? onfocuscb) (not focus)) (onfocuscb g wgt type mx my))))
-                      (glgui-widget-set! g wgt 'armed #f)
-                      (glgui-widget-set! g wgt 'longpressed #f))
-                    ((fx= type EVENT_MOTION)
-                      (if (fx> distance 10)
-                          (begin (cancel-longpress)
-                                 (glgui-widget-set! g wgt 'old-mx #f)
-                                 (glgui-widget-set! g wgt 'old-my #f))))
-                    (else (cancel-longpress)))
-              inside))))
-    (glgui-widget-set! g base-label 'enableinput #f)
-    (glgui-widget-set! g base-label 'armed #f)
-    (glgui-widget-set! g base-label 'longpressed #f)
-    (glgui-widget-set! g base-label 'copypastable #t)
-    (glgui-widget-set! g base-label 'old-mx #f)
-    (glgui-widget-set! g base-label 'old-my #f)
-    (glgui-widget-set! g base-label 'longpress-mutex  (make-mutex))
-    (glgui-widget-set! g base-label 'input-handle new-handler)
-    base-label))
-
 ;; Draw checkbox with label
 ;; g: parent GUI of checkbox
 ;; x, y, w: (x, y) position of lower-left corner, width in pixels
@@ -636,7 +555,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (d:inner (- d (* 2 b)))
             (padding (* 3 b))
             (d:button (- d (* 2 padding)))
-            (label-widget (armable-label g (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black)))
+            (label-widget (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black))
             (outer (glgui-box g x y d d Black))
             (inner (glgui-box g (+ x b) (+ y b) d:inner d:inner White))
             (cb (lambda (g . xargs)
@@ -645,8 +564,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                       (checkbox-checked-set! g checkbutton checked?)
                       (if (procedure? callback) (apply callback (append (list label checked? g checkbutton) xargs))))))
             (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
+    (glgui-widget-set! g outer 'callback cb)
     (glgui-widget-set! g inner 'callback cb)
-    (glgui-widget-set! g label-widget 'copypastable #f)
+    (glgui-widget-set! g label-widget 'enableinput #t)
     (glgui-widget-set! g label-widget 'onfocuscb
       (lambda (g wgt . xargs)
         (cb g)
@@ -700,7 +620,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (outer (glgui-box g x y w h Black))
          (inner (glgui-box g x:inner y:inner w:inner h:inner White))
          (lbwgt (glgui-label-local g x (+ y h) w h:label label text_14.fnt Black))
-         (input (armable-label g (glgui-inputlabel g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White))))
+         (input (glgui-inputlabel g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White)))
     (glgui-widget-set! g input 'aftercharcb
       (lambda args (if (procedure? aftercharcb) (apply aftercharcb (cons label args)))))
     (glgui-widget-set! g input 'onfocuscb onfocuscb)
