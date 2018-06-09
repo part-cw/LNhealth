@@ -94,7 +94,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:settings:redcap:focusedbox #f)
 (define rrate:settings:redcap:uploadbutton #f)
 (define rrate:settings:keypad #f)
-(define rrate:settings:toast #f)
 (define rrate:settings:backbutton #f)
 (define rrate:settings:nextbutton #f)
 
@@ -320,7 +319,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (repforms?     (settings-ref "REP_FORMS?"))
             (uploadbutton-hidden? (= (table-length rrate:datatable) 0))
             (forms-shift (if longitudinal? 80 0))
-            (content-height (+ 230 (if longitudinal? 80 0) (if repforms? 50 0) (if uploadbutton-hidden? 0 30)))
+            (content-height (+ 260 (if longitudinal? 80 0) (if repforms? 50 0)))
             (uploadbutton-y (- frame-height (+ 250 (if longitudinal? 80 0) (if repforms? 50 0))))
             (aftercharcb (lambda (label g wgt . xargs)
               (settings-set! label (glgui-widget-get g wgt 'label))))
@@ -363,8 +362,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (uploadbutton (glgui-button-local boxcontainer 0 uploadbutton-y width 30 "UPLOAD" text_20.fnt
               (lambda xargs
                 (if (not (rrate:redcap-upload))
-                  (rrate:show-popup rrate:popup:redcap #f))
-                (uploadbutton-hidden-set! #t)))))
+                    (rrate:show-popup rrate:popup:redcap #f)
+                    (uploadbutton-hidden-set! #t))))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) aftercharcb noshift-onfocuscb)
@@ -397,13 +396,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'hideonreturn hideonreturn)
   (glgui-widget-set! rrate:gui rrate:settings:keypad 'bgcolor DarkGrey)
   (keypad-hidden-set! #t)
-
-  ;; Toast message
-  (set! rrate:settings:toast (glgui-label-wrapped rrate:gui (/ (- w 70) 2) 60 75 20 "" text_14.fnt White (color-fade DimGrey 0.9)))
-  (glgui-widget-set! rrate:gui rrate:settings:toast 'rounded #t)
-  (glgui-widget-set! rrate:gui rrate:settings:toast 'showstart #t)
-  (glgui-widget-set! rrate:gui rrate:settings:toast 'hidden #t)
-  (glgui-widget-set! rrate:gui rrate:settings:toast 'align GUI_ALIGNCENTER)
 
   ;; Go to the next page or finish settings
   (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg (- w 107) 6 100 32 right_arrow.img
@@ -479,7 +471,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Set REDCap upload button visibility
 (define (uploadbutton-hidden-set! b)
-  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden b))
+  (let ((hidden (glgui-widget-get rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden)))
+    (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden b)
+    (if (not (eq? hidden b)) (glgui-framed-container-content-grow rrate:settings:redcap rrate:settings:redcap:boxcontainer (if b -40 40) 'h))))
 
 ;; Set textboxes' container's visibility
 (define (boxcontainer-hidden-set! b)
@@ -490,7 +484,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (let* ((widget-y  (glgui-widget-get rrate:settings:redcap:boxcontainer wgt 'y))
        (content   (glgui-widget-get rrate:settings:redcap rrate:settings:redcap:boxcontainer 'content))
        (content-y (glgui-widget-get rrate:settings:redcap content 'yofs)))
-  (glgui-framed-container-content-ofs-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer (- 157 (- widget-y content-y)) 'yofs)))
+  (glgui-framed-container-content-ofs-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer (- 165 (- widget-y content-y)) 'yofs)))
 
 ;; Shift widget down by `shift` pixels
 (define (widget-y-shift! g wgt shift)
@@ -532,13 +526,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (cond ((eq? l '()) #f)
           ((p (car l) i) i)
           (else (loop p (cdr l) (+ i 1))))))
-
-(define (show-toast message seconds)
-  (let ((future-time (lambda (seconds) (seconds->time (+ seconds (time->seconds (current-time)))))))
-    (glgui-widget-set! rrate:gui rrate:settings:toast 'label message)
-    (glgui-widget-set! rrate:gui rrate:settings:toast 'hidden #f)
-    (thread-sleep! (future-time 1))
-    (glgui-widget-set! rrate:gui rrate:settings:toast 'hidden #t)))
 
 ;; Draw checkbox with label
 ;; g: parent GUI of checkbox
@@ -1070,7 +1057,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (rrate:go-to-stage stage)
   (let ((stage1? (fx= stage 1))
         (stage2? (fx= stage 2))
-        (stage3? (fx= stage 3)))
+        (stage3? (fx= stage 3))
+        (recordno (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label)))
     (glgui-widget-set! rrate:cont rrate:cancelbutton          'hidden (or (not stage1?) (not rrate:cancelproc)))
     (glgui-widget-set! rrate:cont rrate:settingsbutton        'hidden (or (not stage1?) rrate:no-settings?))
     (glgui-widget-set! rrate:cont rrate:nobutton              'hidden (not stage2?))
@@ -1095,7 +1083,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! rrate:cont rrate:animationbg           'hidden (not stage2?))
     (glgui-widget-set! rrate:cont rrate:redcapsave            'hidden (not stage3?))
     (glgui-widget-set! rrate:cont rrate:redcapsave:backbutton 'hidden (not stage3?))
-    (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not stage3?))
+    (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (or (not stage3?) (not (string->number recordno))))
 
     ;; If leaving stage 3, hide keypad and defocus recordnobox
     (if (not stage3?)
