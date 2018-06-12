@@ -1579,6 +1579,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (glgui-widget-set! rrate:cont rrate:redcapsave:savebutton 'hidden (not (string->number recordno)))))
       (lambda (g wgt . xargs)
         (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #f)))))
+   (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'copyable? #f)
+   (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'pastable? #f)
    (glgui-widget-set! rrate:cont rrate:redcapsave 'hidden #t)
 
    ;; Create popup background and message
