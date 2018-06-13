@@ -475,7 +475,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Set REDCap upload button visibility
 (define (uploadbutton-hidden-set!)
   (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden (= (table-length rrate:datatable) 0))
-  (boxcontainer-height-set!))
+  (boxcontainer-height-set!)
+  (glgui-framed-container-position-y-snap! rrate:settings:redcap rrate:settings:redcap:boxcontainer))
 
 ;; Set textboxes' container's visibility
 (define (boxcontainer-hidden-set! b)
