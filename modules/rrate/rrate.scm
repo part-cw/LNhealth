@@ -317,9 +317,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (letrec  ((x 25) (boxcontainer-y 53) (frame-height 310) (width (- w (* 2 x)))
             (longitudinal? (settings-ref "LONGITUDINAL?"))
             (repforms?     (settings-ref "REP_FORMS?"))
-            (uploadbutton-hidden? (= (table-length rrate:datatable) 0))
             (forms-shift (if longitudinal? 80 0))
-            (content-height (+ 260 (if longitudinal? 80 0) (if repforms? 50 0)))
             (uploadbutton-y (- frame-height (+ 250 (if longitudinal? 80 0) (if repforms? 50 0))))
             (aftercharcb (lambda (label g wgt . xargs)
               (settings-set! label (glgui-widget-get g wgt 'label))))
@@ -327,12 +325,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (set! rrate:settings:redcap:focusedbox wgt)
               (keypad-hidden-set! #f)))
             (noshift-onfocuscb (lambda (g wgt . xargs)
-              (glgui-framed-container-content-ofs-reset! rrate:settings:redcap g)
+              (glgui-widget-set! rrate:settings:redcap g 'scroll-y 0)
               (onfocuscb wgt)))
             (shift-onfocuscb   (lambda (g wgt . xargs)
               (boxcontainer-position-set! wgt)
               (onfocuscb wgt)))
-            (boxcontainer (glgui-framed-container rrate:settings:redcap x boxcontainer-y width frame-height width content-height))
+            (boxcontainer (glgui-framed-container rrate:settings:redcap x boxcontainer-y width frame-height width (boxcontainer-height-get)))
             (event     (textbox  boxcontainer 0 (- frame-height 230) width "EVENT" aftercharcb shift-onfocuscb))
             (repevents (checkbox boxcontainer 0 (- frame-height 260) width "REP_EVENTS?"
               ;; Set setting given by label with checkbox state
@@ -345,7 +343,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                            (settings-set! "REP_FORMS?" #f)
                            (textbox-struct-hidden-set!   boxcontainer form     #t)
                            (checkbox-struct-checked-set! boxcontainer repforms #f)
-                           (keypad-hidden-set! #t))))))
+                           (keypad-hidden-set! #t)
+                           (boxcontainer-height-set!)
+                           (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer))))))
             (form     (textbox  boxcontainer 0 (- frame-height 260 forms-shift) width "FORM" aftercharcb shift-onfocuscb))
             (repforms (checkbox boxcontainer 0 (- frame-height 210 forms-shift) width "REP_FORMS?"
               ;; Set setting given by label with checkbox state
@@ -355,15 +355,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 (settings-set! label checked?)
                 (textbox-struct-hidden-set! boxcontainer form (not checked?))
                 (widget-y-shift! boxcontainer uploadbutton (if checked? 50 -50))
-                (glgui-framed-container-content-grow rrate:settings:redcap boxcontainer (if checked? 50 -50) 'h)
-                (if checked? (begin (settings-set! "REP_EVENTS?" #f)
-                                    (checkbox-struct-checked-set! boxcontainer repevents #f))
-                             (keypad-hidden-set! #t)))))
+                (boxcontainer-height-set!)
+                (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer)
+                (if (and checked? (settings-ref "REP_EVENTS?"))
+                    (begin (settings-set! "REP_EVENTS?" #f)
+                           (checkbox-struct-checked-set! boxcontainer repevents #f))
+                           (keypad-hidden-set! #t)))))
             (uploadbutton (glgui-button-local boxcontainer 0 uploadbutton-y width 30 "UPLOAD" text_20.fnt
               (lambda xargs
                 (if (not (rrate:redcap-upload))
                     (rrate:show-popup rrate:popup:redcap #f)
-                    (uploadbutton-hidden-set! #t))))))
+                    (uploadbutton-hidden-set!))))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) aftercharcb noshift-onfocuscb)
@@ -378,7 +380,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (checkbox-struct-y-shift!    boxcontainer repforms     (if checked? 80 -80))
         (textbox-struct-y-shift!     boxcontainer form         (if checked? 80 -80))
         (widget-y-shift!             boxcontainer uploadbutton (if checked? 80 -80))
-        (glgui-framed-container-content-grow rrate:settings:redcap boxcontainer (if checked? 80 -80) 'h)
+        (boxcontainer-height-set!)
+        (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer)
         (keypad-hidden-set! #t)))
     (textbox-struct-hidden-set!  boxcontainer form      (not repforms?))
     (textbox-struct-hidden-set!  boxcontainer event     (not longitudinal?))
@@ -389,7 +392,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (glgui-widget-set! boxcontainer uploadbutton 'solid-color #t)
     (glgui-widget-set! boxcontainer uploadbutton 'button-normal-color Red)
     (glgui-widget-set! boxcontainer uploadbutton 'button-selected-color DarkRed)
-    (uploadbutton-hidden-set! uploadbutton-hidden?))
+    (uploadbutton-hidden-set!))
 
   ;; Keypad for REDCap
   (set! rrate:settings:keypad (glgui-keypad rrate:gui 0 0 w 210 text_14.fnt))
@@ -470,10 +473,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     success))
 
 ;; Set REDCap upload button visibility
-(define (uploadbutton-hidden-set! b)
-  (let ((hidden (glgui-widget-get rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden)))
-    (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden b)
-    (if (not (eq? hidden b)) (glgui-framed-container-content-grow rrate:settings:redcap rrate:settings:redcap:boxcontainer (if b -40 40) 'h))))
+(define (uploadbutton-hidden-set!)
+  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden (= (table-length rrate:datatable) 0))
+  (boxcontainer-height-set!))
 
 ;; Set textboxes' container's visibility
 (define (boxcontainer-hidden-set! b)
@@ -481,10 +483,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Set boxcontainer scroll position to reveal wgt
 (define (boxcontainer-position-set! wgt)
-(let* ((widget-y  (glgui-widget-get rrate:settings:redcap:boxcontainer wgt 'y))
-       (content   (glgui-widget-get rrate:settings:redcap rrate:settings:redcap:boxcontainer 'content))
-       (content-y (glgui-widget-get rrate:settings:redcap content 'yofs)))
-  (glgui-framed-container-content-ofs-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer (- 165 (- widget-y content-y)) 'yofs)))
+  (let* ((widget-y  (glgui-widget-get rrate:settings:redcap:boxcontainer wgt 'y))
+         (content   (glgui-widget-get rrate:settings:redcap rrate:settings:redcap:boxcontainer 'content))
+         (content-y (glgui-widget-get rrate:settings:redcap content 'yofs))
+         (content-h (glgui-widget-get rrate:settings:redcap content 'h)))
+    (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'scroll-y (- (+ content-h content-y) widget-y 200))))
+
+;; Calculate boxcontainer height according to what's visible
+(define (boxcontainer-height-get)
+  (let* ((longitudinal (if (settings-ref "LONGITUDINAL?")       80 0))
+         (repforms     (if (settings-ref "REP_FORMS?")          50 0))
+         (uploadbutton (if (> (table-length rrate:datatable) 0) 40 0))
+         (height       (+ 220 longitudinal repforms uploadbutton)))
+    height))
+
+;; Set boxcontainer height according to what's visible
+(define (boxcontainer-height-set!)
+    (glgui-widget-set! rrate:settings:redcap rrate:settings:redcap:boxcontainer 'content-h (boxcontainer-height-get)))
 
 ;; Shift widget down by `shift` pixels
 (define (widget-y-shift! g wgt shift)
@@ -497,8 +512,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Callback for keypad on return
 (define (hideonreturn)
-  (if (not (glgui-framed-container-content-position-valid? rrate:settings:redcap rrate:settings:redcap:boxcontainer))
-    (glgui-framed-container-content-ofs-reset! rrate:settings:redcap rrate:settings:redcap:boxcontainer))
+  (glgui-framed-container-position-y-snap! rrate:settings:redcap rrate:settings:redcap:boxcontainer)
   (focusedbox-next!))
 
 ;; Shift focus to next empty textbox
@@ -1434,7 +1448,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:redcapsave:savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt
      (lambda (g . x)
        (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
-       (uploadbutton-hidden-set! #f)
+       (uploadbutton-hidden-set!)
        (rrate:go-to-stage 2)
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
