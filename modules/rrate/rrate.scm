@@ -77,7 +77,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                        (cons "REDCAP_USE?" #f)
                        (cons "LONGITUDINAL?" #f)
                        (cons "REP_EVENTS?" #f)
-                       (cons "REP_FORMS?" #f)))
+                       (cons "REP_FORMS?" #f)
+                       (cons "UPLOAD_SAVE?" #f)))
 )
 
 ;; Settings page for configuring number of taps and consistency percent for threshold
@@ -318,7 +319,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (longitudinal? (settings-ref "LONGITUDINAL?"))
             (repforms?     (settings-ref "REP_FORMS?"))
             (forms-shift (if longitudinal? 80 0))
-            (uploadbutton-y (- frame-height (+ 250 (if longitudinal? 80 0) (if repforms? 50 0))))
+            (uploadbutton-y (- frame-height (+ 280 (if longitudinal? 80 0) (if repforms? 50 0))))
             (aftercharcb (lambda (label g wgt . xargs)
               (settings-set! label (glgui-widget-get g wgt 'label))))
             (onfocuscb (lambda (wgt)
@@ -339,7 +340,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (lambda (label checked? g wgt . xargs)
                 (settings-set! label checked?)
                 (if (and checked? (settings-ref "REP_FORMS?"))
-                    (begin (widget-y-shift! boxcontainer uploadbutton -50)
+                    (begin (checkbox-struct-y-shift! boxcontainer saveonupload -50)
+                           (widget-y-shift! boxcontainer uploadbutton -50)
                            (settings-set! "REP_FORMS?" #f)
                            (textbox-struct-hidden-set!   boxcontainer form     #t)
                            (checkbox-struct-checked-set! boxcontainer repforms #f)
@@ -354,6 +356,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (lambda (label checked? g wgt . xargs)
                 (settings-set! label checked?)
                 (textbox-struct-hidden-set! boxcontainer form (not checked?))
+                (checkbox-struct-y-shift! boxcontainer saveonupload (if checked? 50 -50))
                 (widget-y-shift! boxcontainer uploadbutton (if checked? 50 -50))
                 (boxcontainer-height-set!)
                 (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer)
@@ -361,11 +364,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                     (begin (settings-set! "REP_EVENTS?" #f)
                            (checkbox-struct-checked-set! boxcontainer repevents #f))
                            (keypad-hidden-set! #t)))))
+            (saveonupload (checkbox boxcontainer 0 (+ uploadbutton-y 40) width "UPLOAD_SAVE?"
+              (lambda (label checked? g wgt . xargs)
+                (settings-set! label checked?)
+                (boxcontainer-height-set!)
+                (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer)
+                (uploadbutton-hidden-set!))))
             (uploadbutton (glgui-button-local boxcontainer 0 uploadbutton-y width 30 "UPLOAD" text_20.fnt
               (lambda xargs
-                (if (not (rrate:redcap-upload))
-                    (rrate:show-popup rrate:popup:redcap #f)
-                    (uploadbutton-hidden-set!))))))
+                (rrate:show-popup (if (rrate:redcap-upload) rrate:popup:redcap:success rrate:popup:redcap:failed) #f #t)
+                (uploadbutton-hidden-set!)))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) aftercharcb noshift-onfocuscb)
@@ -379,6 +387,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (checkbox-struct-hidden-set! boxcontainer repevents    (not checked?))
         (checkbox-struct-y-shift!    boxcontainer repforms     (if checked? 80 -80))
         (textbox-struct-y-shift!     boxcontainer form         (if checked? 80 -80))
+        (checkbox-struct-y-shift!    boxcontainer saveonupload (if checked? 80 -80))
         (widget-y-shift!             boxcontainer uploadbutton (if checked? 80 -80))
         (boxcontainer-height-set!)
         (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer)
@@ -439,6 +448,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;  - as a string, the timestamp for the first tap,
 ;;    then the time passed (s) since the first tap for each subsequent tap
 ;;    to variable "rrate_taps"
+;; This only uploads the latest session if not repeatable
 (define (rrate:redcap-upload)
   (let* ((success #t)
          (longitudinal?      (settings-ref "LONGITUDINAL?"))
@@ -474,7 +484,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Set REDCap upload button visibility
 (define (uploadbutton-hidden-set!)
-  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden (= (table-length rrate:datatable) 0))
+  (glgui-widget-set! rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'hidden
+    (or (settings-ref "UPLOAD_SAVE?") (= (table-length rrate:datatable) 0)))
   (boxcontainer-height-set!)
   (glgui-framed-container-position-y-snap! rrate:settings:redcap rrate:settings:redcap:boxcontainer))
 
@@ -494,8 +505,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (boxcontainer-height-get)
   (let* ((longitudinal (if (settings-ref "LONGITUDINAL?")       80 0))
          (repforms     (if (settings-ref "REP_FORMS?")          50 0))
-         (uploadbutton (if (> (table-length rrate:datatable) 0) 40 0))
-         (height       (+ 220 longitudinal repforms uploadbutton)))
+         (uploadbutton (if (and (not (settings-ref "UPLOAD_SAVE?")) (> (table-length rrate:datatable) 0)) 40 0))
+         (height       (+ 250 longitudinal repforms uploadbutton)))
     height))
 
 ;; Set boxcontainer height according to what's visible
@@ -728,7 +739,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:popup:toofast #f)
 (define rrate:popup:retrybutton #f)
 (define rrate:popup:ignorebutton #f)
-(define rrate:popup:redcap #f)
+(define rrate:popup:okbutton #f)
+(define rrate:popup:redcap:failed #f)
+(define rrate:popup:redcap:success #f)
 
 ;; The procedures for what to do when done with the module
 (define rrate:cancelproc #f)
@@ -995,7 +1008,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 (begin
                   (rrate:fail-feedback)
                   (glgui-widget-set! rrate:cont rrate:value 'color Grey)
-                  (rrate:show-popup rrate:popup:toofast (< medrate 200)))
+                  (rrate:show-popup rrate:popup:toofast (< medrate 200) #f))
                 (begin
                   (rrate:success-feedback)
                   (set! successtap #t)
@@ -1023,7 +1036,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
                      ;; Show message about error with taps and change number to red
                      (glgui-widget-set! rrate:cont rrate:value 'color Grey)
-                     (rrate:show-popup (if (>= rrate:rate 140) rrate:popup:toofast rrate:popup:inconsistent) (< rrate:rate 200)))))
+                     (rrate:show-popup (if (>= rrate:rate 140) rrate:popup:toofast rrate:popup:inconsistent) (< rrate:rate 200) #f))))
 
                ;; Don't play a breathing sound from this tap, and delay the breathing sounds during animation
                (set! playbreath #f)
@@ -1126,7 +1139,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Displays the popup with the given message, which is rrate:popup:inconsistent, rrate:popup:toofast, rrate:popup:notenough, or rrate:popup:redcap
 ;; If ignore? is true, the ignore button is shown as an option
-(define (rrate:show-popup message ignore?)
+;; If ok? is true, show an OK button instead of retry or ignore buttons
+(define (rrate:show-popup message ignore? ok?)
 
   ;; Enter modal mode, which show the popup background and buttons
   (glgui-modal-set! #t)
@@ -1140,10 +1154,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                         "Too fast")
                      ((eq? message rrate:popup:inconsistent)
                         "Inconsistent")
-                     ((eq? message rrate:popup:notenough)
-                        "Not enough taps")
+                     ((eq? message rrate:popup:redcap:failed)
+                        "Upload to REDCap failed")
+                     ((eq? message rrate:popup:redcap:success)
+                        "Upload to REDCAP succeeded")
                      (else
-                        "Upload to REDCap failed")))
+                        "Not enough taps")))
 
    ;; If the ignore option is used, show this button, otherwise hide it and center the retry button
    (if ignore?
@@ -1153,6 +1169,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (begin
         (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'hidden #t)
         (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton 'x (+ 125 rrate:xoffset))))
+
+  ;; If ok option is used, show the ok button and none of the other ones
+  (if ok? (begin
+    (glgui-widget-set! rrate:popup:cont rrate:popup:retrybutton  'hidden #t)
+    (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'hidden #t)))
+  (glgui-widget-set! rrate:popup:cont rrate:popup:okbutton     'hidden (not ok?))
 
   ;; Hide the cancel button
   (glgui-widget-set! rrate:cont rrate:cancelbutton 'hidden #t)
@@ -1168,7 +1190,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:popup:cont rrate:popup:inconsistent 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'hidden #t)
-  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap 'hidden #t)
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'hidden #t)
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:success 'hidden #t)
 )
 
 ;; Give feedback that a breath has been tapped or during the animation
@@ -1444,7 +1467,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:redcapsave:savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt
      (lambda (g . x)
        (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
-       (uploadbutton-hidden-set!)
+       (if (settings-ref "UPLOAD_SAVE?")
+           ((glgui-widget-get rrate:settings:redcap:boxcontainer rrate:settings:redcap:uploadbutton 'callback))
+           (uploadbutton-hidden-set!))
        (rrate:go-to-stage 2)
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
@@ -1613,10 +1638,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      "TAPS_TOO_FAST" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'modal #t)
-   (set! rrate:popup:redcap (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
+   (set! rrate:popup:redcap:failed (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
      "REDCAP_UPLOAD_FAILED" text_20.fnt White))
-   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap 'hidden #t)
-   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap 'modal #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'hidden #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'modal #t)
+   (set! rrate:popup:redcap:success (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
+    "REDCAP_UPLOAD_SUCCESS" text_20.fnt White))
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:success 'hidden #t)
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:success 'modal #t)
 
    ;; Popup buttons
 
@@ -1648,6 +1677,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'button-normal-color Gray)
    (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'button-selected-color DarkGray)
    (glgui-widget-set! rrate:popup:cont rrate:popup:ignorebutton 'modal #t)
+
+   ;; Make OK button for dismissing REDCap popups
+   (set! rrate:popup:okbutton (glgui-button-local rrate:popup:cont (+ 125 rrate:xoffset) (+ 125 rrate:yoffset) 139 32 "OK" text_20.fnt
+     (lambda (g wgt . x)
+       ;; Exit modal mode
+       (rrate:hide-popup))))
+   (glgui-widget-set! rrate:popup:cont rrate:popup:okbutton 'button-normal-color Gray)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:okbutton 'button-selected-color DarkGray)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:okbutton 'modal #t)
+
 )
 
 ;; Running procedure for the rrate module - should be called continuously when on the RRate page.
@@ -1684,7 +1723,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                ;; Show popup, and change RR colour to red for if we go to the animation page
                (glgui-widget-set! rrate:cont rrate:value 'color Grey)
                (rrate:show-popup (if (fx< (length rrate:times) 4) rrate:popup:notenough
-                 (if (>= medrate 140) rrate:popup:toofast rrate:popup:inconsistent)) (< medrate 200)
+                 (if (>= medrate 140) rrate:popup:toofast rrate:popup:inconsistent)) (< medrate 200) #f
                )
              )
            )
