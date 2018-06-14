@@ -469,7 +469,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                   (loop (- i 1) (+ instance 1))))
             (upload recordno (car sessions) #f #f)))
       rrate:datatable)
-    (if success (rrate:erase-data))
+    (if success (rrate:erasedata))
     success))
 
 ;; Set REDCap upload button visibility
@@ -816,11 +816,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (if (not (table? rrate:datatable))
       (set! rrate:datatable (make-table))))
 
-;; Save datatable to cdb
-;; N.B. Should be called at least on exit
-(define (rrate:writecdb) (table->cdb rrate:datatable rrate:filepath))
-
-;; Save data to datatable
+;; Save data to datatable and save datatable to file
 ;; This copies part of `init-rrate` from parts/apps/PneumOx/sandbox/main.sx
 (define (rrate:savedata recordno rrate times)
   (set! rrate:recordno recordno)
@@ -836,7 +832,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                     (seconds->string starttime "%Y-%m-%d %H:%M:%S")
                     (roundtostring (- starttime (floor starttime))) ";"
                     (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))
-              (if sessions sessions '())))))
+              (if sessions sessions '()))))
+  (table->cdb rrate:datatable rrate:filepath))
 
 ;; Get the next record number
 ;; If no saves have been performed yet, do not provide a preset record number
@@ -854,8 +851,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ""))
 
 ;; Erase all existing data
-;; N.B. Actual CDB file will not be written over until rrate:writecdb is called
-(define (rrate:erase-data) (set! rrate:datatable (make-table)))
+(define (rrate:erasedata)
+  (set! rrate:datatable (make-table))
+  (table->cdb rrate:datatable rrate:filepath))
 
 ;; Sets the offset of the animation so that it starts on inhalation right now
 (define (rrate:set-animate-offset)
@@ -1327,9 +1325,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (lambda (g . x)
        ;; Determine if there are any taps, if none then cancel out of module, otherwise just reset
        (if (fx= (length rrate:times) 0)
-         (begin
-           (rrate:writecdb)
-           (if rrate:cancelproc (rrate:cancelproc)))
+         (if rrate:cancelproc (rrate:cancelproc))
          (begin
            ;; Clear interval and scale values
            (set! rrate:calc:medinterval #f)
@@ -1428,7 +1424,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (lambda (g . x)
        ;; Prepare for next time
        (rrate-reset)
-       (rrate:writecdb)
        (if rrate:cancelproc
          (rrate:cancelproc)
          (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #t)
