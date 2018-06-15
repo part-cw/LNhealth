@@ -852,13 +852,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (list (make-session
             rrate
             (seconds->string (current-time-seconds) "%Y-%m-%d %H:%M:%S")
-            (let ((starttime (car times))
-                 (nexttimes (cdr times))
-                 (roundtostring (lambda (n) (number->string (round-decimal n 4)))))
-              (string-append
-                (seconds->string starttime "%Y-%m-%d %H:%M:%S")
-                (roundtostring (- starttime (floor starttime))) ";"
-                (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))))))
+            (taptimes->string times))))))
   (table->cdb rrate:datatable rrate:filepath))
 
 ;; Get the next record number
@@ -880,6 +874,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (rrate:erasedata)
   (set! rrate:datatable (make-table))
   (table->cdb rrate:datatable rrate:filepath))
+
+;; Given a list of timestamps given as seconds,
+;; format the first timestamp as date and time
+;; then append subsequence timestamps as seconds elapsed since first timestamp
+(define (taptimes->string taptimes)
+  (let ((starttime (car taptimes))
+        (nexttimes (cdr taptimes))
+        (roundtostring (lambda (n) (number->string (round-decimal n 4)))))
+    (string-append
+      (seconds->string starttime "%Y-%m-%d %H:%M:%S")
+      (roundtostring (- starttime (floor starttime))) ";"
+      (string-mapconcat nexttimes ";" (lambda (n) (roundtostring (- n starttime)))))))
 
 ;; Sets the offset of the animation so that it starts on inhalation right now
 (define (rrate:set-animate-offset)
@@ -1301,6 +1307,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Clears the RRate related values from the store
 (define (rrate-store-clear)
   (store-clear! rrate:store "RR")
+  (store-clear! rrate:store "RR_TAPS")
 )
 
 ;M @deffn {procedure} rrate-init x y w h store cancelproc doneproc
@@ -1435,7 +1442,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (set! rrate:yesbutton (glgui-button-local rrate:cont (- w 65 6) 6 65 32 "YES" text_20.fnt
      (lambda (g . x)
        ;; Save the RR to the store
-       (if rrate:store (store-set! rrate:store "RR" (glgui-widget-get rrate:cont rrate:value 'label)))
+       (if rrate:store
+           (begin (store-set! rrate:store "RR"      (glgui-widget-get rrate:cont rrate:value 'label))
+                  (store-set! rrate:store "RR_TAPS" (taptimes->string rrate:times))))
        (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
        (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
