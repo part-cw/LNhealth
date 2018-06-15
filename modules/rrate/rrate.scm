@@ -1488,6 +1488,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #t)
 
    ;; Back and Save/Upload buttons for REDCap save page
+   ;; If upload on save has been enabled, in case of failure, on pressing Save,
+   ;;   - display an Upload button instead of the Save button since data has already been saved
+   ;;   - disable editing the recordno after it has been saved
+   ;;   - change error message to saved + upload failed the first time
+   ;;   - make back button go back to restart/exit screen instead of yes/no screen so that data cannot be overwritten
+   ;; If upload has failed and upload button has been pressed again,
+   ;;   - change error message back to upload failed only
+   ;; When uploading,
+   ;;   - show the "Uploading..." popup (whose message will be updated by redcap-upload)
+   ;;   - hide all buttons so that popup acts as progress indicator
+   ;;   - start redcap-upload in separate thread so that main thread can return and update UI
+   ;;   - show a success/failure message once upload procedure returns
+   ;; Once upload has succeeded,
+   ;;   - hide Upload button again (Save button will be restored by go-to-stage)
+   ;;   - re-enable editing recordno for next time
+   ;;   - restore error message to upload failed only
+   ;;   - restore back button behaviour to go back to yes/no screen for next time
+   ;;   - go to yes/no screen instead of restart/exit screen
+   ;;   - execute done procedure if any
+   ;; If upload on save has NOT been enabled, save data and go to restart/exit screen on pressing Save
    (letrec ((goback (lambda xargs
               (rrate:go-to-stage 2)
               (glgui-widget-set! rrate:redcapsave rrate:redcapsave:uploadbutton 'hidden #t)
