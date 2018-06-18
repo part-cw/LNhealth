@@ -490,7 +490,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         rrate:datatable)
       (if success (rrate:erasedata))
       (rrate:hide-popup)
-      (rrate:show-popup (if result rrate:popup:redcap:success rrate:popup:redcap:failed) #f #t)
+      (rrate:show-popup (if success rrate:popup:redcap:success rrate:popup:redcap:failed) #f #t)
       (callback success))))))
 
 ;; Set REDCap upload button visibility
