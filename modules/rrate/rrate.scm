@@ -371,14 +371,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer)
                 (uploadbutton-hidden-set!))))
             (uploadbutton (glgui-button-local boxcontainer 0 uploadbutton-y width 30 "UPLOAD" text_20.fnt
-              (lambda xargs
-                (glgui-set! rrate:popup:redcap:uploading 'label (local-get-text "REDCAP_UPLOAD_PENDING"))
-                (rrate:show-popup rrate:popup:redcap:uploading #f #f)
-                (rrate:hide-popup-buttons)
-                (thread-start! (make-safe-thread (lambda () (rrate:redcap-upload (lambda (result)
-                  (rrate:hide-popup)
-                  (rrate:show-popup (if result rrate:popup:redcap:success rrate:popup:redcap:failed) #f #t)
-                  (uploadbutton-hidden-set!))))))))))
+              (lambda xargs (rrate:redcap-upload (lambda (result) (uploadbutton-hidden-set!)))))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) aftercharcb noshift-onfocuscb)
@@ -447,6 +440,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 )
 
 ;; Upload data to REDCap
+;; THIS FUNCTION RUNS A NEW THREAD!!
 ;; This uploads:
 ;;  - the integral respiratory rate to variable "rrate_rate";
 ;;  - when the save button was pressed to variable "rrate_time"; and
@@ -454,42 +448,50 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;    then the time passed (s) since the first tap for each subsequent tap
 ;;    to variable "rrate_taps"
 ;; This only uploads the latest session if not repeatable
-;; callback takes #t if the upload was successful and #f if not
+;; The callback takes #t if the upload was successful and #f if not
 (define (rrate:redcap-upload callback)
-  (let* ((success #t)
-         (longitudinal?      (settings-ref "LONGITUDINAL?"))
-         (repeatable-events? (settings-ref "REP_EVENTS?"))
-         (repeatable-forms?  (settings-ref "REP_FORMS?"))
-         (repeatable? (or (and longitudinal? repeatable-events?) repeatable-forms?))
-         (host  (settings-ref "HOST"))
-         (url   (settings-ref "URL"))
-         (token (settings-ref "TOKEN"))
-         (event (if longitudinal?     (settings-ref "EVENT") ""))
-         (form  (if repeatable-forms? (settings-ref "FORM")  #f))
-         (get-data (lambda (s)
-            `(("rrate_rate" . ,(session-rate s))
-              ("rrate_time" . ,(session-time s))
-              ("rrate_taps" . ,(session-taps s)))))
-         (upload (lambda (recordno len num session instrument instance)
-            (log-status "Uploading session " num " of " len " for record number " recordno " to instance " instance " for event " event " and instrument " instrument)
-            (glgui-set! rrate:popup:redcap:uploading 'label (string-format (local-get-text "REDCAP_UPLOADING") num len recordno))
-            (set! success (and success
-              (redcap-import-record host token recordno (get-data session) 'event event 'instrument instrument 'instance instance))))))
-    (redcap-url-set! url)
-    (table-for-each
-      (lambda (recordno sessions)
-        (if repeatable?
-            (let loop ((i 0)
-                       (instance (redcap-get-next-instance-index host token recordno 'form form 'event event)))
-              (if instance
-                  (upload recordno (length sessions) (+ i 1) (list-ref sessions i) form (number->string instance))
-                  (set! success #f))
-              (if (and success (< (+ i 1) (length sessions)))
-                  (loop (+ i 1) (+ instance 1))))
-            (upload recordno 1 1 (car sessions) #f #f)))
-      rrate:datatable)
-    (if success (rrate:erasedata))
-    (callback success)))
+  (glgui-set! rrate:popup:redcap:uploading 'label (local-get-text "REDCAP_UPLOAD_PENDING"))
+  (rrate:show-popup rrate:popup:redcap:uploading #f #f)
+  (rrate:hide-popup-buttons)
+  (thread-start! (make-safe-thread (lambda ()
+    (thread-yield!) ;; Let main thread update popup first
+    (let* ((success #t)
+           (longitudinal?      (settings-ref "LONGITUDINAL?"))
+           (repeatable-events? (settings-ref "REP_EVENTS?"))
+           (repeatable-forms?  (settings-ref "REP_FORMS?"))
+           (repeatable? (or (and longitudinal? repeatable-events?) repeatable-forms?))
+           (host  (settings-ref "HOST"))
+           (url   (settings-ref "URL"))
+           (token (settings-ref "TOKEN"))
+           (event (if longitudinal?     (settings-ref "EVENT") ""))
+           (form  (if repeatable-forms? (settings-ref "FORM")  #f))
+           (get-data (lambda (s)
+              `(("rrate_rate" . ,(session-rate s))
+                ("rrate_time" . ,(session-time s))
+                ("rrate_taps" . ,(session-taps s)))))
+           (upload (lambda (recordno len num session instrument instance)
+              (log-status "Uploading session " num " of " len " for record number " recordno " to instance " instance " for event " event " and instrument " instrument)
+              (glgui-set! rrate:popup:redcap:uploading 'label (string-format (local-get-text "REDCAP_UPLOADING") num len recordno))
+              (thread-yield!) ;; Give the main thread a chance to update the popup text in its draw loop
+              (set! success (and success
+                (redcap-import-record host token recordno (get-data session) 'event event 'instrument instrument 'instance instance))))))
+      (redcap-url-set! url)
+      (table-for-each
+        (lambda (recordno sessions)
+          (if repeatable?
+              (let loop ((i 0)
+                         (instance (redcap-get-next-instance-index host token recordno 'form form 'event event)))
+                (if instance
+                    (upload recordno (length sessions) (+ i 1) (list-ref sessions i) form (number->string instance))
+                    (set! success #f))
+                (if (and success (< (+ i 1) (length sessions)))
+                    (loop (+ i 1) (+ instance 1))))
+              (upload recordno 1 1 (car sessions) #f #f)))
+        rrate:datatable)
+      (if success (rrate:erasedata))
+      (rrate:hide-popup)
+      (rrate:show-popup (if result rrate:popup:redcap:success rrate:popup:redcap:failed) #f #t)
+      (callback success))))))
 
 ;; Set REDCap upload button visibility
 (define (uploadbutton-hidden-set!)
@@ -1520,14 +1522,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
               (if rrate:cancelproc (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
               (if rrate:doneproc (rrate:doneproc))))
-            (upload (lambda xargs
-              (glgui-set! rrate:popup:redcap:uploading 'label (local-get-text "REDCAP_UPLOAD_PENDING"))
-              (rrate:show-popup rrate:popup:redcap:uploading #f #f)
-              (rrate:hide-popup-buttons)
-              (thread-start! (make-safe-thread (lambda () (rrate:redcap-upload (lambda (result)
-                (rrate:hide-popup)
-                (rrate:show-popup (if result rrate:popup:redcap:success rrate:popup:redcap:failed) #f #t)
-                (if result (goback)))))))))
+            (upload (lambda () (rrate:redcap-upload (lambda (result) (if result (goback))))))
             (savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt (lambda xargs
               (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
               (uploadbutton-hidden-set!)
