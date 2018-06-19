@@ -127,6 +127,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Go back to previous settings page or out of settings completely
   (set! rrate:settings:backbutton (glgui-button rrate:settings:bg 12 6 100 32 left_arrow.img
     (lambda (g . x)
+      ;; Save textbox settings from REDCap settings page
+      (textboxes-settings-set!)
       (cond ((fx= rrate:settings:page 0)
               (set! rrate:settings:viewing #f)
               (rrate:go-to-stage 1))
@@ -320,8 +322,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (repforms?     (settings-ref "REP_FORMS?"))
             (forms-shift (if longitudinal? 80 0))
             (uploadbutton-y (- frame-height (+ 280 (if longitudinal? 80 0) (if repforms? 50 0))))
-            (aftercharcb (lambda (label g wgt . xargs)
-              (settings-set! label (glgui-widget-get g wgt 'label))))
             (onfocuscb (lambda (wgt)
               (set! rrate:settings:redcap:focusedbox wgt)
               (keypad-hidden-set! #f)))
@@ -332,7 +332,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (boxcontainer-position-set! wgt)
               (onfocuscb wgt)))
             (boxcontainer (glgui-framed-container rrate:settings:redcap x boxcontainer-y width frame-height width (boxcontainer-height-get)))
-            (event     (textbox  boxcontainer 0 (- frame-height 230) width "EVENT" aftercharcb shift-onfocuscb))
+            (event     (textbox  boxcontainer 0 (- frame-height 230) width "EVENT" #f shift-onfocuscb))
             (repevents (checkbox boxcontainer 0 (- frame-height 260) width "REP_EVENTS?"
               ;; Set setting given by label with checkbox state
               ;; If checked, uncheck repeated forms because at most one can be selected,
@@ -348,7 +348,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                            (keypad-hidden-set! #t)
                            (boxcontainer-height-set!)
                            (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer))))))
-            (form     (textbox  boxcontainer 0 (- frame-height 260 forms-shift) width "FORM" aftercharcb shift-onfocuscb))
+            (form     (textbox  boxcontainer 0 (- frame-height 260 forms-shift) width "FORM" #f shift-onfocuscb))
             (repforms (checkbox boxcontainer 0 (- frame-height 210 forms-shift) width "REP_FORMS?"
               ;; Set setting given by label with checkbox state
               ;; If checked, uncheck repeated events because at most one can be selected
@@ -371,10 +371,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 (glgui-framed-container-position-y-snap! rrate:settings:redcap boxcontainer)
                 (uploadbutton-hidden-set!))))
             (uploadbutton (glgui-button-local boxcontainer 0 uploadbutton-y width 30 "UPLOAD" text_20.fnt
-              (lambda xargs (rrate:redcap-upload (lambda (result) (uploadbutton-hidden-set!)))))))
+              (lambda xargs
+                (textboxes-settings-set!)
+                (rrate:redcap-upload (lambda (result) (uploadbutton-hidden-set!)))))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
-      (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) aftercharcb noshift-onfocuscb)
+      (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) #f noshift-onfocuscb)
       `(,event ,form)))
     (checkbox boxcontainer 0 (- frame-height 180) width "LONGITUDINAL?"
       ;; Set setting given by label with checkbox state
@@ -410,6 +412,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;; Go to the next page or finish settings
   (set! rrate:settings:nextbutton (glgui-button rrate:settings:bg (- w 107) 6 100 32 right_arrow.img
     (lambda (g . x)
+      ;; Save textbox settings from REDCap settings page
+      (textboxes-settings-set!)
       (cond ((fx= rrate:settings:page 3)
               ;; Leave the settings page
               (set! rrate:settings:page 0)
@@ -564,6 +568,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           ((p (car l) i) i)
           (else (loop p (cdr l) (+ i 1))))))
 
+;; Save all textbox settings
+(define (textboxes-settings-set!)
+  (for-each (lambda (textbox)
+    (settings-set! (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-label textbox) 'tag)
+                   (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'label)))
+    rrate:settings:redcap:textboxes))
+
 ;; Draw checkbox with label
 ;; g: parent GUI of checkbox
 ;; x, y, w: (x, y) position of lower-left corner, width in pixels
@@ -579,7 +590,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (d:inner (- d (* 2 b)))
             (padding (* 3 b))
             (d:button (- d (* 2 padding)))
-            (label-widget (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black))
+            (lbwgt (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black))
             (outer (glgui-box g x y d d Black))
             (inner (glgui-box g (+ x b) (+ y b) d:inner d:inner White))
             (cb (lambda (g . xargs)
@@ -590,15 +601,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
     (glgui-widget-set! g outer 'callback cb)
     (glgui-widget-set! g inner 'callback cb)
-    (glgui-widget-set! g label-widget 'enableinput #t)
-    (glgui-widget-set! g label-widget 'onfocuscb
+    (glgui-widget-set! g lbwgt 'tag label)
+    (glgui-widget-set! g lbwgt 'enableinput #t)
+    (glgui-widget-set! g lbwgt 'onfocuscb
       (lambda (g wgt . xargs)
         (cb g)
         (glgui-widget-set! g wgt 'focus #f)))
     (glgui-widget-set! g checkbutton 'solid-color #t)
     (glgui-widget-set! g checkbutton 'rounded #f)
     (checkbox-checked-set! g checkbutton (settings-ref label))
-    (make-checkbox-struct outer inner checkbutton label-widget)))
+    (make-checkbox-struct outer inner checkbutton lbwgt)))
 
 (define (checkbox-struct-hidden-set! g s b)
   (glgui-widget-set! g (checkbox-struct-outer  s) 'hidden b)
@@ -629,7 +641,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; g: parent GUI of box
 ;; x, y, w: (x, y) position of lower-left corner, width in pixels
 ;; label: label shown above textbox
-;; aftercharcb: callback for keypress; takes a string (the label) followed by standard callback arguments
+;; aftercharcb: callback for keypress; takes standard callback arguments
 ;; onfocuscb: callback for focus obtained; takes standard callback arguments
 ;; Returns a textbox-struct
 ;; For the moment, font is fixed at text_14.fnt and height is fixed accordingly
@@ -645,8 +657,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (inner (glgui-box g x:inner y:inner w:inner h:inner White))
          (lbwgt (glgui-label-local g x (+ y h) w h:label label text_14.fnt Black))
          (input (glgui-inputlabel g (+ x:inner 2) y:inner (- w:inner 4) h:inner (settings-ref label) text_14.fnt Black White)))
-    (glgui-widget-set! g input 'aftercharcb
-      (lambda args (if (procedure? aftercharcb) (apply aftercharcb (cons label args)))))
+    (glgui-widget-set! g lbwgt 'tag label)
+    (glgui-widget-set! g input 'aftercharcb aftercharcb)
     (glgui-widget-set! g input 'onfocuscb onfocuscb)
     (make-textbox-struct outer inner input lbwgt)))
 
