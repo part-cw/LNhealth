@@ -479,13 +479,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (table-for-each
         (lambda (recordno sessions)
           (if repeatable?
-              (let loop ((i 0)
-                         (instance (redcap-get-next-instance-index host token recordno 'form form 'event event)))
-                (if instance
-                    (upload recordno (length sessions) (+ i 1) (list-ref sessions i) form (number->string instance))
-                    (set! success #f))
-                (if (and success (< (+ i 1) (length sessions)))
-                    (loop (+ i 1) (+ instance 1))))
+              (let loop ((i 0))
+                (let ((instance (redcap-get-next-instance-index host token recordno 'form form 'event event)))
+                  (if instance
+                      (upload recordno (length sessions) (+ i 1) (list-ref sessions i) form (number->string instance))
+                      (set! success #f))
+                  (if (and success (< (+ i 1) (length sessions)))
+                      (loop (+ i 1)))))
               (upload recordno 1 1 (car sessions) #f #f)))
         rrate:datatable)
       (if success (rrate:erasedata))
