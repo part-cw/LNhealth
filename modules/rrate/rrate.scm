@@ -132,6 +132,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (cond ((fx= rrate:settings:page 0)
               (set! rrate:settings:viewing #f)
               (rrate:go-to-stage 1))
+            ((and (not (textboxes-filled?)) (fx= rrate:settings:page 3))
+              (rrate:show-popup rrate:popup:redcap:fields #f #t))
             ((and rrate:oneminute (fx= rrate:settings:page 3))
               (set! rrate:settings:page 0))
             (else
@@ -373,7 +375,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (uploadbutton (glgui-button-local boxcontainer 0 uploadbutton-y width 30 "UPLOAD" text_20.fnt
               (lambda xargs
                 (textboxes-settings-set!)
-                (rrate:redcap-upload (lambda (result) (uploadbutton-hidden-set!)))))))
+                (if (not (textboxes-filled?))
+                    (rrate:show-popup rrate:popup:redcap:fields #f #t)
+                    (rrate:redcap-upload (lambda (result) (uploadbutton-hidden-set!))))))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) #f noshift-onfocuscb)
@@ -414,7 +418,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (lambda (g . x)
       ;; Save textbox settings from REDCap settings page
       (textboxes-settings-set!)
-      (cond ((fx= rrate:settings:page 3)
+      (cond ((and (not (textboxes-filled?)) (fx= rrate:settings:page 3))
+              (rrate:show-popup rrate:popup:redcap:fields #f #t))
+            ((fx= rrate:settings:page 3)
               ;; Leave the settings page
               (set! rrate:settings:page 0)
               (set! rrate:settings:viewing #f)
@@ -571,9 +577,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Save all textbox settings
 (define (textboxes-settings-set!)
   (for-each (lambda (textbox)
-    (settings-set! (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-label textbox) 'tag)
-                   (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'label)))
+      (settings-set! (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-label textbox) 'tag)
+                     (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'label)))
     rrate:settings:redcap:textboxes))
+
+;; Check that all visible fields are filled out
+(define (textboxes-filled?)
+  (foldr (lambda (textbox filled)
+      (and filled
+           (or (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'hidden)
+               (not (equal? "" (string-trim (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'label)))))))
+    #t rrate:settings:redcap:textboxes))
 
 ;; Draw checkbox with label
 ;; g: parent GUI of checkbox
@@ -767,6 +781,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:popup:redcap:failed #f)
 (define rrate:popup:redcap:success #f)
 (define rrate:popup:redcap:uploading #f)
+(define rrate:popup:redcap:fields #f)
 
 ;; The procedures for what to do when done with the module
 (define rrate:cancelproc #f)
@@ -1194,6 +1209,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                         "Upload to REDCAP succeeded")
                      ((eq? message rrate:popup:redcap:uploading)
                         "Uploading to REDCAP")
+                     ((eq? message rrate:popup:redcap:fields)
+                        "Blank fields")
                      (else
                         "Not enough taps")))
 
@@ -1233,6 +1250,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:success 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'hidden #t)
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:fields 'hidden #t)
 )
 
 ;; Give feedback that a breath has been tapped or during the animation
@@ -1730,6 +1748,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:success 'modal #t)
    (set! rrate:popup:redcap:uploading (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
     "REDCAP_UPLOAD_PENDING" text_20.fnt White))
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'hidden #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'modal #t)
+   (set! rrate:popup:redcap:fields (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
+    "REDCAP_FIELDS" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'modal #t)
 

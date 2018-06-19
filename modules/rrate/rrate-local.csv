@@ -25,6 +25,7 @@ REDCAP_UPLOAD_FAILED,Upload to REDCap failed. Please make sure all your REDCap s
 REDCAP_UPLOAD_SUCCESS,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.
 REDCAP_UPLOAD_PENDING,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...
 REDCAP_UPLOADING,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.
+REDCAP_FIELDS,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.
 RETRY,Retry,[t],[t],ደግመሽ ሞክሪው,baan theem,[t],[t],[t],Réessayer,[t]
 IGNORE,Ignore,[t],[t],ተይው,akac gaam,[t],[t],[t],Ignorer,Ignorar
 OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK
