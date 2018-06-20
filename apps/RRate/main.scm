@@ -129,7 +129,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   )
  (lambda () #t)
  (lambda () (glgui-suspend))
- (lambda () (rrate-checksvsreg) (glgui-resume))
+ (lambda () (rrate-checksvsreg)
+    (if (and rrate:svsmode (= (svs-get-state) VITALSIGN_STATE_NEW) (procedure? rrate-reset))
+        (rrate-reset))
+    (glgui-resume))
 )
 
 ;; eof

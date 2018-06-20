@@ -22,6 +22,13 @@ private int getVitalSign() {
   return sign;
 }
 
+private int getState() {
+  if (mSharevitals == null) return -1;
+  final int state=mSharevitals.getStateRequested();
+  Log.d("VitalSign","reading state requested:"+state);
+  return state;
+}
+
 private void registerVitalSigns(int sign) {
   mSharevitals = new ShareVitalSigns(sign); //init SVS class
   mSharevitals.ShareVitalSignsIntent = sharevitalsIntent;
@@ -55,6 +62,20 @@ private void requestVitalSigns(int sign) {
       public void onResult(float[] vital, int[] confidence) {
       }
     },sign),sign);
+  } catch (Exception e) {
+      Toast.makeText(this,String.format("No App providing "+sign+" found on device."),
+                     Toast.LENGTH_SHORT).show();
+  }
+}
+
+private void requestVitalSigns(int sign, int state) {
+  rSharevitals = new ShareVitalSigns();
+  try {
+    startActivityForResult(rSharevitals.measureVitalSigns(new ShareVitalSignsResultReceiver() {
+      @Override
+      public void onResult(float[] vital, int[] confidence) {
+      }
+    },sign,state),sign);
   } catch (Exception e) {
       Toast.makeText(this,String.format("No App providing "+sign+" found on device."),
                      Toast.LENGTH_SHORT).show();

@@ -43,9 +43,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void android_passVitalSign(float value, int qual, int sign);
   void android_finishVitalSign(void);
   int android_getVitalSign(void);
+  int android_getState(void);
   void android_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel);
   void android_registerVitalSign(int sign);
   void android_requestVitalSign(int sign);
+  void android_requestVitalSignWithState(int sign, int state);
   int android_retrieveVitalSign(int sign);
 #endif
 
@@ -73,6 +75,12 @@ int svs_get_vitalsign(void){
 #endif
 }
 
+int svs_get_state(void){
+#ifdef ANDROID
+  return android_getState();
+#endif
+}
+
 void svs_register_vitalsign(int sign){
 #ifdef ANDROID
   android_registerVitalSign(sign);
@@ -82,6 +90,12 @@ void svs_register_vitalsign(int sign){
 void svs_request_vitalsign(int sign){
 #ifdef ANDROID
   android_requestVitalSign(sign);
+#endif
+}
+
+void svs_request_vitalsign_with_state(int sign, int state){
+#ifdef ANDROID
+  android_requestVitalSignWithState(sign, state);
 #endif
 }
 
@@ -104,6 +118,10 @@ end-of-c-declare
 (define VITALSIGN_TEMP 8)
 (define VITALSIGN_PO (bitwise-ior VITALSIGN_HR VITALSIGN_SPO2))
 
+;; Vital Sign state definitions. These should match the definitions of the android library
+(define VITALSIGN_STATE_NEW 1)
+(define VITALSIGN_STATE_RESUME 2)
+
 ;; type definitions
 (c-define-type SVS_MSG char-string)
 (c-define-type SVS_OK char-string)
@@ -113,6 +131,7 @@ end-of-c-declare
 (c-define-type SVS_QUALITY int)
 (c-define-type SVS_VITAL int)
 (c-define-type SVS_SIGN int)
+(c-define-type SVS_STATE int)
 
 ;; Send a result of measured vital sign to the android runtime so it can be shared to other apps
 ;; Example: (svs-pass-vitalsign 120 100 VITALSIGN_HR) would send a hr of 120 with 100% confidence
@@ -128,11 +147,17 @@ end-of-c-declare
 ;; Ask for vital sign requested
 (define svs-get-vitalsign (c-lambda () int "svs_get_vitalsign"))
 
+;; Ask for state required
+(define svs-get-state (c-lambda () int "svs_get_state"))
+
 ;; Register a provided vitalsign that we can export
 (define svs-register-vitalsign (c-lambda (SVS_SIGN) void "svs_register_vitalsign"))
 
 ;; Send an intent to request a given vitalsign
 (define svs-request-vitalsign (c-lambda (SVS_SIGN) void "svs_request_vitalsign"))
+
+;; Send an intent to request a given vitalsign with provider in given state
+(define svs-request-vitalsign-with-state (c-lambda (SVS_SIGN SVS_STATE) void "svs_request_vitalsign_with_state"))
 
 ;; Retrieve requested vitalsign
 ;; Returns -1 if unsuccessful, 0 if in progress
