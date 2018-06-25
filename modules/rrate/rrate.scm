@@ -583,11 +583,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; Check that all visible fields are filled out
 (define (textboxes-filled?)
-  (foldr (lambda (textbox filled)
-      (and filled
-           (or (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'hidden)
-               (not (equal? "" (string-trim (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'label)))))))
-    #t rrate:settings:redcap:textboxes))
+  (or (not (settings-ref "REDCAP_USE?"))
+       (foldr (lambda (textbox filled)
+           (and filled
+                (or (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'hidden)
+                    (not (equal? "" (string-trim (glgui-widget-get rrate:settings:redcap:boxcontainer (textbox-struct-input textbox) 'label)))))))
+         #t rrate:settings:redcap:textboxes)))
 
 ;; Draw checkbox with label
 ;; g: parent GUI of checkbox
