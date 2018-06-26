@@ -71,7 +71,7 @@ int android_retrieveVitalSign(int sign){
 
 jstring jstr;
 const char *s = NULL;
-char* android_retrieveVitalSignString(int sign) {
+const char* android_retrieveVitalSignString(int sign) {
   JNIEnv *env = GetJNIEnv();
   if (env&&globalObj){
     jclass cls = (*env)->GetObjectClass(env, globalObj);

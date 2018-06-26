@@ -50,7 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void android_requestVitalSign(int sign);
   void android_requestVitalSignWithState(int sign, int state);
   int android_retrieveVitalSign(int sign);
-  char* android_retrieveVitalSignString(int sign);
+  const char* android_retrieveVitalSignString(int sign);
   void android_retrieveVitalSignStringRelease(void);
 #endif
 
@@ -116,7 +116,7 @@ int svs_retrieve_vitalsign(int sign){
 #endif
 }
 
-char* svs_retrieve_vitalsign_string(int sign){
+const char* svs_retrieve_vitalsign_string(int sign){
 #ifdef ANDROID
   return android_retrieveVitalSignString(sign);
 #else
