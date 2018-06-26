@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef ANDROID
   void android_passVitalSign(float value, int qual, int sign);
+  void android_passVitalSignString(char* str, int qual, int sign);
   void android_finishVitalSign(void);
   int android_getVitalSign(void);
   int android_getState(void);
@@ -49,11 +50,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void android_requestVitalSign(int sign);
   void android_requestVitalSignWithState(int sign, int state);
   int android_retrieveVitalSign(int sign);
+  char* android_retrieveVitalSignString(int sign);
+  void android_retrieveVitalSignStringRelease(void);
 #endif
 
 void svs_pass_vitalsign(float value, int qual, int sign ){
 #ifdef ANDROID
   android_passVitalSign(value,qual,sign);
+#endif
+}
+
+void svs_pass_vitalsign_string(char* value, int qual, int sign ){
+#ifdef ANDROID
+  android_passVitalSignString(value,qual,sign);
 #endif
 }
 
@@ -107,6 +116,20 @@ int svs_retrieve_vitalsign(int sign){
 #endif
 }
 
+char* svs_retrieve_vitalsign_string(int sign){
+#ifdef ANDROID
+  return android_retrieveVitalSignString(sign);
+#else
+  return NULL;
+#endif
+}
+
+void svs_retrieve_vitalsign_string_release(){
+#ifdef ANDROID
+  android_retrieveVitalSignStringRelease();
+#endif
+}
+
 
 end-of-c-declare
 )
@@ -116,7 +139,9 @@ end-of-c-declare
 (define VITALSIGN_RR 2)
 (define VITALSIGN_SPO2 4)
 (define VITALSIGN_TEMP 8)
+(define VITALSIGN_RRTAPS 64)
 (define VITALSIGN_PO (bitwise-ior VITALSIGN_HR VITALSIGN_SPO2))
+(define VITALSIGN_RRATE (bitwise-ior VITALSIGN_RR VITALSIGN_RRTAPS))
 
 ;; Vital Sign state definitions. These should match the definitions of the android library
 (define VITALSIGN_STATE_NEW 1)
@@ -128,6 +153,7 @@ end-of-c-declare
 (c-define-type SVS_CANCEL char-string)
 
 (c-define-type SVS_VALUE float)
+(c-define-type SVS_VALUE_STRING char-string)
 (c-define-type SVS_QUALITY int)
 (c-define-type SVS_VITAL int)
 (c-define-type SVS_SIGN int)
@@ -136,6 +162,9 @@ end-of-c-declare
 ;; Send a result of measured vital sign to the android runtime so it can be shared to other apps
 ;; Example: (svs-pass-vitalsign 120 100 VITALSIGN_HR) would send a hr of 120 with 100% confidence
 (define svs-pass-vitalsign (c-lambda (SVS_VALUE SVS_QUALITY SVS_VITAL) void "svs_pass_vitalsign"))
+
+;; Send a result as a string
+(define svs-pass-vitalsign-string (c-lambda (SVS_VALUE_STRING SVS_QUALITY SVS_VITAL) void "svs_pass_vitalsign_string"))
 
 ;; Open a dialog window to end measurement send vital sign and close app
 ;; Example: (svs-confirmationdialog "Measure finished. Send data?" "OK" "Cancel")
@@ -162,5 +191,12 @@ end-of-c-declare
 ;; Retrieve requested vitalsign
 ;; Returns -1 if unsuccessful, 0 if in progress
 (define svs-retrieve-vitalsign (c-lambda (SVS_SIGN) int "svs_retrieve_vitalsign"))
+
+;; Retrieve requested string vitalsign
+;; Returns #f if unsuccessful, "" if in progress
+(define (svs-retrieve-vitalsign-string sign)
+  (let ((str ((c-lambda (SVS_SIGN) char-string "svs_retrieve_vitalsign_string") sign)))
+    ((c-lambda () void "svs_retrieve_vitalsign_string_release"))
+    str))
 
 ;;eof

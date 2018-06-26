@@ -8,6 +8,16 @@ void android_passVitalSign(float value, int qual, int sign){
   }
 }
 
+void android_passVitalSignString(char* value, int qual, int sign){
+  JNIEnv *env = GetJNIEnv();
+  jstring jstr = (*env)->NewStringUTF(env, value);
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "passVitalSign", "(Ljava/lang/String;II)V");
+    (*env)->CallVoidMethod(env, globalObj, method, jstr, qual, sign);
+  }
+}
+
 void android_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel){
   JNIEnv *env = GetJNIEnv();
   jstring jmes = (*env)->NewStringUTF(env, msg_message);
@@ -57,6 +67,28 @@ int android_retrieveVitalSign(int sign){
     return contype;
   }
   return contype;
+}
+
+jstring jstr;
+const char *s = NULL;
+char* android_retrieveVitalSignString(int sign) {
+  JNIEnv *env = GetJNIEnv();
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "retrieveRequestedVitalSignString", "(I)Ljava/lang/String;");
+    jstr = (jstring) (*env)->CallObjectMethod(env, globalObj, method, sign);
+    s = (*env)->GetStringUTFChars(env, jstr, 0);
+    return s;
+  }
+  return NULL;
+}
+
+void android_retrieveVitalSignStringRelease() {
+  if (jstr && s) {
+    JNIEnv *env = GetJNIEnv();
+    (*env)->ReleaseStringUTFChars(env, jstr, s);
+    s = NULL;
+  }
 }
 
 void android_finishVitalSign(){

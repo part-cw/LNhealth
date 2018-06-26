@@ -4,6 +4,12 @@ private void passVitalSign(float vital, int quality, int sign){
   Log.d("VitalSign","Added vital to structure:"+sign);
 }
 
+private void passVitalSign(String str, int quality, int sign){
+  if (mSharevitals == null) return;
+  mSharevitals.saveVitalSign(sign,str,quality);
+  Log.d("VitalSign","Added vital to structure:"+sign);
+}
+
 private void transmitVitalSign () {
   Intent vitalintent = mSharevitals.prepareIntent();
   Log.d("VitalSign","intent created for transmission");
@@ -84,13 +90,21 @@ private void requestVitalSigns(int sign, int state) {
 
 private int retrieveRequestedVitalSign(int sign) {
   if (rSharevitals != null) {
-    final int result = (int) rSharevitals.svsData.getResultVIndex(sign);
+    final int result = (int) rSharevitals.svsData.getResultVDatumIndex(sign).getFloat();
     return result;
   } else {
     return -1;
   }
 }
 
+private String retrieveRequestedVitalSignString(int sign) {
+  if (rSharevitals != null) {
+    final String result = rSharevitals.svsData.getResultVDatumIndex(sign).getString();
+    return result;
+  } else {
+    return null;
+  }
+}
 
 private void jConfirmationDialog(String msg, String ok, String cancel) {
   final String msg_message=msg;

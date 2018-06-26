@@ -45,14 +45,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:svsmode #f)
 
 (define (rrate-checksvsreg)
-  (svs-register-vitalsign VITALSIGN_RR)
-  (set! rrate:svsmode (= VITALSIGN_RR (svs-get-vitalsign)))
+  (svs-register-vitalsign VITALSIGN_RRATE)
+  (set! rrate:svsmode (= VITALSIGN_RRATE (svs-get-vitalsign)))
 )
 
 (define (rrate-sendvitalsign)
   (if (and rrate:calc:medinterval rrate:svsmode)
     (begin
       (svs-pass-vitalsign (round (/ 60. rrate:calc:medinterval)) 100 VITALSIGN_RR)
+      (svs-pass-vitalsign-string (taptimes->string rrate:times) 100 VITALSIGN_RRTAPS)
       (svs-finish)
     )
   )
