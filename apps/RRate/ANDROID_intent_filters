@@ -1,5 +1,7 @@
 <intent-filter>
   <action android:name="org.ecemgroup.sharevitalsigns.MEASURE" />
   <action android:name="org.ecemgroup.sharevitalsigns.MEASURE.RR" />
+  <action android:name="org.ecemgroup.sharevitalsigns.MEASURE.RRTAPS" />
+  <action android:name="org.ecemgroup.sharevitalsigns.MEASURE.RRATE" />
   <category android:name="android.intent.category.DEFAULT" />
 </intent-filter>
