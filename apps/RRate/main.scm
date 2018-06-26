@@ -42,21 +42,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define gui:lang #f)
 (define gui:langlist #f)
 (define language? #f)
-(define rrate:svsmode #f)
+(define rrate:svsmode:rr #f)
+(define rrate:svsmode:rrtaps #f)
 
 (define (rrate-checksvsreg)
   (svs-register-vitalsign VITALSIGN_RRATE)
-  (set! rrate:svsmode (= VITALSIGN_RRATE (svs-get-vitalsign)))
+  (let ((vitalsign (svs-get-vitalsign)))
+    (set! rrate:svsmode:rr     (or (= VITALSIGN_RR     vitalsign) (= VITALSIGN_RRATE vitalsign)))
+    (set! rrate:svsmode:rrtaps (or (= VITALSIGN_RRTAPS vitalsign) (= VITALSIGN_RRATE vitalsign))))
 )
 
 (define (rrate-sendvitalsign)
-  (if (and rrate:calc:medinterval rrate:svsmode)
-    (begin
-      (svs-pass-vitalsign (round (/ 60. rrate:calc:medinterval)) 100 VITALSIGN_RR)
-      (svs-pass-vitalsign-string (taptimes->string rrate:times) 100 VITALSIGN_RRTAPS)
-      (svs-finish)
-    )
-  )
+  (let ((hasrr (and rrate:calc:medinterval rrate:svsmode:rr))
+        (hasrrtaps (and rrate:times rrate:svsmode:rrtaps)))
+    (if hasrr
+        (svs-pass-vitalsign (round (/ 60. rrate:calc:medinterval)) 100 VITALSIGN_RR))
+    (if hasrrtaps
+        (svs-pass-vitalsign-string (taptimes->string rrate:times) 100 VITALSIGN_RRTAPS))
+    (if (or hasrr hasrrtaps) (svs-finish)))
 )
 
 ;; main loop
