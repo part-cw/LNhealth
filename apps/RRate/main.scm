@@ -134,7 +134,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  (lambda () #t)
  (lambda () (glgui-suspend))
  (lambda () (rrate-checksvsreg)
-    (if (and rrate:svsmode (= (svs-get-state) VITALSIGN_STATE_NEW) (procedure? rrate-reset))
+    (if (and (or rrate:svsmode:rr rrate:svsmode:rrtaps) (= (svs-get-state) VITALSIGN_STATE_NEW) (procedure? rrate-reset))
         (rrate-reset))
     (glgui-resume))
 )
