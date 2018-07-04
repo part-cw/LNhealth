@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void android_passVitalSignString(char* str, int qual, int sign);
   void android_finishVitalSign(void);
   int android_getVitalSign(void);
-  int android_getState(void);
+  int android_getExtraState(void);
   void android_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel);
   void android_registerVitalSign(int sign);
   void android_requestVitalSign(int sign);
@@ -90,9 +90,9 @@ int svs_get_vitalsign(void){
 #endif
 }
 
-int svs_get_state(void){
+int svs_get_extra_state(void){
 #ifdef ANDROID
-  return android_getState();
+  return android_getExtraState();
 #endif
 }
 
@@ -176,8 +176,10 @@ end-of-c-declare
 ;; Ask for vital sign requested
 (define svs-get-vitalsign (c-lambda () int "svs_get_vitalsign"))
 
-;; Ask for state required
-(define svs-get-state (c-lambda () int "svs_get_state"))
+;; Ask for extras sent
+;; 'state: one of VITALSIGN_STATE_NEW, VITALSIGN_STATE_RESUME
+(define (svs-get-extras)
+  (list->table (list (cons 'state ((c-lambda () int "svs_get_extra_state"))))))
 
 ;; Register a provided vitalsign that we can export
 (define svs-register-vitalsign (c-lambda (SVS_SIGN) void "svs_register_vitalsign"))

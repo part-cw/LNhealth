@@ -43,13 +43,13 @@ int android_getVitalSign(){
   return contype;
 }
 
-int android_getState(){
+int android_getExtraState(){
   JNIEnv *env = GetJNIEnv();
-  static int contype=1;
+  static int contype = 0;
 
   if (env&&globalObj){
     jclass cls = (*env)->GetObjectClass(env, globalObj);
-    jmethodID method = (*env)->GetMethodID(env, cls, "getState", "()I");
+    jmethodID method = (*env)->GetMethodID(env, cls, "getExtraState", "()I");
     contype = (*env)->CallIntMethod(env, globalObj, method);
     return contype;
   }

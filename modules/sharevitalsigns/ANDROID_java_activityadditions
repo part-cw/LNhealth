@@ -28,11 +28,8 @@ private int getVitalSign() {
   return sign;
 }
 
-private int getState() {
-  if (mSharevitals == null) return -1;
-  final int state=mSharevitals.getStateRequested();
-  Log.d("VitalSign","reading state requested:"+state);
-  return state;
+private int getExtraState() {
+  return mSharevitals.getExtraState();
 }
 
 private void registerVitalSigns(int sign) {
