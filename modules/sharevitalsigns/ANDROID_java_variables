@@ -2,3 +2,4 @@ public ShareVitalSigns mSharevitals;
 public ShareVitalSigns rSharevitals;
 private int sharevitalsRequest=0;
 private Intent sharevitalsIntent;
+private int extraState;

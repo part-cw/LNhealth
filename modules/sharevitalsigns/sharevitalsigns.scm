@@ -48,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void android_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel);
   void android_registerVitalSign(int sign);
   void android_requestVitalSign(int sign);
-  void android_requestVitalSignWithState(int sign, int state);
+  void android_addExtras(int state);
   int android_retrieveVitalSign(int sign);
   const char* android_retrieveVitalSignString(int sign);
   void android_retrieveVitalSignStringRelease(void);
@@ -63,6 +63,12 @@ void svs_pass_vitalsign(float value, int qual, int sign ){
 void svs_pass_vitalsign_string(char* value, int qual, int sign ){
 #ifdef ANDROID
   android_passVitalSignString(value,qual,sign);
+#endif
+}
+
+void svs_add_extras(int state) {
+#ifdef ANDROID
+  android_addExtras(state);
 #endif
 }
 
@@ -99,12 +105,6 @@ void svs_register_vitalsign(int sign){
 void svs_request_vitalsign(int sign){
 #ifdef ANDROID
   android_requestVitalSign(sign);
-#endif
-}
-
-void svs_request_vitalsign_with_state(int sign, int state){
-#ifdef ANDROID
-  android_requestVitalSignWithState(sign, state);
 #endif
 }
 
@@ -185,8 +185,9 @@ end-of-c-declare
 ;; Send an intent to request a given vitalsign
 (define svs-request-vitalsign (c-lambda (SVS_SIGN) void "svs_request_vitalsign"))
 
-;; Send an intent to request a given vitalsign with provider in given state
-(define svs-request-vitalsign-with-state (c-lambda (SVS_SIGN SVS_STATE) void "svs_request_vitalsign_with_state"))
+;; Add extras to Android intent
+;; SVS_STATE: 1 (reset provider to initial state) | 2 (resume provider app without erasing data)
+(define svs-add-extras (c-lambda (SVS_STATE) void "svs_add_extras"))
 
 ;; Retrieve requested vitalsign
 ;; Returns -1 if unsuccessful, 0 if in progress

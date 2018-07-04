@@ -118,11 +118,20 @@ void android_requestVitalSign(int sign){
   }
 }
 
-void android_requestVitalSignWithState(int sign, int state){
+void android_requestVitalSignWithState(int sign){
   JNIEnv *env = GetJNIEnv();
   if (env&&globalObj){
     jclass cls = (*env)->GetObjectClass(env,globalObj);
-    jmethodID method = (*env)->GetMethodID(env, cls, "requestVitalSigns", "(II)V");
-    (*env)->CallVoidMethod(env, globalObj, method, sign, state);
+    jmethodID method = (*env)->GetMethodID(env, cls, "requestVitalSigns", "(I)V");
+    (*env)->CallVoidMethod(env, globalObj, method, sign);
+  }
+}
+
+void android_addExtras(int state){
+  JNIEnv *env = GetJNIEnv();
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env,globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "addExtras", "(I)V");
+    (*env)->CallVoidMethod(env, globalObj, method, state);
   }
 }

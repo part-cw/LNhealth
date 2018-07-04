@@ -62,6 +62,7 @@ private void registerVitalSigns(int sign) {
 
 private void requestVitalSigns(int sign) {
   rSharevitals = new ShareVitalSigns();
+  rSharevitalsAddExtras();
   try {
     startActivityForResult(rSharevitals.measureVitalSigns(new ShareVitalSignsResultReceiver() {
       @Override
@@ -74,18 +75,17 @@ private void requestVitalSigns(int sign) {
   }
 }
 
-private void requestVitalSigns(int sign, int state) {
-  rSharevitals = new ShareVitalSigns();
-  try {
-    startActivityForResult(rSharevitals.measureVitalSigns(new ShareVitalSignsResultReceiver() {
-      @Override
-      public void onResult(float[] vital, int[] confidence) {
-      }
-    },sign,state),sign);
-  } catch (Exception e) {
-      Toast.makeText(this,String.format("No App providing "+sign+" found on device."),
-                     Toast.LENGTH_SHORT).show();
-  }
+// Function dedicated to adding extras to request intent
+// For each extra, add an argument, a global variable in the java_variables file,
+// a public field in ShareVitalSigns, a line in rSharevitalsAddExtras,
+// and an argument for functions that call addExtras
+private void addExtras(int state) {
+  extraState = state;
+}
+
+// Private function for adding global extras to fields in rSharevitals
+private void rSharevitalsAddExtras() {
+  rSharevitals.stateCode = extraState;
 }
 
 private int retrieveRequestedVitalSign(int sign) {
