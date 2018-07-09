@@ -1753,8 +1753,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'modal #t)
    (set! rrate:popup:redcap:fields (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
     "REDCAP_FIELDS" text_20.fnt White))
-   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'hidden #t)
-   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'modal #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:fields 'hidden #t)
+   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:fields 'modal #t)
 
    ;; Popup buttons
 
