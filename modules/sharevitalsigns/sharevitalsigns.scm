@@ -43,32 +43,56 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void android_passVitalSign(float value, int qual, int sign);
   void android_passVitalSignString(char* str, int qual, int sign);
   void android_finishVitalSign(void);
-  int android_getVitalSign(void);
-  int android_getExtraState(void);
+  int  android_getVitalSign(void);
+  int  android_getExtraState(void);
   void android_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel);
   void android_registerVitalSign(int sign);
   void android_requestVitalSign(int sign);
   void android_addExtras(int state);
-  int android_retrieveVitalSign(int sign);
+  int  android_retrieveVitalSign(int sign);
   const char* android_retrieveVitalSignString(int sign);
   void android_retrieveVitalSignStringRelease(void);
 #endif
 
-void svs_pass_vitalsign(float value, int qual, int sign ){
+#ifdef IOS
+  void ios_passVitalSign(float value, int qual, int sign);
+  void ios_passVitalSignString(char* str, int qual, int sign);
+  void ios_finishVitalSign(void);
+  int  ios_getVitalSign(void);
+  int  ios_getExtraState(void);
+  void ios_registerVitalSign(int sign);
+  void ios_requestVitalSign(int sign);
+  void ios_addExtras(int state);
+  int  ios_retrieveVitalSign(int sign);
+  const char* ios_retrieveVitalSignString(int sign);
+  void ios_retrieveVitalSignStringRelease(void);
+  void ios_return(void);
+#endif
+
+void svs_pass_vitalsign(float value, int qual, int sign) {
 #ifdef ANDROID
-  android_passVitalSign(value,qual,sign);
+  android_passVitalSign(value, qual, sign);
+#endif
+#ifdef IOS
+  ios_passVitalSign(value, qual, sign);
 #endif
 }
 
-void svs_pass_vitalsign_string(char* value, int qual, int sign ){
+void svs_pass_vitalsign_string(char* value, int qual, int sign) {
 #ifdef ANDROID
-  android_passVitalSignString(value,qual,sign);
+  android_passVitalSignString(value, qual, sign);
+#endif
+#ifdef IOS
+  ios_passVitalSignString(value, qual, sign);
 #endif
 }
 
 void svs_add_extras(int state) {
 #ifdef ANDROID
   android_addExtras(state);
+#endif
+#ifdef IOS
+  ios_addExtras(state);
 #endif
 }
 
@@ -82,11 +106,17 @@ void svs_finish(void){
 #ifdef ANDROID
  android_finishVitalSign();
 #endif
+#ifdef IOS
+  ios_finishVitalSign();
+#endif
 }
 
 int svs_get_vitalsign(void){
 #ifdef ANDROID
   return android_getVitalSign();
+#endif
+#ifdef IOS
+  return ios_getVitalSign();
 #endif
 }
 
@@ -94,11 +124,17 @@ int svs_get_extra_state(void){
 #ifdef ANDROID
   return android_getExtraState();
 #endif
+#ifdef IOS
+  return ios_getExtraState();
+#endif
 }
 
 void svs_register_vitalsign(int sign){
 #ifdef ANDROID
   android_registerVitalSign(sign);
+#endif
+#ifdef IOS
+  ios_registerVitalSign(sign);
 #endif
 }
 
@@ -106,12 +142,18 @@ void svs_request_vitalsign(int sign){
 #ifdef ANDROID
   android_requestVitalSign(sign);
 #endif
+#ifdef IOS
+  ios_requestVitalSign(sign);
+#endif
 }
 
 int svs_retrieve_vitalsign(int sign){
 #ifdef ANDROID
   return android_retrieveVitalSign(sign);
 #else
+#ifdef IOS
+  return ios_retrieveVitalSign(sign);
+#endif
   return -1;
 #endif
 }
@@ -120,6 +162,9 @@ const char* svs_retrieve_vitalsign_string(int sign){
 #ifdef ANDROID
   return android_retrieveVitalSignString(sign);
 #else
+#ifdef IOS
+  return ios_retrieveVitalSignString(sign);
+#endif
   return NULL;
 #endif
 }
@@ -128,6 +173,15 @@ void svs_retrieve_vitalsign_string_release(){
 #ifdef ANDROID
   android_retrieveVitalSignStringRelease();
 #endif
+#ifdef IOS
+  ios_retrieveVitalSignStringRelease();
+#endif
+}
+
+void svs_cancel(){
+#ifdef IOS
+  ios_return();
+#endif IOS
 }
 
 
@@ -173,11 +227,14 @@ end-of-c-declare
 ;; send vital sign and close app
 (define svs-finish (c-lambda () void "svs_finish"))
 
-;; Ask for vital sign requested
+;; cancel retrieving vital sign and close app
+(define svs-cancel (c-lambda () void "svs_cancel"))
+
+;; Ask for vital sign requested; -1 if unavailable
 (define svs-get-vitalsign (c-lambda () int "svs_get_vitalsign"))
 
 ;; Ask for extras sent
-;; 'state: one of VITALSIGN_STATE_NEW, VITALSIGN_STATE_RESUME
+;; 'state: VITALSIGN_STATE_NEW | VITALSIGN_STATE_RESUME | 0 (none provided)
 (define (svs-get-extras)
   (list->table (list (cons 'state ((c-lambda () int "svs_get_extra_state"))))))
 
@@ -188,7 +245,7 @@ end-of-c-declare
 (define svs-request-vitalsign (c-lambda (SVS_SIGN) void "svs_request_vitalsign"))
 
 ;; Add extras to Android intent
-;; SVS_STATE: 1 (reset provider to initial state) | 2 (resume provider app without erasing data)
+;; SVS_STATE: VITALSIGN_STATE_NEW (reset provider to initial state) | VITALSIGN_STATE_RESUME (resume provider app without erasing data)
 (define svs-add-extras (c-lambda (SVS_STATE) void "svs_add_extras"))
 
 ;; Retrieve requested vitalsign

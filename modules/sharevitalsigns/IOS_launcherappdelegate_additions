@@ -1,0 +1,12 @@
+extern NSString *sourceBundleID;
+
+// Documentation: https://developer.apple.com/documentation/uikit/uiapplicationdelegate/1623073-application?language=objc
+// See also https://developer.apple.com/library/archive/documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/Inter-AppCommunication/Inter-AppCommunication.html
+// Note that this has been deprecated in favour of application:openURL:options:, but that is only available in iOS 10+
+- (BOOL)application:(UIApplication *)application 
+        openURL:(NSURL *)url 
+        sourceApplication:(NSString *)sourceApplication 
+        annotation:(id)annotation {
+    sourceBundleID = [sourceApplication copy];
+    return YES;
+}

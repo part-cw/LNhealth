@@ -62,6 +62,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (if (or hasrr hasrrtaps) (svs-finish)))
 )
 
+(define (rrate-terminate)
+  (if (or rrate:svsmode:rr rrate:svsmode:rrtaps) (svs-cancel))
+  (terminate))
+
 ;; main loop
 (main
  (lambda (w h)
@@ -87,7 +91,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (begin
            (set! language? l)
            (local-index-set! l)
-           (rrate-init 0 0 w 433 #f terminate rrate-sendvitalsign)
+           (rrate-init 0 0 w 433 #f rrate-terminate rrate-sendvitalsign)
          )
          ;; Language selection
          (let ((lanlist (rrate-setup-language-choices)))
@@ -102,7 +106,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                                   (settings-set! "Language" lindexl)
                                   (set! language? #t)
                                   (local-index-set! lindexl)
-                                  (rrate-init 0 0 w 433 #f terminate rrate-sendvitalsign)))))
+                                  (rrate-init 0 0 w 433 #f rrate-terminate rrate-sendvitalsign)))))
                  (glgui-widget-set! gui:lang buttonl 'button-normal-color Black)
                  (glgui-widget-set! gui:lang buttonl 'button-selected-color Gray)
                  (if (fx< (+ i 1) (length lanlist))
@@ -113,7 +117,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                                       (settings-set! "Language" lindexr)
                                       (set! language? #t)
                                       (local-index-set! lindexr)
-                                      (rrate-init 0 0 w 433 #f terminate rrate-sendvitalsign)))))
+                                      (rrate-init 0 0 w 433 #f rrate-terminate rrate-sendvitalsign)))))
                    (glgui-widget-set! gui:lang buttonr 'button-normal-color Black)
                    (glgui-widget-set! gui:lang buttonr 'button-selected-color Gray)))
                  (loop (+ i 2) (- by 52)))))
@@ -126,14 +130,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Call RRate main loop
    (if language? (rrate-run t))
 
-   (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYESCAPE)) (terminate))
-   (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYBACK))
-     (terminate))
+   (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYESCAPE)) (rrate-terminate))
+   (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYBACK))   (rrate-terminate))
    (glgui-event (list (if language? rrate:gui gui:lang) gui) t x y)
   )
  (lambda () #t)
  (lambda () (glgui-suspend))
- (lambda () (rrate-checksvsreg)
+ (lambda ()
+    (rrate-checksvsreg)
     (let ((state (table-ref (svs-get-extras) 'state)))
       (if (and (or rrate:svsmode:rr rrate:svsmode:rrtaps)
                (= state VITALSIGN_STATE_NEW)

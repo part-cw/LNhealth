@@ -1,0 +1,13 @@
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLName</key>
+        <string>org.ecemgroup.sharevitalsigns</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>svs-rr</string>
+            <string>svs-rrtaps</string>
+            <string>svs-rrate</string>
+        </array>
+    </dict>
+</array>

@@ -1,0 +1,168 @@
+/** Constants and variables **/
+
+// vital sign code constants
+typedef enum {
+    HR        = 1,
+    RR        = 2,
+    SPO2      = 4,
+    TEMP      = 8,
+    BPSYS     = 16,
+    BPDIA     = 32,
+    RRTAPS    = 64,
+    BP        = BPSYS | BPDIA,
+    PO        = HR    | SPO2,
+    RRATE     = RR    | RRTAPS
+} VitalSign;
+
+static NSUInteger const MAX_VITALSIGN = RRTAPS;
+
+// vital sign URL schemes
+static NSString *const svsHR     = @"svs-hr";
+static NSString *const svsRR     = @"svs-rr";
+static NSString *const svsSPO2   = @"svs-spo2";
+static NSString *const svsTEMP   = @"svs-temp";
+static NSString *const svsBPSYS  = @"svs-bpsys";
+static NSString *const svsBPDIA  = @"svs-bpdia";
+static NSString *const svsRRTAPS = @"svs-rrtaps";
+static NSString *const svsBP     = @"svs-bp";
+static NSString *const svsPO     = @"svs-po";
+static NSString *const svsRRATE  = @"svs-rrate";
+
+// pasteboard
+UIPasteboard *pasteboard;
+static NSString *const pasteboardName = @"svsPasteboard";
+
+// dynamically-allocated variables (need to be freed)
+NSMutableArray *signVitalArray;
+NSString *sourceBundleID;
+
+int sign  = 0;
+int state = 0;
+
+
+/** Helper functions **/
+
+NSString* getURLScheme(VitalSign sign) {
+    switch (sign) {
+        case HR:     return svsHR;
+        case RR:     return svsRR;
+        case SPO2:   return svsSPO2;
+        case TEMP:   return svsTEMP;
+        case BPSYS:  return svsBPSYS;
+        case BPDIA:  return svsBPDIA;
+        case RRTAPS: return svsRRTAPS;
+        case BP:     return svsBP;
+        case PO:     return svsPO;
+        case RRATE:  return svsRRATE;
+        default:     return nil;
+    }
+}
+
+BOOL openURL(NSString *scheme, BOOL releaseScheme) {
+    NSURL *url = [NSURL URLWithString:[scheme stringByAppendingFormat:@"://"]];
+    if (releaseScheme) [scheme release];
+    return [[UIApplication sharedApplication] openURL:url];
+}
+
+void showAlert(NSString *title, NSString *message) {
+    UIAlertView *alert = [[UIAlertView alloc]
+            initWithTitle:title message:message
+            delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+    [alert show];
+    [alert release];
+}
+
+NSString* getPasteboardVal(NSString *key) {
+    for (NSString *string in pasteboard.strings) {
+        NSArray *keyval = [string componentsSeparatedByString:@":"];
+        if ([key isEqualToString:[keyval firstObject]]) {
+            return [keyval lastObject];
+        }
+    }
+    return nil;
+}
+
+void initSignVitalArray(int maxIndex) {
+    signVitalArray = [[NSMutableArray alloc] initWithCapacity:(maxIndex + 1)];
+    for (int i = 0; i <= maxIndex; i++) {
+        [signVitalArray addObject:[NSString string]];
+    }
+}
+
+
+/** Provider methods **/
+
+void ios_passVitalSign(float value, int qual, int sign) {
+    signVitalArray[ilogb(sign)] = [NSString stringWithFormat:@"%d:%f", ilogb(sign), value];
+}
+
+void ios_passVitalSignString(char* str, int qual, int sign) {
+    signVitalArray[ilogb(sign)] = [NSString stringWithFormat:@"%d:%@", ilogb(sign), [NSString stringWithCString:(const char*)str encoding:NSUTF8StringEncoding]];
+}
+
+void ios_return(void) {
+    openURL(sourceBundleID, YES);
+}
+
+
+void ios_finishVitalSign(void) {
+    pasteboard.strings = signVitalArray;
+    [signVitalArray release];
+    ios_return();
+}
+
+int ios_getVitalSign(void) {
+    return sign;
+}
+
+int ios_getExtraState(void) {
+    return state;
+}
+
+void ios_registerVitalSign(int providerSign) {
+    initSignVitalArray(ilogb(MAX_VITALSIGN));
+    pasteboard = [UIPasteboard pasteboardWithName:pasteboardName create:NO];
+    sign  = getPasteboardVal(@"sign").intValue;
+    state = getPasteboardVal(@"state").intValue;
+    if (((unsigned int) sign & (unsigned int) providerSign) < (unsigned int) sign) {
+        showAlert([NSString stringWithFormat:@"Requested vital sign %d is not supported.", sign], @"");
+    }
+}
+
+
+/** Requester methods **/
+
+void ios_addExtras(int st) {
+    state = st;
+}
+
+void ios_requestVitalSign(int sign) {
+    pasteboard = [UIPasteboard pasteboardWithName:pasteboardName create:YES];
+    [pasteboard setPersistent:YES];
+    pasteboard.strings = @[[NSString stringWithFormat:@"sign:%d", sign], [NSString stringWithFormat:@"state:%d", state]];
+    if (!openURL(getURLScheme(sign), NO)) {
+        showAlert(
+            [NSString stringWithFormat:@"No app providing sign %d found on device.", sign], 
+            [NSString stringWithFormat:@"Ensure that you have an app that can handle the URL scheme \"%@\".", getURLScheme(sign)]
+        );
+    }
+}
+
+//  0: in progress (URL not yet arrived)
+// -1: sign not found - must be invalid
+int ios_retrieveVitalSign(int sign) {
+    NSString *vital = getPasteboardVal(@(ilogb(sign)).stringValue);
+    return vital ? vital.intValue : 0;
+}
+
+//   "": in progress (URL not yet arrived)
+// NULL: sign is empty - must be invalid
+NSString *vitalString;
+const char* ios_retrieveVitalSignString(int sign) {
+    vitalString = [getPasteboardVal(@(ilogb(sign)).stringValue) copy];
+    return vitalString ? vitalString.UTF8String : "";
+}
+
+void ios_retrieveVitalSignStringRelease(void) {
+    if (vitalString) [vitalString release];
+}

@@ -1,0 +1,1 @@
+sourceBundleID = [[launchOptions objectForKey:UIApplicationLaunchOptionsSourceApplicationKey] copy];
