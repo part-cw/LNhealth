@@ -10,7 +10,7 @@ private void passVitalSign(String str, int quality, int sign){
   Log.d("VitalSign","Added vital to structure:"+sign);
 }
 
-private void transmitVitalSign () {
+private void transmitVitalSign() {
   Intent vitalintent = mSharevitals.prepareIntent();
   Log.d("VitalSign","intent created for transmission");
   if (getParent() == null) {
@@ -19,6 +19,11 @@ private void transmitVitalSign () {
     getParent().setResult(Activity.RESULT_OK, vitalintent);
   }
   finish(); //finish has to be called after setResult()
+}
+
+private void cancel() {
+  setResult(RESULT_CANCELED);
+  finish();
 }
 
 private int getVitalSign() {

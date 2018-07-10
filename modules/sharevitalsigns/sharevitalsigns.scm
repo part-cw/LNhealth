@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void android_passVitalSign(float value, int qual, int sign);
   void android_passVitalSignString(char* str, int qual, int sign);
   void android_finishVitalSign(void);
+  void android_cancel(void);
   int  android_getVitalSign(void);
   int  android_getExtraState(void);
   void android_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel);
@@ -58,6 +59,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void ios_passVitalSign(float value, int qual, int sign);
   void ios_passVitalSignString(char* str, int qual, int sign);
   void ios_finishVitalSign(void);
+  void ios_return(void);
   int  ios_getVitalSign(void);
   int  ios_getExtraState(void);
   void ios_registerVitalSign(int sign);
@@ -66,7 +68,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   int  ios_retrieveVitalSign(int sign);
   const char* ios_retrieveVitalSignString(int sign);
   void ios_retrieveVitalSignStringRelease(void);
-  void ios_return(void);
 #endif
 
 void svs_pass_vitalsign(float value, int qual, int sign) {
@@ -179,6 +180,9 @@ void svs_retrieve_vitalsign_string_release(){
 }
 
 void svs_cancel(){
+#ifdef ANDROID
+  android_cancel();
+#endif
 #ifdef IOS
   ios_return();
 #endif IOS

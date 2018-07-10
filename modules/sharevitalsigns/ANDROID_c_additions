@@ -100,6 +100,15 @@ void android_finishVitalSign(){
   }
 }
 
+void android_cancel(){
+  JNIEnv *env = GetJNIEnv();
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "cancel", "()V");
+    (*env)->CallVoidMethod(env, globalObj, method);
+  }
+}
+
 void android_registerVitalSign(int sign){
   JNIEnv *env = GetJNIEnv();
   if (env&&globalObj){
