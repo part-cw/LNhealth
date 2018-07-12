@@ -74,9 +74,10 @@ void showAlert(NSString *title, NSString *message) {
 
 NSString* getPasteboardVal(NSString *key) {
     for (NSString *string in pasteboard.strings) {
-        NSArray *keyval = [string componentsSeparatedByString:@":"];
+        NSMutableArray *keyval = [NSMutableArray arrayWithArray:[string componentsSeparatedByString:@":"]];
         if ([key isEqualToString:[keyval firstObject]]) {
-            return [keyval lastObject];
+            [keyval removeObjectAtIndex:0];
+            return [keyval componentsJoinedByString:@":"];
         }
     }
     return nil;
@@ -97,7 +98,7 @@ void ios_passVitalSign(float value, int qual, int sign) {
 }
 
 void ios_passVitalSignString(char* str, int qual, int sign) {
-    signVitalArray[ilogb(sign)] = [NSString stringWithFormat:@"%d:%@", ilogb(sign), [NSString stringWithCString:(const char*)str encoding:NSUTF8StringEncoding]];
+    signVitalArray[ilogb(sign)] = [NSString stringWithFormat:@"%d:%@", ilogb(sign), [NSString stringWithUTF8String:(const char*)str]];
 }
 
 void ios_return(void) {
