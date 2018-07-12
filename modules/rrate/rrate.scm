@@ -1166,8 +1166,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (if rrate:redcapsave:recordnobox (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'focus #f))
         (glgui-widget-set! rrate:redcapsave rrate:redcapsave:keypad 'hidden #t)))
 
-    ;; Reset skipping breath sound if going back to stage 1
-    (if stage1?
+    ;; Reset skipping breath sound if going back to stage 1 or on to stage 3
+    (if (or stage1? stage3?)
       (set! rrate:skipbreath #f))
 
     ;; Reset timer if going back to stage 1 and doing one minute tapping
@@ -1257,22 +1257,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Give feedback that a breath has been tapped or during the animation
 ;; give feedback of the rate by regularly playing a sound or vibrating
 (define (rrate:breath-feedback)
-  (if (or (= (audiofile-getvolume) 0.) (rrate-is-muted-headset))
-    (begin
-      (if rrate:sound_on
-        (begin
-          (set! rrate:sound_on #f)
-          (audiofile-stop)))
-      (vibrate))
+  (if (and (> (audiofile-getvolume) 0.) (not (rrate-is-muted-headset)))
     (begin
       (if (not rrate:sound_on)
         (begin
-           (set! rrate:sound_on #t)
-           (audiofile-start)))
+          (set! rrate:sound_on #t)
+          (audiofile-start)))
       (audiofile-play rrate:sound:breath)
-      ;; Also vibrate if this option is checked
       (if (settings-ref "VibrateSound")
-        (vibrate))))
+        (vibrate)))
+    (vibrate))
 )
 
 ;; Give feedback that the RRate has been successfully measured by playing a sound or lack of vibrating
