@@ -55,6 +55,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Standard fonts, to switch back to if switching languages
 (define rrate:stfnt_12.fnt text_12.fnt)
 (define rrate:stfnt_14.fnt text_14.fnt)
+(define rrate:stfnt_16.fnt text_16.fnt)
 (define rrate:stfnt_20.fnt text_20.fnt)
 (define rrate:stfnt_40.fnt text_40.fnt)
 
@@ -218,7 +219,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (let ((typeslist (glgui-list rrate:settings:language types-list-margin types-list-y types-list-w types-list-h types-list-entry-h
             (map (lambda (n) (lambda (g wgt bx by bw bh selected?)
               (glgui:draw-pixmap-center bx (+ by 2) 30 29 (if selected? checkedcircle.img uncheckedcircle.img) White)
-              (glgui:draw-text-left (+ bx 42) (+ by 3) 250 23 (local-get-text n) text_20.fnt Black)))
+              (glgui:draw-text-left (+ bx 42) (+ by 3) 250 23 (local-get-text n) text_16.fnt Black)))
               '("CHECK" "ONEMIN"))
             ;; Save the setting
             (lambda (g wgt type mx my)
@@ -296,7 +297,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:settings:redcap (glgui-box rrate:settings:redcap 10 53 (- w 20) (- h 63) (color:shuffle #xd7eaefff)) 'rounded #t)
   (glgui-label-local rrate:settings:redcap 25 (- h 50) (- w 50) 30 "REDCAP" text_20.fnt Black)
 
-  (checkbox rrate:settings:redcap 25 (- h 65) (- w 50) "REDCAP_USE?"
+  (checkbox rrate:settings:redcap 25 (- h 68) (- w 50) "REDCAP_USE?"
     (lambda (label checked? g wgt . xargs)
       (settings-set! label checked?)
       (boxcontainer-hidden-set! (not checked?))
@@ -319,7 +320,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ;;    * will only appear when REP_FORMS? is true
   ;;  - upload button
   ;;    * will only appear when datatable is nonempty
-  (letrec  ((x 25) (boxcontainer-y 53) (frame-height 310) (width (- w (* 2 x)))
+  (letrec  ((x 25) (boxcontainer-y 50) (frame-height 307) (width (- w (* 2 x)))
             (longitudinal? (settings-ref "LONGITUDINAL?"))
             (repforms?     (settings-ref "REP_FORMS?"))
             (forms-shift (if longitudinal? 80 0))
@@ -1362,11 +1363,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (begin
        (set! text_12.fnt textEng_12.fnt)
        (set! text_14.fnt textAm_14.fnt)
+       (set! text_16.fnt textEng_16.fnt)
        (set! text_20.fnt textAm_20.fnt)
        (set! text_40.fnt textEng_40.fnt))
      (begin
        (set! text_12.fnt textEng_12.fnt)
        (set! text_14.fnt textEng_14.fnt)
+       (set! text_16.fnt textEng_16.fnt)
        (set! text_20.fnt textEng_20.fnt)
        (set! text_40.fnt textEng_40.fnt)))
 
@@ -1480,11 +1483,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (if (settings-ref "REDCAP_USE?")
         (begin
           (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'label (rrate:get-next-recordno))
-          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:ratelabel 'label
-            (string-append
-              (local-get-text "RRATE") " "
-              (number->string (fix (round rrate:rate))) " "
-              (local-get-text "RRATE_UNIT")))
+          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:ratelabel 'label (number->string (fix (round rrate:rate))))
           (glgui-widget-set! rrate:redcapsave rrate:redcapsave:timeslabel 'label
             (string-append
               (local-get-text "TAPS") " "
@@ -1695,8 +1694,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; REDCap save page
    (set! rrate:redcapsave (glgui-container rrate:cont x 43 w (- h 43)))
    (glgui-box rrate:redcapsave x 0 w h White)
-   (glgui-label rrate:redcapsave 25 (- h 98) (- w 50) 30 (local-get-text "REDCAP_SAVE") text_20.fnt Black)
-   (set! rrate:redcapsave:ratelabel  (glgui-label rrate:redcapsave 25 (- h 123) (- w 50) 25 "" text_14.fnt Black))
+   (glgui-label-local rrate:redcapsave 25 (- h 98) (- w 50) 30 "REDCAP_SAVE" text_20.fnt Black)
+   (set! rrate:redcapsave:ratelabel  (glgui-label rrate:redcapsave 25 (- h 120) 35 25 "" text_14.fnt Black))
+   (glgui-label-local rrate:redcapsave 60 (- h 123) (- w 75) 25 "RRATE_UNIT" text_16.fnt Black)
    (set! rrate:redcapsave:timeslabel (glgui-label rrate:redcapsave 25 (- h 148) (- w 50) 25 "" text_14.fnt Black))
    (set! rrate:redcapsave:keypad (glgui-keypad rrate:cont 0 0 w 210 text_14.fnt keypad:numeric))
    (glgui-widget-set! rrate:cont rrate:redcapsave:keypad 'bgcolor DarkGrey)

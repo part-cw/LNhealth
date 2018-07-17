@@ -43,15 +43,15 @@ FORM,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Ins
 EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Événement :,Evento:
 UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Télécharger sur REDCap,Recobro para REDCap
 RECORD_NO,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Numéro d'enregistrement :,Registre o numero:
-REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Sauvegarder les données pour télécharger sur REDCap ?,Guardar dados para upload em REDCap?
+REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,[t],[t]
 LONGITUDINAL?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Projet longitudinale ?,Coleta de dados longitudinais?
 REP_EVENTS?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Événements répétables ?,Eventos repetivel?
 REP_FORMS?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Instruments répétables ?,Instrumentos repetivel?
-UPLOAD_SAVE?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Télécharger tous après le sauvegardement ?,Recobro tudo quanda guardar?
+UPLOAD_SAVE?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,[t],Recobro tudo quanda guardar?
 BACK,Back,Back,Back,Back,Back,Back,Back,Back,Retourner,Retornar
 SAVE,Save,Save,Save,Save,Save,Save,Save,Save,Sauvegarder,Guardar
 UPLOAD_SIMPLE,Upload,Upload,Upload,Upload,Upload,Upload,Upload,Upload,Télécharger,Recobro
-REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Sauvegarder les données pour REDCap,Guardar dados em REDCap
-TAPS,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Nombre de tapotements,Número de toques:
+REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Sauvegarder les données pour REDCap,[t]
+TAPS,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Nombre de tapotements :,Número de toques:
 ONEMIN,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Taper pour une minute.,Toque por um minuto.
-CHECK,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Utiliser l'algorithme de RRate,Use o algoritma RRate.
+CHECK,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Utiliser l'algorithme de RRate.,Use o algoritma RRate.

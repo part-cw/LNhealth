@@ -56,3 +56,7 @@ DejaVuSans.ttf 14 'Tentar de Novo' RETRY10
 DejaVuSans.ttf 14 'Frequência//Respiratória:' RRATE10
 DejaVuSans.ttf 12 'Respirações_///min' RRATE_UNIT10
 DejaVuSans.ttf 12 'A frequência da respiração// reflecte o paciente?' RR_MATCH10
+DejaVuSans.ttf 12 'Guardar dados para upload em REDCap?' REDCAP_USE?10
+DejaVuSans.ttf 14 'Guardar dados em REDCap' REDCAP_SAVE10
+DejaVuSans.ttf 12 'Sauvegarder les données pour//téléchargersur REDCap ?' REDCAP_USE?9
+DejaVuSans.ttf 12 'Télécharger tous après//le sauvegardement ?' UPLOAD_SAVE?9
