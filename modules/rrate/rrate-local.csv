@@ -39,8 +39,8 @@ REDCAP,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap
 HOST,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Hôte :,Host:
 URL,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:
 TOKEN,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,Clé d'API :,Sinal de API:
-FORM,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument :,Instrument:
-EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Événement :,Event:
+FORM,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument :,Instrumento:
+EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Événement :,Evento:
 UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Télécharger sur REDCap,Recobro para REDCap
 RECORD_NO,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Numéro d'enregistrement :,Registre o numero:
 REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Sauvegarder les données pour télécharger sur REDCap ?,Guardar dados para upload em REDCap?
