@@ -378,7 +378,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 (textboxes-settings-set!)
                 (if (not (textboxes-filled?))
                     (rrate:show-popup rrate:popup:redcap:fields #f #t)
-                    (rrate:redcap-upload (lambda (result) (uploadbutton-hidden-set!))))))))
+                    (rrate:redcap-upload #f (lambda (result) (uploadbutton-hidden-set!))))))))
     (set! rrate:settings:redcap:boxcontainer boxcontainer)
     (set! rrate:settings:redcap:textboxes (append
       (textboxes-ver boxcontainer '("HOST" "URL" "TOKEN") width (- frame-height 150) #f noshift-onfocuscb)
@@ -460,7 +460,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;    to variable "rrate_taps"
 ;; This only uploads the latest session if not repeatable
 ;; The callback takes #t if the upload was successful and #f if not
-(define (rrate:redcap-upload callback)
+(define (rrate:redcap-upload upload-on-save? callback)
   (glgui-set! rrate:popup:redcap:uploading 'label (local-get-text "REDCAP_UPLOAD_PENDING"))
   (rrate:show-popup rrate:popup:redcap:uploading #f #f)
   (rrate:hide-popup-buttons)
@@ -501,7 +501,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         rrate:datatable)
       (if success (rrate:erasedata))
       (rrate:hide-popup)
-      (rrate:show-popup (if success rrate:popup:redcap:success rrate:popup:redcap:failed) #f #t)
+      (rrate:show-popup
+        (if success
+            rrate:popup:redcap:success
+            (if upload-on-save?
+                rrate:popup:redcap:savedfailed
+                rrate:popup:redcap:failed)) #f #t)
       (callback success))))))
 
 ;; Set REDCap upload button visibility
@@ -781,6 +786,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define rrate:popup:ignorebutton #f)
 (define rrate:popup:okbutton #f)
 (define rrate:popup:redcap:failed #f)
+(define rrate:popup:redcap:savedfailed #f)
 (define rrate:popup:redcap:success #f)
 (define rrate:popup:redcap:uploading #f)
 (define rrate:popup:redcap:fields #f)
@@ -1207,6 +1213,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                         "Inconsistent")
                      ((eq? message rrate:popup:redcap:failed)
                         "Upload to REDCap failed")
+                     ((eq? message rrate:popup:redcap:savedfailed)
+                        "Data saved but upload to REDCap failed")
                      ((eq? message rrate:popup:redcap:success)
                         "Upload to REDCAP succeeded")
                      ((eq? message rrate:popup:redcap:uploading)
@@ -1250,6 +1258,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! rrate:popup:cont rrate:popup:toofast 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:notenough 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'hidden #t)
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:savedfailed 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:success 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:uploading 'hidden #t)
   (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:fields 'hidden #t)
@@ -1538,7 +1547,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (rrate:go-to-stage 2)
               (glgui-widget-set! rrate:redcapsave rrate:redcapsave:uploadbutton 'hidden #t)
               (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'enableinput #t)
-              (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'label (local-get-text "REDCAP_UPLOAD_FAILED"))
               (glgui-widget-set! rrate:cont backbutton 'callback (lambda xargs (rrate:go-to-stage 2)))
               (glgui-widget-set! rrate:cont rrate:confirm 'hidden #t)
               (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
@@ -1546,7 +1554,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
               (if rrate:cancelproc (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
               (if rrate:doneproc (rrate:doneproc))))
-            (upload (lambda () (rrate:redcap-upload (lambda (result) (if result (goback))))))
+            (upload (lambda () (rrate:redcap-upload #t (lambda (result) (if result (goback))))))
             (savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt (lambda xargs
               (rrate:savedata (glgui-widget-get rrate:redcapsave rrate:redcapsave:recordnobox 'label) (glgui-widget-get rrate:cont rrate:value 'label) rrate:times)
               (uploadbutton-hidden-set!)
@@ -1554,13 +1562,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                   (begin (glgui-widget-set! rrate:cont savebutton   'hidden #t)
                          (glgui-widget-set! rrate:cont uploadbutton 'hidden #f)
                          (glgui-widget-set! rrate:redcapsave rrate:redcapsave:recordnobox 'enableinput #f)
-                         (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'label (local-get-text "REDCAP_UPLOAD_SAVEDFAILED"))
                          (glgui-widget-set! rrate:cont backbutton 'callback goback)
                          (upload))
                   (goback)))))
-            (uploadbutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "UPLOAD_SIMPLE" text_20.fnt (lambda xargs
-              (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'label (local-get-text "REDCAP_UPLOAD_FAILED"))
-              (upload))))
+            (uploadbutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "UPLOAD_SIMPLE" text_20.fnt (lambda xargs (upload))))
             (backbutton (glgui-button-local rrate:cont 6 6 140 32 "BACK" text_20.fnt (lambda xargs (rrate:go-to-stage 2)))))
       (set! rrate:redcapsave:savebutton   savebutton)
       (set! rrate:redcapsave:uploadbutton uploadbutton)
@@ -1737,6 +1742,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      "REDCAP_UPLOAD_FAILED" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'hidden #t)
    (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:failed 'modal #t)
+   (set! rrate:popup:redcap:savedfailed (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
+    "REDCAP_UPLOAD_SAVEDFAILED" text_20.fnt White))
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:savedfailed 'hidden #t)
+  (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:savedfailed 'modal #t)
    (set! rrate:popup:redcap:success (glgui-label-local rrate:popup:cont (+ 75 rrate:xoffset) (+ 166 rrate:yoffset) 240 100
     "REDCAP_UPLOAD_SUCCESS" text_20.fnt White))
    (glgui-widget-set! rrate:popup:cont rrate:popup:redcap:success 'hidden #t)

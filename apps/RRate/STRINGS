@@ -58,5 +58,8 @@ DejaVuSans.ttf 12 'Respirações_///min' RRATE_UNIT10
 DejaVuSans.ttf 12 'A frequência da respiração// reflecte o paciente?' RR_MATCH10
 DejaVuSans.ttf 12 'Guardar dados para upload em REDCap?' REDCAP_USE?10
 DejaVuSans.ttf 14 'Guardar dados em REDCap' REDCAP_SAVE10
-DejaVuSans.ttf 12 'Sauvegarder les données pour//téléchargersur REDCap ?' REDCAP_USE?9
-DejaVuSans.ttf 12 'Télécharger tous après//le sauvegardement ?' UPLOAD_SAVE?9
+DejaVuSans.ttf 12 'Sauvegarder les données pour//téléchargement vers REDCAP ?' REDCAP_USE?9
+DejaVuSans.ttf 20 'Echec du téléchargement//vers REDCAP. Veuillez//vérifier les réglages//de REDCAP.' REDCAP_UPLOAD_FAILED9
+DejaVuSans.ttf 20 'Données sauvegardées,//mais échec du//téléchargement. Veuillez//vérifier les réglages//de REDCAP.' REDCAP_UPLOAD_SAVEDFAILED9
+DejaVuSans.ttf 20 'Recobro para REDCap//falhou. Verifique se todas//as configuracoes estao//corretas em REDCap.' REDCAP_UPLOAD_FAILED10
+DejaVuSans.ttf 20 'Dados guardados, mas//o recobro falhou.//Verifique se todas as//configuracoes estao//corretas em REDCap.' REDCAP_UPLOAD_SAVEDFAILED10
