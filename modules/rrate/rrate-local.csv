@@ -1,7 +1,7 @@
 Key,English,Luganda,Khmer,Amharic,Dinka,Español,Quechua,Aymara,Français,Português
 CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculating the respiratory rate.,Londako emirundi gy'okoonye ku lutimbe egyetaagisibwa okubala enzisa,[t],የአተነፋፈስ መጠን ላማስላት የሚያገለግለውን ተመሳሰይ ንክኪ ብዛት ምረጪ,kueny adet tueny ca beeric yen wiic bi mat kek adet weei,Seleccione el número necesario de toques consistentes para calcular la frecuencia respiratoria,ñit'ispa yupanakunata akllay kallpachay chaninchaywan sapa samaywan,"qhawqha limiñasa wakisi uka ajlliña, samsunaka yatiñataki",Choisir le nombre d'intervalles réguliers requis pour le calcul de la fréquence respiratoire,Seleccionar o número de toques consistentes necessarios para calcular a frequência respiratória
 CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,[t],የተመሳሳይነት መነሻ ምረጪ,kuen ke ca beeric,Seleccione el umbral de consistencia,chaykamalla ñit'ispa kallpachay,ukakama  puriñataki  aski ajllita.,Choisir la limite de régularité,Seleccionar o limite da consistencia
-VIBRATE_SOUND,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrate with sound.,Vibrar con sonido,ch'aqwaypi kharkatiy,Suynayaña,Vibration avec son,Vibrar com som
+VIBRATE_SOUND,Vibrate,Vibrate,Vibrate,Vibrate,Vibrate,Vibrar,kharkatiy,Suynayaña,Vibration,Vibrar
 CANCEL,Cancel,Sazaamu,[t],ሰርዝ,temkou,Cancelar,tukupay,Ch’ujtayña,Annuler,Cancelar
 SETTINGS,Settings,Entereeza,[t],ሌቲንግ,cook piiny,Configuración,wakmanta hallch'ay,Wakichaña,Réglages,Definições
 NO,No,Nedda,[t],አይደለም,[t],No,mana,janiwa,Non,Não

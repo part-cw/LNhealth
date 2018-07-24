@@ -130,8 +130,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    ;; Call RRate main loop
    (if language? (rrate-run t))
 
-   (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYESCAPE)) (rrate-terminate))
-   (if (and (= t EVENT_KEYPRESS) (= x EVENT_KEYBACK))   (rrate-terminate))
+   (if (and (= t EVENT_KEYRELEASE) (= x EVENT_KEYESCAPE)) (rrate-terminate))
+   (if (and (= t EVENT_KEYRELEASE) (= x EVENT_KEYBACK))   (rrate-terminate))
    (glgui-event (list (if language? rrate:gui gui:lang) gui) t x y)
   )
  (lambda () #t)

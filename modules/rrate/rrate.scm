@@ -1273,10 +1273,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (begin
           (set! rrate:sound_on #t)
           (audiofile-start)))
-      (audiofile-play rrate:sound:breath)
-      (if (settings-ref "VibrateSound")
-        (vibrate)))
-    (vibrate))
+      (audiofile-play rrate:sound:breath)))
+    (if (settings-ref "VibrateSound") (vibrate))
 )
 
 ;; Give feedback that the RRate has been successfully measured by playing a sound or lack of vibrating
