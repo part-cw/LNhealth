@@ -3,29 +3,29 @@ CONSISTENCY_NUM_TAPS,Choose the number of consistent taps required for calculati
 CONSISTENCY_THRESH,Choose the consistency threshold.,Londa emirundi egisalirwako egitakyukakyuka,[t],የተመሳሳይነት መነሻ ምረጪ,kuen ke ca beeric,Seleccione el umbral de consistencia,chaykamalla ñit'ispa kallpachay,ukakama  puriñataki  aski ajllita.,Choisir la limite de régularité,Seleccionar o limite da consistencia
 VIBRATE_SOUND,Vibrate,Vibrate,Vibrate,Vibrate,Vibrate,Vibrar,kharkatiy,Suynayaña,Vibration,Vibrar
 CANCEL,Cancel,Sazaamu,[t],ሰርዝ,temkou,Cancelar,tukupay,Ch’ujtayña,Annuler,Cancelar
-SETTINGS,Settings,Entereeza,[t],ሌቲንግ,cook piiny,Configuración,wakmanta hallch'ay,Wakichaña,Réglages,Definições
+SETTINGS,Settings,Entereeza,[t],ሌቲንግ,cook piiny,Ajustes,wakmanta hallch'ay,Wakichaña,Réglages,Definições
 NO,No,Nedda,[t],አይደለም,[t],No,mana,janiwa,Non,Não
 YES,Yes,Yee,[t],አዎ,[t],Si,ari,jisa,Oui,Sim
-RESTART,Restart,[t],[t],እንደገና ማስጀመር,baan jook,[t],[t],[t],Redémarrer,Reiniciar
+RESTART,Restart,[t],[t],እንደገና ማስጀመር,baan jook,Reiniciar,[t],[t],Redémarrer,Reiniciar
 RR_MATCH,Does the breathing rate match the patient?,Enzisa efaanana n'eyomulwadde?,[t],የትንፋሽ መጠኑ ከታማሚው ጋር ይመሳሰላል?,ye weei raan tuany loou ka thoong,[t],llankhaywan samaywan kuchkachay,jaqina samsutapaxa kikipakiw,[t],[t]
 EXIT,Exit,[t],[t],ውጪ,loou heer,[t],[t],[t],Sortie,Saída
 RRATE,Respiratory Rate:,Enzisa,[t],የአተነፋፈስ መጠን:,weeiyic:,Frecuencia respiratoria:,sapa kuti samay:,Qhawqha  samsutasa:,Fréquence respiratoire:,[t]
 RRATE_UNIT,Breaths/min,[t],[t],የትንፋሸ መጠን በ1 ደfዎ,weei/yuolic,[t],[t],[t],Resp/min,[t]
 TAP_TO_SYNC,Tap on inhalation to synchronize,[t],[t],[t],[t],Tocar en cada inspiración para sincronizar,samaywan takay chaninchanapaq,"Wakichañatakixa,  samkatasina  limiñawa",Taper à l'inhalation pour synchroniser,Toque após inalação para sincronizar
-FAST,Fast,Kumuukum,[t],ፈጣን,apuol,Muy rápido,utqhay,k'ataki,Rapide,Rápido
+FAST,Fast,Kumuukum,[t],ፈጣን,apuol,Rápido,utqhay,k'ataki,Rapide,Rápido
 CONSISTENT,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric,Consistente,unaypaq,khusa wakisiri,Régulier,Consistente
 CONSISTENTD,Consistent,Bikwatagana,[t],ተመሳሳይ,beeric,Consistente,unaypaq,wali wakisiri,Régulier,Consistente
-SLOW,Slow,Mpola,[t],ዝግ ያለ,ee cath amath,Muy despacio,allillanmanta,k'achata,Lent,Lento
+SLOW,Slow,Mpola,[t],ዝግ ያለ,ee cath amath,Despacio,allillanmanta,k'achata,Lent,Lento
 TAP_INHALATION,Tap on inhalation,Koona ku kigambo "okusika omukka",[t],[t],tuany tene weei alongthinic,Tocar en cada inspiracion ,samaywan takay ,Samkatasina  limxataña,Taper à l'inhalation,Toque em cada inalação
 TAPS_INCONSISTENT,Taps are inconsistent. Please try again.,Byonyize Tebikwatagana,[t],የተዘበራረቀ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany aci beeric. theem det.,"Los toques son inconsistentes. Por favor, inténtelo de nuevo.","ch'aqwaypi mana samaq. ama hinachu kay, wakmanta qallariy","Limitanakaxa  janiwa walikiti. Mira suma,  wasitata lurañawa",Intervalles irréguliers. Réessayer,Toques são inconsistentes. Tente de novo.
 NOT_ENOUGH_TAPS,Not enough taps. Please try again.,Emilundi gy'onyize tegiweeze,[t],በቂ ያልሆነ ንክኪ. እባክሽ ደግመሽ ሞክሪው.,akac tuany apeth. theem det.,"El número de toques es insuficiente. Por favor, inténtelo de nuevo","pisi chaqway. ama hinachu kay, wakmanta qallariy","Jani phuqata  limitanaka. Mira suma, wasitata lurañawa",Nombre d'intervalles insuffisant. Réessayer,Toques insuficientes. Tente de novo.
 TAPS_TOO_FAST,Taps are too fast. Please try again.,Onyigidde Kumuukumu,[t],በጣም ፈጣን ንክኪ. እባክሽ ደግመሽ ሞክሪው.,tuany apuol apeidit. theem det.,"Los toques son demasiado rápidos. Por favor, inténtelo de nuevo","ch'aqwaykuna sinchiutqhay. ama hinachu kay, wakmanta qallariy","Limitaxa sinti k’ataki luratawa. Mira suma,  wasitata lurañawa",Intervalles trop courts. Réessayer,Toques muito rápidos. Tente de novo.
-REDCAP_UPLOAD_SAVEDFAILED,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,[t],[t]
-REDCAP_UPLOAD_FAILED,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,[t],[t]
-REDCAP_UPLOAD_SUCCESS,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Téléchargement vers REDCap réussi.,Upload bem sucedido a REDCap
-REDCAP_UPLOAD_PENDING,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Téléchargement en cours...,Recobrando...
-REDCAP_UPLOADING,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Téléchargement ~a de ~a pour l'enregistrement numéro ~a.,Recobrando ~a de ~a para registro ~a.
-REDCAP_FIELDS,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Veuillez remplir tous les champs.,Por favor complete todos os itens.
+REDCAP_UPLOAD_SAVEDFAILED,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,[t],Data saved but upload failed. Please make sure all your REDCap settings are correct.,Data saved but upload failed. Please make sure all your REDCap settings are correct.,[t],[t]
+REDCAP_UPLOAD_FAILED,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,[t],Upload to REDCap failed. Please make sure all your REDCap settings are correct.,Upload to REDCap failed. Please make sure all your REDCap settings are correct.,[t],[t]
+REDCAP_UPLOAD_SUCCESS,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,Upload to REDCap successful.,La subida a REDCap se ha relizado con exito.,Upload to REDCap successful.,Upload to REDCap successful.,Téléchargement vers REDCap réussi.,Upload bem sucedido a REDCap
+REDCAP_UPLOAD_PENDING,Uploading...,Uploading...,Uploading...,Uploading...,Uploading...,Subiendo...,Uploading...,Uploading...,Téléchargement en cours...,Recobrando...
+REDCAP_UPLOADING,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Subiendo ~a de ~a para el numero de registro 3.,Uploading ~a of ~a for record number ~a.,Uploading ~a of ~a for record number ~a.,Téléchargement ~a de ~a pour l'enregistrement numéro ~a.,Recobrando ~a de ~a para registro ~a.
+REDCAP_FIELDS,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,Please fill in all fields.,"Por favor, rellene todos los datos.",Please fill in all fields.,Please fill in all fields.,Veuillez remplir tous les champs.,Por favor complete todos os itens.
 RETRY,Retry,[t],[t],ደግመሽ ሞክሪው,baan theem,[t],[t],[t],Réessayer,[t]
 IGNORE,Ignore,[t],[t],ተይው,akac gaam,[t],[t],[t],Ignorer,Ignorar
 OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK
@@ -36,22 +36,22 @@ M_pC,M + C,M + C,M + C,አ+ተ,M + C,M + C,M + C,M + C,M + R,M + C
 M,M,M,M,አ,M,M,M,M,M,M
 M_mC,M - C,M - C,M - C,አ-ተ,M - C,M - C,M - C,M - C,M - R,M - C
 REDCAP,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap
-HOST,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Host:,Hôte :,Host:
+HOST,Host:,Host:,Host:,Host:,Host:,Servidor:,Host:,Host:,Hôte :,Host:
 URL,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,Addresse URL:,URL:
-TOKEN,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,API Token:,Clé d'API :,Sinal de API:
-FORM,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrument :,Instrumento:
-EVENT,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Event:,Événement :,Evento:
-UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Télécharger vers REDCap,Recobro para REDCap
-RECORD_NO,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Numéro d'enregistrement :,Registre o numero:
-REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,[t],[t]
-LONGITUDINAL?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Projet longitudinale ?,Coleta de dados longitudinais?
-REP_EVENTS?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Événements répétables ?,Eventos repetivel?
-REP_FORMS?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Instruments répétables ?,Instrumentos repetivel?
-UPLOAD_SAVE?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Télécharger tout à la sauvegarde ?,Recobro tudo quanda guardar?
-BACK,Back,Back,Back,Back,Back,Back,Back,Back,Retour,Retornar
-SAVE,Save,Save,Save,Save,Save,Save,Save,Save,Sauvegarder,Guardar
-UPLOAD_SIMPLE,Upload,Upload,Upload,Upload,Upload,Upload,Upload,Upload,Télécharger,Recobro
-REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Sauvegarder les données pour REDCap,[t]
-TAPS,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Nombre de tapes :,Número de toques:
-ONEMIN,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Taper pour une minute.,Toque por um minuto.
-CHECK,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Utiliser l'algorithme RRate.,Use o algoritma RRate.
+TOKEN,API Token:,API Token:,API Token:,API Token:,API Token:,Token de API:,API Token:,API Token:,Clé d'API :,Sinal de API:
+FORM,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrumento:,Instrument:,Instrument:,Instrument :,Instrumento:
+EVENT,Event:,Event:,Event:,Event:,Event:,Evento:,Event:,Event:,Événement :,Evento:
+UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Subir a REDCap,Upload to REDCap,Upload to REDCap,Télécharger vers REDCap,Recobro para REDCap
+RECORD_NO,Record Number:,Record Number:,Record Number:,Record Number:,Record Number:,Numero de registro:,Record Number:,Record Number:,Numéro d'enregistrement :,Registre o numero:
+REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save data for upload to REDCap?,[t],Save data for upload to REDCap?,Save data for upload to REDCap?,[t],[t]
+LONGITUDINAL?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,¿El proyecto es longitudinal?,Longitudinal project?,Longitudinal project?,Projet longitudinale ?,Coleta de dados longitudinais?
+REP_EVENTS?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,¿Los eventos son repetibles?,Repeatable events?,Repeatable events?,Événements répétables ?,Eventos repetivel?
+REP_FORMS?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,¿Los instrumentos son repetibles?,Repeatable instruments?,Repeatable instruments?,Instruments répétables ?,Instrumentos repetivel?
+UPLOAD_SAVE?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,¿Subir todos los datos al guardar?,Upload all on save?,Upload all on save?,Télécharger tout à la sauvegarde ?,Recobro tudo quanda guardar?
+BACK,Back,Back,Back,Back,Back,Atras,Back,Back,Retour,Retornar
+SAVE,Save,Save,Save,Save,Save,Guardar,Save,Save,Sauvegarder,Guardar
+UPLOAD_SIMPLE,Upload,Upload,Upload,Upload,Upload,Subir,Upload,Upload,Télécharger,Recobro
+REDCAP_SAVE,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,Save data for REDCap,[t],Save data for REDCap,Save data for REDCap,Sauvegarder les données pour REDCap,[t]
+TAPS,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Number of taps:,Número de toques:,Number of taps:,Number of taps:,Nombre de tapes :,Número de toques:
+ONEMIN,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tap for one minute.,Tocar durante un minuto.,Tap for one minute.,Tap for one minute.,Taper pour une minute.,Toque por um minuto.
+CHECK,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Use RRate algorithm.,Utilizar el algoritmo RRate.,Use RRate algorithm.,Use RRate algorithm.,Utiliser l'algorithme RRate.,Use o algoritma RRate.
