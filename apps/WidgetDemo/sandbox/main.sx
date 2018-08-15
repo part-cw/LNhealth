@@ -99,6 +99,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (button text "Barcodes" action ex_barcodes)
     (spacer height 10)
     (button text "Sensors" action ex_sensors)
+    (spacer height 10)
+    (button text "Sliders" action ex_sliders)
     (spacer)
   )
 
@@ -253,7 +255,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (ex_sensors
     "Sensors"
     ("Prev" ex_barcodes)
-    ("Next" #f)
+    ("Next" ex_sliders)
     (spacer)
     (label text "GPS:")
     (label text ,(lambda () (string-append 
@@ -272,6 +274,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        (float->choppedstring (gyro-pitch) 6) ":"
        (float->choppedstring (gyro-roll) 6))))
     (spacer)
+  )
+
+  (ex_sliders
+    "Sliders"
+    ("Prev" ex_sensors)
+    #f
+    (spacer height 70)
+    (label text "Simple small blank slider")
+    (slider id dummy_slide1 number #f location ui h 48)
+    (spacer height 5)
+    ,(lambda ()
+       (let ((value (uiget 'dummy_slide1 50)))
+         `(label text ,(string-append "Value is " (number->string value)))))
+    (spacer height 70)
+    (label text "Labelled slider")
+    (spacer height 5)
+    (slider id dummy_slide2 labels ("Left" "Middle" "Right") min 0 max 10)
   )
 
   (example6
