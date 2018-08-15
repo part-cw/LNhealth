@@ -1,3 +1,18 @@
+/** Delegate for alerts **/
+
+// need to declare before usage
+void ios_finishVitalSign(BOOL success);
+
+@interface AlertViewCancelDelegate : NSObject<UIAlertViewDelegate>
+@end
+
+@implementation AlertViewCancelDelegate
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)index {
+    ios_finishVitalSign(NO);
+}
+@end
+
+
 /** Constants and variables **/
 
 // vital sign code constants
@@ -14,7 +29,9 @@ typedef enum {
     RRATE     = RR    | RRTAPS
 } VitalSign;
 
+// update MAX_VITALSIGN when adding new vital sign codes
 static NSUInteger const MAX_VITALSIGN = RRTAPS;
+static NSUInteger const SUCCESS_CODE  = MAX_VITALSIGN * 2;
 
 // vital sign URL schemes
 static NSString *const svsHR     = @"svs-hr";
@@ -35,6 +52,7 @@ static NSString *const pasteboardName = @"svsPasteboard";
 // dynamically-allocated variables (need to be freed)
 NSMutableArray *signVitalArray;
 NSString *sourceBundleID;
+AlertViewDelegate *alertViewDelegate;
 
 int sign  = 0;
 int state = 0;
@@ -64,10 +82,11 @@ BOOL openURL(NSString *scheme, BOOL releaseScheme) {
     return [[UIApplication sharedApplication] openURL:url];
 }
 
-void showAlert(NSString *title, NSString *message) {
+void showAlert(NSString *title, NSString *message, BOOL cancelOnClose) {
+    alertViewDelegate = cancelOnClose ? [[AlertViewDelegate alloc] init] : nil;
     UIAlertView *alert = [[UIAlertView alloc]
             initWithTitle:title message:message
-            delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            delegate:alertViewDelegate cancelButtonTitle:@"OK" otherButtonTitles:nil];
     [alert show];
     [alert release];
 }
@@ -101,15 +120,12 @@ void ios_passVitalSignString(char* str, int qual, int sign) {
     signVitalArray[ilogb(sign)] = [NSString stringWithFormat:@"%d:%@", ilogb(sign), [NSString stringWithUTF8String:(const char*)str]];
 }
 
-void ios_return(void) {
-    openURL(sourceBundleID, YES);
-}
-
-
-void ios_finishVitalSign(void) {
+void ios_finishVitalSign(BOOL success) {
+    ios_passVitalSign(success, 0, SUCCESS_CODE);
     pasteboard.strings = signVitalArray;
     [signVitalArray release];
-    ios_return();
+    if (alertViewDelegate) [alertViewDelegate release];
+    openURL(sourceBundleID, YES);
 }
 
 int ios_getVitalSign(void) {
@@ -121,12 +137,12 @@ int ios_getExtraState(void) {
 }
 
 void ios_registerVitalSign(int providerSign) {
-    initSignVitalArray(ilogb(MAX_VITALSIGN));
+    initSignVitalArray(ilogb(SUCCESS_CODE));
     pasteboard = [UIPasteboard pasteboardWithName:pasteboardName create:NO];
     sign  = getPasteboardVal(@"sign").intValue;
     state = getPasteboardVal(@"state").intValue;
     if (((unsigned int) sign & (unsigned int) providerSign) < (unsigned int) sign) {
-        showAlert([NSString stringWithFormat:@"Requested vital sign %d is not supported.", sign], @"");
+        showAlert([NSString stringWithFormat:@"Requested vital sign %d is not supported.", sign], @"", YES);
     }
 }
 
@@ -144,24 +160,38 @@ void ios_requestVitalSign(int sign) {
     if (!openURL(getURLScheme(sign), NO)) {
         showAlert(
             [NSString stringWithFormat:@"No app providing sign %d found on device.", sign], 
-            [NSString stringWithFormat:@"Ensure that you have an app that can handle the URL scheme \"%@\".", getURLScheme(sign)]
-        );
+            [NSString stringWithFormat:@"Ensure that you have an app that can handle the URL scheme \"%@\".", getURLScheme(sign)],
+        NO);
     }
 }
 
 //  0: in progress (URL not yet arrived)
 // -1: sign not found - must be invalid
 int ios_retrieveVitalSign(int sign) {
-    NSString *vital = getPasteboardVal(@(ilogb(sign)).stringValue);
-    return vital ? vital.intValue : 0;
+    NSString *success = getPasteboardVal(@(ilogb(SUCCESS_CODE)).stringValue);
+    if (!success) {
+        return 0;
+    } else if (!success.intValue) {
+        return -1;
+    } else {
+        NSString *vital = getPasteboardVal(@(ilogb(sign)).stringValue);
+        return vital ? vital.intValue : -1;
+    }
 }
 
 //   "": in progress (URL not yet arrived)
-// NULL: sign is empty - must be invalid
+// NULL: sign not found - must be invalid
 NSString *vitalString;
 const char* ios_retrieveVitalSignString(int sign) {
-    vitalString = [getPasteboardVal(@(ilogb(sign)).stringValue) copy];
-    return vitalString ? vitalString.UTF8String : "";
+    NSString *success = getPasteboardVal(@(ilogb(SUCCESS_CODE)).stringValue);
+    if (!success) {
+        return "";
+    } else if (!success.intValue) {
+        return NULL;
+    } else {
+        vitalString = [getPasteboardVal(@(ilogb(sign)).stringValue) copy];
+        return vitalString ? vitalString.UTF8String : NULL;
+    }
 }
 
 void ios_retrieveVitalSignStringRelease(void) {
