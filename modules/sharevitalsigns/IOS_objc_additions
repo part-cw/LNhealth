@@ -52,7 +52,7 @@ static NSString *const pasteboardName = @"svsPasteboard";
 // dynamically-allocated variables (need to be freed)
 NSMutableArray *signVitalArray;
 NSString *sourceBundleID;
-AlertViewDelegate *alertViewDelegate;
+AlertViewCancelDelegate *alertViewDelegate;
 
 int sign  = 0;
 int state = 0;
@@ -83,7 +83,7 @@ BOOL openURL(NSString *scheme, BOOL releaseScheme) {
 }
 
 void showAlert(NSString *title, NSString *message, BOOL cancelOnClose) {
-    alertViewDelegate = cancelOnClose ? [[AlertViewDelegate alloc] init] : nil;
+    alertViewDelegate = cancelOnClose ? [[AlertViewCancelDelegate alloc] init] : nil;
     UIAlertView *alert = [[UIAlertView alloc]
             initWithTitle:title message:message
             delegate:alertViewDelegate cancelButtonTitle:@"OK" otherButtonTitles:nil];
