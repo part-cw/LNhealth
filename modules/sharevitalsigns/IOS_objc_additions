@@ -90,10 +90,10 @@ void showAlert(NSString *title, NSString *message) {
     [alert release];
 }
 
-NSString* getPasteboardVal(NSString *key) {
-    for (NSString *string in pasteboard.strings) {
-        NSMutableArray *keyval = [NSMutableArray arrayWithArray:[string componentsSeparatedByString:@":"]];
-        if ([key isEqualToString:keyval.firstObject]) {
+NSString* getPasteboardVal(int key) {
+    if (2 * key < pasteboard.strings.count) {
+        NSMutableArray *keyval = [NSMutableArray arrayWithArray:[pasteboard.strings[2 * key] componentsSeparatedByString:@":"]];
+        if ([@(key).stringValue isEqualToString:keyval.firstObject]) {
             [keyval removeObjectAtIndex:0];
             return [keyval componentsJoinedByString:@":"];
         }
@@ -104,7 +104,7 @@ NSString* getPasteboardVal(NSString *key) {
 void initSignVitalArray(int maxIndex) {
     vitalSignArray = [[NSMutableArray alloc] initWithCapacity:(2 * (maxIndex + 1))];
     for (int i = 0; i < 2 * (maxIndex + 1); i++) {
-        [vitalSignArray addObject:[NSString string]];
+        [vitalSignArray addObject:@(-1).stringValue];
     }
 }
 
@@ -140,8 +140,8 @@ int ios_getExtraState(void) {
 void ios_registerVitalSign(int providerSign) {
     initSignVitalArray(ilogb(SUCCESS_CODE));
     pasteboard = [UIPasteboard pasteboardWithName:pasteboardName create:NO];
-    sign  = getPasteboardVal(@"sign").intValue;
-    state = getPasteboardVal(@"state").intValue;
+    sign  = [pasteboard.strings[0] substringFromIndex:1].intValue;
+    state = [pasteboard.strings[1] substringFromIndex:1].intValue;
     if (((unsigned int) sign & (unsigned int) providerSign) < (unsigned int) sign) {
         alertViewDelegate = [AlertViewCancelDelegate new];
         showAlert([NSString stringWithFormat:@"Requested vital sign %d is not supported.", sign], @"");
@@ -158,7 +158,7 @@ void ios_addExtras(int st) {
 void ios_requestVitalSign(int sign) {
     pasteboard = [UIPasteboard pasteboardWithName:pasteboardName create:YES];
     [pasteboard setPersistent:YES];
-    pasteboard.strings = @[[NSString stringWithFormat:@"sign:%d", sign], [NSString stringWithFormat:@"state:%d", state]];
+    pasteboard.strings = @[[NSString stringWithFormat:@":%d", sign], [NSString stringWithFormat:@":%d", state]];
     if (!openURL(getURLScheme(sign), NO)) {
         showAlert(
             [NSString stringWithFormat:@"No app providing sign %d found on device.", sign], 
@@ -169,13 +169,13 @@ void ios_requestVitalSign(int sign) {
 //  0: in progress (URL not yet arrived)
 // -1: sign not found - must be invalid
 int ios_retrieveVitalSign(int sign) {
-    NSString *success = getPasteboardVal(@(ilogb(SUCCESS_CODE)).stringValue);
+    NSString *success = getPasteboardVal(ilogb(SUCCESS_CODE));
     if (!success) {
         return 0;
     } else if (!success.intValue) {
         return -1;
     } else {
-        NSString *vital = getPasteboardVal(@(ilogb(sign)).stringValue);
+        NSString *vital = getPasteboardVal(ilogb(sign));
         return vital ? vital.intValue : -1;
     }
 }
@@ -184,13 +184,13 @@ int ios_retrieveVitalSign(int sign) {
 // NULL: sign not found - must be invalid
 NSString *vitalString;
 const char* ios_retrieveVitalSignString(int sign) {
-    NSString *success = getPasteboardVal(@(ilogb(SUCCESS_CODE)).stringValue);
+    NSString *success = getPasteboardVal(ilogb(SUCCESS_CODE));
     if (!success) {
         return "";
     } else if (!success.intValue) {
         return NULL;
     } else {
-        vitalString = [getPasteboardVal(@(ilogb(sign)).stringValue) copy];
+        vitalString = [getPasteboardVal(ilogb(sign)) copy];
         return vitalString ? vitalString.UTF8String : NULL;
     }
 }
