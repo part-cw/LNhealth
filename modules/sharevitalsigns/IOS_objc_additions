@@ -1,14 +1,14 @@
 /** Delegate for alerts **/
 
 // need to declare before usage
-void ios_finishVitalSign(BOOL success);
+void ios_finishVitalSign(bool success);
 
 @interface AlertViewCancelDelegate : NSObject<UIAlertViewDelegate>
 @end
 
 @implementation AlertViewCancelDelegate
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)index {
-    ios_finishVitalSign(NO);
+    ios_finishVitalSign(false);
 }
 @end
 
@@ -27,7 +27,7 @@ typedef enum {
     BP        = BPSYS | BPDIA,
     PO        = HR    | SPO2,
     RRATE     = RR    | RRTAPS
-} VitalSign;
+} VitalSignCode;
 
 // update MAX_VITALSIGN when adding new vital sign codes
 static NSUInteger const MAX_VITALSIGN = RRTAPS;
@@ -50,9 +50,9 @@ UIPasteboard *pasteboard;
 static NSString *const pasteboardName = @"svsPasteboard";
 
 // dynamically-allocated variables (need to be freed)
-NSMutableArray *signVitalArray;
+NSMutableArray *vitalSignArray;
 NSString *sourceBundleID;
-AlertViewCancelDelegate *alertViewDelegate;
+AlertViewCancelDelegate *alertViewDelegate = nil;
 
 int sign  = 0;
 int state = 0;
@@ -60,7 +60,7 @@ int state = 0;
 
 /** Helper functions **/
 
-NSString* getURLScheme(VitalSign sign) {
+NSString* getURLScheme(VitalSignCode sign) {
     switch (sign) {
         case HR:     return svsHR;
         case RR:     return svsRR;
@@ -82,8 +82,7 @@ BOOL openURL(NSString *scheme, BOOL releaseScheme) {
     return [[UIApplication sharedApplication] openURL:url];
 }
 
-void showAlert(NSString *title, NSString *message, BOOL cancelOnClose) {
-    alertViewDelegate = cancelOnClose ? [[AlertViewCancelDelegate alloc] init] : nil;
+void showAlert(NSString *title, NSString *message) {
     UIAlertView *alert = [[UIAlertView alloc]
             initWithTitle:title message:message
             delegate:alertViewDelegate cancelButtonTitle:@"OK" otherButtonTitles:nil];
@@ -94,7 +93,7 @@ void showAlert(NSString *title, NSString *message, BOOL cancelOnClose) {
 NSString* getPasteboardVal(NSString *key) {
     for (NSString *string in pasteboard.strings) {
         NSMutableArray *keyval = [NSMutableArray arrayWithArray:[string componentsSeparatedByString:@":"]];
-        if ([key isEqualToString:[keyval firstObject]]) {
+        if ([key isEqualToString:keyval.firstObject]) {
             [keyval removeObjectAtIndex:0];
             return [keyval componentsJoinedByString:@":"];
         }
@@ -103,9 +102,9 @@ NSString* getPasteboardVal(NSString *key) {
 }
 
 void initSignVitalArray(int maxIndex) {
-    signVitalArray = [[NSMutableArray alloc] initWithCapacity:(maxIndex + 1)];
-    for (int i = 0; i <= maxIndex; i++) {
-        [signVitalArray addObject:[NSString string]];
+    vitalSignArray = [[NSMutableArray alloc] initWithCapacity:(2 * (maxIndex + 1))];
+    for (int i = 0; i < 2 * (maxIndex + 1); i++) {
+        [vitalSignArray addObject:[NSString string]];
     }
 }
 
@@ -113,17 +112,19 @@ void initSignVitalArray(int maxIndex) {
 /** Provider methods **/
 
 void ios_passVitalSign(float value, int qual, int sign) {
-    signVitalArray[ilogb(sign)] = [NSString stringWithFormat:@"%d:%f", ilogb(sign), value];
+    vitalSignArray[2 * ilogb(sign)]     = [NSString stringWithFormat:@"%d:%f",      ilogb(sign), value];
+    vitalSignArray[2 * ilogb(sign) + 1] = [NSString stringWithFormat:@"%d-qual:%d", ilogb(sign), qual];
 }
 
 void ios_passVitalSignString(char* str, int qual, int sign) {
-    signVitalArray[ilogb(sign)] = [NSString stringWithFormat:@"%d:%@", ilogb(sign), [NSString stringWithUTF8String:(const char*)str]];
+    vitalSignArray[2 * ilogb(sign)]     = [NSString stringWithFormat:@"%d:%@",      ilogb(sign), [NSString stringWithUTF8String:(const char*)str]];
+    vitalSignArray[2 * ilogb(sign) + 1] = [NSString stringWithFormat:@"%d-qual:%d", ilogb(sign), qual];
 }
 
-void ios_finishVitalSign(BOOL success) {
+void ios_finishVitalSign(bool success) {
     ios_passVitalSign(success, 0, SUCCESS_CODE);
-    pasteboard.strings = signVitalArray;
-    [signVitalArray release];
+    pasteboard.strings = vitalSignArray;
+    [vitalSignArray release];
     if (alertViewDelegate) [alertViewDelegate release];
     openURL(sourceBundleID, YES);
 }
@@ -142,7 +143,8 @@ void ios_registerVitalSign(int providerSign) {
     sign  = getPasteboardVal(@"sign").intValue;
     state = getPasteboardVal(@"state").intValue;
     if (((unsigned int) sign & (unsigned int) providerSign) < (unsigned int) sign) {
-        showAlert([NSString stringWithFormat:@"Requested vital sign %d is not supported.", sign], @"", YES);
+        alertViewDelegate = [AlertViewCancelDelegate new];
+        showAlert([NSString stringWithFormat:@"Requested vital sign %d is not supported.", sign], @"");
     }
 }
 
@@ -160,8 +162,7 @@ void ios_requestVitalSign(int sign) {
     if (!openURL(getURLScheme(sign), NO)) {
         showAlert(
             [NSString stringWithFormat:@"No app providing sign %d found on device.", sign], 
-            [NSString stringWithFormat:@"Ensure that you have an app that can handle the URL scheme \"%@\".", getURLScheme(sign)],
-        NO);
+            [NSString stringWithFormat:@"Ensure that you have an app that can handle the URL scheme \"%@\".", getURLScheme(sign)]);
     }
 }
 

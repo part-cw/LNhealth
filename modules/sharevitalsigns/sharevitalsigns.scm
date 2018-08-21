@@ -39,6 +39,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; ShareVitalSigns module
 (c-declare  #<<end-of-c-declare
 
+#include <stdbool.h>
+
 #ifdef ANDROID
   void android_passVitalSign(float value, int qual, int sign);
   void android_passVitalSignString(char* str, int qual, int sign);
@@ -58,7 +60,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef IOS
   void ios_passVitalSign(float value, int qual, int sign);
   void ios_passVitalSignString(char* str, int qual, int sign);
-  void ios_finishVitalSign(int);
+  void ios_finishVitalSign(bool success);
   int  ios_getVitalSign(void);
   int  ios_getExtraState(void);
   void ios_registerVitalSign(int sign);
@@ -107,7 +109,7 @@ void svs_finish(void){
  android_finishVitalSign();
 #endif
 #ifdef IOS
-  ios_finishVitalSign(1);
+  ios_finishVitalSign(true);
 #endif
 }
 
@@ -183,7 +185,7 @@ void svs_cancel(){
   android_cancel();
 #endif
 #ifdef IOS
-  ios_finishVitalSign(0);
+  ios_finishVitalSign(false);
 #endif IOS
 }
 
