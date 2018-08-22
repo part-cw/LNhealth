@@ -47,11 +47,12 @@ static NSString *const svsRRATE  = @"svs-rrate";
 
 static NSString *const pasteboardName = @"svsPasteboard";
 
-// dynamically-allocated variables (need to be freed)
-NSMutableDictionary *vitalSignDict;
-NSString *sourceBundleID;
+// dynamically-allocated variables (need to be released)
+NSMutableDictionary *vitalSignDict = nil;
+NSString *sourceBundleID = nil;
 AlertViewCancelDelegate *alertViewDelegate = nil;
 
+// extras
 int sign  = 0;
 int state = 0;
 
