@@ -218,6 +218,14 @@ end-of-c-declare
 (c-define-type SVS_SIGN int)
 (c-define-type SVS_STATE int)
 
+(define (svs:get-xarg key xargs default)
+  (let loop ((xs xargs))
+    (if (fx= (length xs) 0)
+      default
+      (if (equal? key (car xs))
+        (cadr xs)
+        (loop (cdr xs))))))
+
 ;; Send a result of measured vital sign to the android runtime so it can be shared to other apps
 ;; Example: (svs-pass-vitalsign 120 100 VITALSIGN_HR) would send a hr of 120 with 100% confidence
 (define svs-pass-vitalsign (c-lambda (SVS_VALUE SVS_QUALITY SVS_VITAL) void "svs_pass_vitalsign"))
@@ -249,9 +257,11 @@ end-of-c-declare
 ;; Send an intent to request a given vitalsign
 (define svs-request-vitalsign (c-lambda (SVS_SIGN) void "svs_request_vitalsign"))
 
-;; Add extras to Android intent
+;; Add extras to be sent
 ;; SVS_STATE: VITALSIGN_STATE_NEW (reset provider to initial state) | VITALSIGN_STATE_RESUME (resume provider app without erasing data)
-(define svs-add-extras (c-lambda (SVS_STATE) void "svs_add_extras"))
+(define (svs-add-extras . xargs)
+  (let ((state (svs:get-xarg 'state xargs 0)))
+    ((c-lambda (SVS_STATE) void "svs_add_extras") state)))
 
 ;; Retrieve requested vitalsign
 ;; Returns -1 if unsuccessful, 0 if in progress
