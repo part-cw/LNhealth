@@ -64,6 +64,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   void ios_finishVitalSign(bool success);
   int  ios_getVitalSign(void);
   int  ios_getExtraState(void);
+  void ios_showConfirmationDialog(char* msg_message, char* msg_ok, char* msg_cancel);
   void ios_registerVitalSign(int sign);
   void ios_requestVitalSign(int sign);
   void ios_addExtras(int state);
@@ -103,6 +104,9 @@ void svs_add_extras(int state) {
 void svs_confirmationdialog(char* msg_message, char* msg_ok, char* msg_cancel){
 #ifdef ANDROID
  android_showConfirmationDialog(msg_message, msg_ok, msg_cancel);
+#endif
+#ifdef IOS
+  ios_showConfirmationDialog(msg_message, msg_ok, msg_cancel);
 #endif
 }
 
