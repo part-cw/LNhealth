@@ -196,6 +196,19 @@ const char* ios_retrieveVitalSignString(int sign) {
     }
 }
 
+int ios_retrieveVitalSignQuality(int sign) {
+    NSDictionary *dict = getDictionaryFromPasteboard(pasteboardName);
+    NSNumber *success = dict[SUCCESS];
+    if (!success) {
+        return 0;
+    } else if (!success.intValue) {
+        return -1;
+    } else {
+        NSNumber *vital = dict[getQualKey(sign)];
+        return vital ? vital.intValue : -1;
+    }
+}
+
 void ios_retrieveVitalSignStringRelease(void) {
     if (vitalString) [vitalString release];
 }

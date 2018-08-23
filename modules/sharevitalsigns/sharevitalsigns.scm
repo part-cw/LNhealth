@@ -55,6 +55,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   int  android_retrieveVitalSign(int sign);
   const char* android_retrieveVitalSignString(int sign);
   void android_retrieveVitalSignStringRelease(void);
+  int  android_retrieveVitalSignQuality(int sign);
 #endif
 
 #ifdef IOS
@@ -69,6 +70,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   int  ios_retrieveVitalSign(int sign);
   const char* ios_retrieveVitalSignString(int sign);
   void ios_retrieveVitalSignStringRelease(void);
+  int  ios_retrieveVitalSignQuality(int sign);
 #endif
 
 void svs_pass_vitalsign(float value, int qual, int sign) {
@@ -180,13 +182,23 @@ void svs_retrieve_vitalsign_string_release(){
 #endif
 }
 
+int svs_retrieve_vitalsign_quality(int sign){
+#ifdef ANDROID
+  return android_retrieveVitalSignQuality(sign);
+#endif
+#ifdef IOS
+  return ios_retrieveVitalSignQuality(sign);
+#endif
+  return -1;
+}
+
 void svs_cancel(){
 #ifdef ANDROID
   android_cancel();
 #endif
 #ifdef IOS
   ios_finishVitalSign(false);
-#endif IOS
+#endif
 }
 
 
@@ -273,5 +285,9 @@ end-of-c-declare
   (let ((str ((c-lambda (SVS_SIGN) char-string "svs_retrieve_vitalsign_string") sign)))
     ((c-lambda () void "svs_retrieve_vitalsign_string_release"))
     str))
+
+;; Retrieve quality measure of requested vitalsign
+;; Returns -1 if unsuccessful, 0 if in progress
+(define svs-retrieve-vitalsign-quality (c-lambda (SVS_SIGN) int "svs_retrieve_vitalsign_quality"))
 
 ;;eof

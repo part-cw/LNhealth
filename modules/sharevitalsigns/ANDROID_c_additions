@@ -91,6 +91,19 @@ void android_retrieveVitalSignStringRelease() {
   }
 }
 
+int android_retrieveVitalSignQuality(int sign){
+  JNIEnv *env = GetJNIEnv();
+  static int contype=1;
+
+  if (env&&globalObj){
+    jclass cls = (*env)->GetObjectClass(env, globalObj);
+    jmethodID method = (*env)->GetMethodID(env, cls, "retrieveRequestedVitalSignQuality", "(I)I");
+    contype = (*env)->CallIntMethod(env, globalObj, method, sign);
+    return contype;
+  }
+  return contype;
+}
+
 void android_finishVitalSign(){
   JNIEnv *env = GetJNIEnv();
   if (env&&globalObj){

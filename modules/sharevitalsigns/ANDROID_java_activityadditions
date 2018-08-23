@@ -108,6 +108,15 @@ private String retrieveRequestedVitalSignString(int sign) {
   }
 }
 
+private int retrieveRequestedVitalSignQuality(int sign) {
+  if (rSharevitals != null) {
+    final int result = (int) rSharevitals.svsData.getResultCIndex(sign);
+    return result;
+  } else {
+    return -1;
+  }
+}
+
 private void jConfirmationDialog(String msg, String ok, String cancel) {
   final String msg_message=msg;
   final String msg_ok=ok;
