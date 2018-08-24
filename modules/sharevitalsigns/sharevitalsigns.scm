@@ -271,13 +271,12 @@ end-of-c-declare
 (define svs-register-vitalsign (c-lambda (SVS_SIGN) void "svs_register_vitalsign"))
 
 ;; Send an intent to request a given vitalsign
-(define svs-request-vitalsign (c-lambda (SVS_SIGN) void "svs_request_vitalsign"))
-
-;; Add extras to be sent
+;; xargs contain extras to be sent in the form (list 'key1 val1 ...)
 ;; SVS_STATE: VITALSIGN_STATE_NEW (reset provider to initial state) | VITALSIGN_STATE_RESUME (resume provider app without erasing data)
-(define (svs-add-extras . xargs)
+(define (svs-request-vitalsign sign . xargs)
   (let ((state (svs:get-xarg 'state xargs 0)))
-    ((c-lambda (SVS_STATE) void "svs_add_extras") state)))
+      ((c-lambda (SVS_STATE) void "svs_add_extras") state))
+  ((c-lambda (SVS_SIGN) void "svs_request_vitalsign") sign))
 
 ;; Retrieve requested vitalsign
 ;; Returns -1 if unsuccessful, 0 if in progress
