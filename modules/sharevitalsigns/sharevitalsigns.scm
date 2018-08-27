@@ -215,7 +215,9 @@ end-of-c-declare
 (define VITALSIGN_SPO2 4)
 (define VITALSIGN_TEMP 8)
 (define VITALSIGN_RRTAPS 64)
+(define VITALSIGN_POFILES 128)
 (define VITALSIGN_PO (bitwise-ior VITALSIGN_HR VITALSIGN_SPO2))
+(define VITALSIGN_POWITHFILES (bitwise-ior VITALSIGN_PO VITALSIGN_POFILES))
 (define VITALSIGN_RRATE (bitwise-ior VITALSIGN_RR VITALSIGN_RRTAPS))
 
 ;; Vital Sign state definitions. These should match the definitions of the android library

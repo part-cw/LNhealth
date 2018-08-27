@@ -35,22 +35,26 @@ typedef enum {
     BPSYS     = 16,
     BPDIA     = 32,
     RRTAPS    = 64,
+    POFILES   = 128,
     BP        = BPSYS | BPDIA,
     PO        = HR    | SPO2,
-    RRATE     = RR    | RRTAPS
+    RRATE     = RR    | RRTAPS,
+    POWITHFILES = PO  | POFILES
 } VitalSignCode;
 
 // vital sign URL schemes
-static NSString *const svsHR     = @"svs-hr";
-static NSString *const svsRR     = @"svs-rr";
-static NSString *const svsSPO2   = @"svs-spo2";
-static NSString *const svsTEMP   = @"svs-temp";
-static NSString *const svsBPSYS  = @"svs-bpsys";
-static NSString *const svsBPDIA  = @"svs-bpdia";
-static NSString *const svsRRTAPS = @"svs-rrtaps";
-static NSString *const svsBP     = @"svs-bp";
-static NSString *const svsPO     = @"svs-po";
-static NSString *const svsRRATE  = @"svs-rrate";
+static NSString *const svsHR      = @"svs-hr";
+static NSString *const svsRR      = @"svs-rr";
+static NSString *const svsSPO2    = @"svs-spo2";
+static NSString *const svsTEMP    = @"svs-temp";
+static NSString *const svsBPSYS   = @"svs-bpsys";
+static NSString *const svsBPDIA   = @"svs-bpdia";
+static NSString *const svsRRTAPS  = @"svs-rrtaps";
+static NSString *const svsPOFILES = @"svs-pofiles";
+static NSString *const svsBP      = @"svs-bp";
+static NSString *const svsPO      = @"svs-po";
+static NSString *const svsRRATE   = @"svs-rrate";
+static NSString *const svsPOWITHFILES  = @"svs-powithfiles";
 
 // other constants
 static NSString *const SIGN    = @"sign";
@@ -72,17 +76,18 @@ int state = 0;
 
 NSString* getURLScheme(VitalSignCode sign) {
     switch (sign) {
-        case HR:     return svsHR;
-        case RR:     return svsRR;
-        case SPO2:   return svsSPO2;
-        case TEMP:   return svsTEMP;
-        case BPSYS:  return svsBPSYS;
-        case BPDIA:  return svsBPDIA;
-        case RRTAPS: return svsRRTAPS;
-        case BP:     return svsBP;
-        case PO:     return svsPO;
-        case RRATE:  return svsRRATE;
-        default:     return nil;
+        case HR:      return svsHR;
+        case RR:      return svsRR;
+        case SPO2:    return svsSPO2;
+        case TEMP:    return svsTEMP;
+        case BPSYS:   return svsBPSYS;
+        case BPDIA:   return svsBPDIA;
+        case RRTAPS:  return svsRRTAPS;
+        case BP:      return svsBP;
+        case PO:      return svsPO;
+        case RRATE:   return svsRRATE;
+        case POFILES: return svsPOFILES;
+        default:      return nil;
     }
 }
 
