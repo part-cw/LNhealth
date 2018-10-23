@@ -51,7 +51,7 @@
   "Cdyn" "Rdyn" "VCO2" "VO2" "VO2kg"
   "sTV" "sRRaw" "sIE" "sPltTi" "sPEEP" "sPmax" "sPin" "sfgO2"
   "sΔPEEP" "sAADel" "sTrgFl" "sTrgLv" "sEndFl" "sInsTi" "sSIMV" "sPSVbd" "sfgFl" "sAGT"))
-(define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "ISO" "SEV" "DES" "CO2"))
+(define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "ISO" "SEV" "DES"))
 
 (define ivue:demographics '("location" "location_connect" "mac"
   "patient_given_name" "patient_middle_name" "patient_family_name" "patient_id" "patient_encounter_id"
