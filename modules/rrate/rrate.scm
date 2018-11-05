@@ -999,7 +999,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                   time
                   (time->seconds (current-time))))
          (count (length rrate:times))
-         (taplimit (settings-ref "Taps" 4))
+         (taplimit (settings-ref "Taps" 5))
          (playbreath #t))
     (set! rrate:times (append rrate:times (list now)))
 
@@ -1028,7 +1028,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
              ;; Determine median interval
              (medinterval (median tapintervals))
              ;; Get current consistency threshold percentage and determine percent of median
-             (consistency (/ (settings-ref "Consistency" 12) 100))
+             (consistency (/ (settings-ref "Consistency" 13) 100))
              (percthreshold (* medinterval consistency))
              (yscale (/ 9.5 percthreshold)))
 
@@ -1815,7 +1815,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                  (if (fx> (length ts) 1)
                    (loop (cdr ts) (append diffs (list (- (cadr ts) (car ts)))))
                    ;; At the end of the loop, compute median interval and determine scale from this
-                   (let ((consistency (/ (settings-ref "Consistency" 12) 100)))
+                   (let ((consistency (/ (settings-ref "Consistency" 13) 100)))
                      (set! rrate:calc:medinterval (median diffs))
                      (set! rrate:calc:yscale (/ 9.5 (* rrate:calc:medinterval consistency))))))
                ;; If less than 2 taps, just set median to 60 seconds
