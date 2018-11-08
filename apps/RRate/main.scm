@@ -1,6 +1,6 @@
 #|
 lnHealth - Health related apps for the LambdaNative framework
-Copyright (c) 2009-2015, University of British Columbia
+Copyright (c) 2009-2018, University of British Columbia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -53,10 +53,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 )
 
 (define (rrate-sendvitalsign)
-  (let ((hasrr (and rrate:calc:medinterval rrate:svsmode:rr))
+  (let ((hasrr (and rrate:rate rrate:svsmode:rr))
         (hasrrtaps (and rrate:times rrate:svsmode:rrtaps)))
     (if hasrr
-        (svs-pass-vitalsign (round (/ 60. rrate:calc:medinterval)) 100 VITALSIGN_RR))
+        (svs-pass-vitalsign (round rrate:rate) 100 VITALSIGN_RR))
     (if hasrrtaps
         (svs-pass-vitalsign-string (taptimes->string rrate:times) 100 VITALSIGN_RRTAPS))
     (if (or hasrr hasrrtaps) (svs-finish)))
@@ -80,7 +80,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      (glgui-menubar gui 0 (- h 44) w 44)
      (glgui-pixmap gui 8 (- h 32) RRATE.img)
      (glgui-widget-set! gui (glgui-label-wrapped gui 120 (- h 44) 200 39 
-       (string-append "RRate " (system-appversion) "\nCopyright \302\251 2017\nUniversity of British Columbia") sans_10.fnt White)
+       (string-append "RRate " (system-appversion) "\nCopyright \302\251 2018\nUniversity of British Columbia") sans_10.fnt White)
        'align GUI_ALIGNRIGHT)
 
      ;; Use the rrate module with no store (no saving data),

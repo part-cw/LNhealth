@@ -37,8 +37,8 @@ M,M,M,M,አ,M,M,M,M,M,M
 M_mC,M - C,M - C,M - C,አ-ተ,M - C,M - C,M - C,M - C,M - R,M - C
 REDCAP,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap,REDCap
 HOST,Host:,Host:,Host:,Host:,Host:,Servidor:,Host:,Host:,Hôte :,Host:
-URL,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,Addresse URL:,URL:
-TOKEN,API Token:,API Token:,API Token:,API Token:,API Token:,Token de API:,API Token:,API Token:,Clé d'API :,Sinal de API:
+URL,URL:,URL:,URL:,URL:,URL:,URL:,URL:,URL:,Adresse URL:,URL:
+TOKEN,API Token:,API Token:,API Token:,API Token:,API Token:,Token de API:,API Token:,API Token:,Clé API :,Sinal de API:
 FORM,Instrument:,Instrument:,Instrument:,Instrument:,Instrument:,Instrumento:,Instrument:,Instrument:,Instrument :,Instrumento:
 EVENT,Event:,Event:,Event:,Event:,Event:,Evento:,Event:,Event:,Événement :,Evento:
 UPLOAD,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Upload to REDCap,Subir a REDCap,Upload to REDCap,Upload to REDCap,Télécharger vers REDCap,Recobro para REDCap
@@ -47,7 +47,7 @@ REDCAP_USE?,Save data for upload to REDCap?,Save data for upload to REDCap?,Save
 LONGITUDINAL?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,Longitudinal project?,¿El proyecto es longitudinal?,Longitudinal project?,Longitudinal project?,Projet longitudinale ?,Coleta de dados longitudinais?
 REP_EVENTS?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,Repeatable events?,¿Los eventos son repetibles?,Repeatable events?,Repeatable events?,Événements répétables ?,Eventos repetivel?
 REP_FORMS?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,Repeatable instruments?,¿Los instrumentos son repetibles?,Repeatable instruments?,Repeatable instruments?,Instruments répétables ?,Instrumentos repetivel?
-UPLOAD_SAVE?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,¿Subir todos los datos al guardar?,Upload all on save?,Upload all on save?,Télécharger tout à la sauvegarde ?,Recobro tudo quanda guardar?
+UPLOAD_SAVE?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,Upload all on save?,¿Subir todos los datos al guardar?,Upload all on save?,Upload all on save?,Télécharger tout à la sauvegarde ?,Recobro tudo quanda guardou
 BACK,Back,Back,Back,Back,Back,Atras,Back,Back,Retour,Retornar
 SAVE,Save,Save,Save,Save,Save,Guardar,Save,Save,Sauvegarder,Guardar
 UPLOAD_SIMPLE,Upload,Upload,Upload,Upload,Upload,Subir,Upload,Upload,Télécharger,Recobro

@@ -1,6 +1,6 @@
 #|
 lnHealth - Health related apps for the LambdaNative framework
-Copyright (c) 2009-2015, University of British Columbia
+Copyright (c) 2009-2018, University of British Columbia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -604,50 +604,48 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;  followed by standard callback arguments
 ;; Returns a checkbox-struct
 ;; For the moment, font is fixed at text_14.fnt and checkbox dimensions are fixed accordingly
-(define-structure checkbox-struct outer inner button label)
+(define-structure checkbox-struct outer inner button label trigger)
 
 (define (checkbox g x y w label callback)
-  (letrec  ((d 17) (b 1)
+  (let*  ((d 17) (b 1)
             (d:inner (- d (* 2 b)))
             (padding (* 3 b))
             (d:button (- d (* 2 padding)))
             (lbwgt (glgui-label-local g (+ x d 4) y (- w d 4) d label text_14.fnt Black))
             (outer (glgui-box g x y d d Black))
             (inner (glgui-box g (+ x b) (+ y b) d:inner d:inner White))
+            (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt #f))
             (cb (lambda (g . xargs)
                    (let* ((newvalue (if (= 0 (glgui-widget-get g checkbutton 'value)) 1 0))
                           (checked? (= 1 newvalue)))
                       (checkbox-checked-set! g checkbutton checked?)
                       (if (procedure? callback) (apply callback (append (list label checked? g checkbutton) xargs))))))
-            (checkbutton (glgui-button-string g (+ x padding) (+ y padding) d:button d:button "" text_14.fnt cb)))
-    (glgui-widget-set! g outer 'callback cb)
-    (glgui-widget-set! g inner 'callback cb)
+            (invistrigger (glgui-box g x y w d (color-fade White 0.))))
     (glgui-widget-set! g lbwgt 'tag label)
-    (glgui-widget-set! g lbwgt 'enableinput #t)
-    (glgui-widget-set! g lbwgt 'onfocuscb
-      (lambda (g wgt . xargs)
-        (cb g)
-        (glgui-widget-set! g wgt 'focus #f)))
+    (glgui-widget-set! g invistrigger 'callback cb)
     (glgui-widget-set! g checkbutton 'solid-color #t)
     (glgui-widget-set! g checkbutton 'rounded #f)
     (checkbox-checked-set! g checkbutton (settings-ref label))
-    (make-checkbox-struct outer inner checkbutton lbwgt)))
+    (make-checkbox-struct outer inner checkbutton lbwgt invistrigger)))
 
 (define (checkbox-struct-hidden-set! g s b)
   (glgui-widget-set! g (checkbox-struct-outer  s) 'hidden b)
   (glgui-widget-set! g (checkbox-struct-inner  s) 'hidden b)
   (glgui-widget-set! g (checkbox-struct-button s) 'hidden b)
-  (glgui-widget-set! g (checkbox-struct-label  s) 'hidden b))
+  (glgui-widget-set! g (checkbox-struct-label  s) 'hidden b)
+  (glgui-widget-set! g (checkbox-struct-trigger  s) 'hidden b))
 
 (define (checkbox-struct-y-shift! g s shift)
   (let ((outer  (checkbox-struct-outer  s))
         (inner  (checkbox-struct-inner  s))
         (button (checkbox-struct-button s))
-        (label  (checkbox-struct-label  s)))
+        (label  (checkbox-struct-label  s))
+        (trigger  (checkbox-struct-trigger  s)))
     (widget-y-shift! g outer  shift)
     (widget-y-shift! g inner  shift)
     (widget-y-shift! g button shift)
-    (widget-y-shift! g label  shift)))
+    (widget-y-shift! g label  shift)
+    (widget-y-shift! g trigger  shift)))
 
 (define (checkbox-checked-set! g c b)
   (let ((newcolour (if b Black White)))
