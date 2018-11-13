@@ -1,0 +1,11 @@
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLName</key>
+        <string>@SYS_PACKAGE_DOT@</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>@SYS_PACKAGE_DOT@</string>
+        </array>
+    </dict>
+</array>
