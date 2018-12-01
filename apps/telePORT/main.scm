@@ -1,5 +1,42 @@
+#|
+lnHealth - Health related apps for the LambdaNative framework
+Copyright (c) 2009-2018, University of British Columbia
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the
+following conditions are met:
+
+* Redistributions of source code must retain the above
+copyright notice, this list of conditions and the following
+disclaimer.
+
+* Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials
+provided with the distribution.
+
+* Neither the name of the University of British Columbia nor
+the names of its contributors may be used to endorse or
+promote products derived from this software without specific
+prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+|#
+
 ;; telePORT [formerly known as iFishAA]
-;; Matthias Görges 2011-2013
 (define voip:enabled #f) ;; Disable until stable
 
 ;; -----------------------------------------------------------------------------
@@ -14,9 +51,9 @@
 
 ;; Labels for Short Messages
 (define message-texts (list "Can you help?" "Thanks"
-			    "Are you okay?" "I'm okay" 
-			    "Had lunch?" "Food in Lounge" 
-			    "I'm leaving" "Go home" 
+			    "Are you okay?" "I'm okay"
+			    "Had lunch?" "Food in Lounge"
+			    "I'm leaving" "Go home"
 			    "Meet in Storage" "Meet in Office"
 			    "Yes" "No"))
 
@@ -44,7 +81,7 @@
 (define MODE_SETUP 98)
 (define mode MODE_LOGIN)
 
-; RUPI settings 
+; RUPI settings
 (define hostname-file (string-append (system-directory) (system-pathseparator) "server"))
 (define rupi:port 8080)
 (define rupi:hostname "bcch.ece.ubc.ca") ;; This is the default hostname
@@ -99,8 +136,8 @@
   (let ((x (- (glgui-width-get) 90))(y 45))
     (glgui-label gui:login x (+ y 18) 85 16 (string-append "Version: " (system-appversion)) ascii_16.fnt DarkGray)
     (glgui-label gui:login x y 85 16 (system-builddate) ascii_16.fnt DarkGray)
-  )    
-  
+  )
+
   ;; Message and *s as response
   (set! login-text (glgui-label gui:login 50 (- (glgui-height-get) (if (screen-height-tall?) 170 150)) 250 25 "Please enter your pin:" ascii_24.fnt White))
   (set! login-pin (glgui-label gui:login 50 (- (glgui-height-get) (if (screen-height-tall?) 200 175)) 250 25 "" ascii_24.fnt Green))
@@ -169,7 +206,7 @@
               (store-set! store "AlertMessages" (expire-messages (caddr success) gui:alert-max-age)) ;; and we also keep the list of already answered things
               (store-set! store "Reminders" (cadddr success)) ;; and also keep the old reminders
               (if (= (length success) 5) ;; added here as to not break compatibility of old clients
-                (store-set! store "ChatMessages" (expire-messages (list-ref success 4) gui:chat-max-age)) 
+                (store-set! store "ChatMessages" (expire-messages (list-ref success 4) gui:chat-max-age))
               )
               (init-gui-messaging)
               (init-gui-alert)
@@ -182,7 +219,7 @@
               (init-gui-phonebook)
               (init-server-communication store) ;;Moved before the overview, reminder-setup so we can initialize values
               (init-gui-overview)
-              (init-gui-waves)    
+              (init-gui-waves)
               (init-gui-waves-landscape)
               (init-gui-trends)
               (init-gui-reminder-setup)
@@ -210,7 +247,7 @@
                 (glgui-widget-set! gui:popup popup-box 'callback #f)
                 (store-set! store "popup-text" (list "BAD PIN" "Please enter a correct pin. (Contact Matthias [mgorges@cw.bc.ca] if you need one.)"))
                 (show-popup)
-                (store-set! store "Key" "") 
+                (store-set! store "Key" "")
               )
             )
           )
@@ -229,7 +266,7 @@
 ;;  OVERVIEW SCREEN RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
 ;; Initialize the overview gui parts
-(define gui:overview #f)	
+(define gui:overview #f)
 (define (init-gui-overview)
     (set! gui:overview (make-glgui))
 
@@ -249,7 +286,7 @@
     )
 )
 
-;;function to write header of the overview screen list 
+;;function to write header of the overview screen list
 (define (header-row g x y)
     ;; Place Location and Phase labels
     (glgui-pixmap g (+ x 5) y location.img)
@@ -277,7 +314,7 @@
 	   (popup-color (priority-color-get highest-priority-value)))
 
       ;; Place the correct OR label
-      (glgui:draw-text-left (+ x 3) y_shift 82 24 or-name ascii_24.fnt 
+      (glgui:draw-text-left (+ x 3) y_shift 82 24 or-name ascii_24.fnt
 	(if (= number-of-messages 0) White (if (>= highest-priority-value 0) popup-color White)))
 
       ;; Put correct phase icon
@@ -292,7 +329,7 @@
       (let ((hr-val (store-ref or-name "hr"))
 	    (hr-src (store-ref or-name "hr_source"))
 	  )
-	(if hr-val (glgui:draw-text-right (+ x 143) y_shift 37 24 (number->string (fix hr-val)) num_24.fnt (if hr-src (cond 
+	(if hr-val (glgui:draw-text-right (+ x 143) y_shift 37 24 (number->string (fix hr-val)) num_24.fnt (if hr-src (cond
 		((string=? hr-src hr-str-s5) Green)((string=? hr-src spo2-str-s5) White)((string=? hr-src "BP1") Red)(else DarkGray)) Green)))
       )
 
@@ -325,7 +362,7 @@
       (let loop ((i 0) (result (list)))
         ;;If we reached length, we return the result
         (if (= i (length rooms)) result
-	   ;; this is the else case, which appends the list with another element 
+	   ;; this is the else case, which appends the list with another element
 	   (loop (+ i 1)(append result (list (numeric-list-element (list-ref rooms i)))))
         )
       )
@@ -392,7 +429,7 @@
 ;;  MESSAGING SCREEN RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
 ;; Initialize the messaging gui parts
-(define gui:messaging #f)	
+(define gui:messaging #f)
 (define gui:messaging-quicktext #f)
 (define gui:paging-response #f)
 (define (init-gui-messaging)
@@ -412,7 +449,7 @@
     )
     ;; Bottom row with secondary navigation buttons
     (set! compose-button
-      (glgui-button-string gui:messaging 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Compose New Message" ascii_24.fnt compose-button-callback)	
+      (glgui-button-string gui:messaging 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Compose New Message" ascii_24.fnt compose-button-callback)
     )
   )
 )
@@ -428,7 +465,7 @@
   (let ((alerts (store-ref "main" "AlertMessages")))
     (if (list-notempty? alerts)
       (let loop ((i 0) (result (list)))
-        (if (= i (length alerts)) 
+        (if (= i (length alerts))
           result
           (loop (+ i 1)(append result (list (alert-list-row (list-ref alerts i)))))
         )
@@ -445,17 +482,17 @@
     (define y_shift (+ y (/ (- h 24) 2)))
     ;;Color the box background in alarm color if such a message was received
     (let ((priority (list-ref alert 3)))
-      (if (not (= priority 0)) (glgui:draw-box x y 75 h (priority-color-get priority)))	
+      (if (not (= priority 0)) (glgui:draw-box x y 75 h (priority-color-get priority)))
     )
     ;;Add the Source name
     (set! source (glgui:draw-text-left (+ x 5) y_shift 70 24 (list-ref alert 1)  ascii_16.fnt White))
-    
+
     ;;Add received time
     (let ((time (- (store-ref "main" "LastUpdateTime") (list-ref alert 0))))
       (if (and time (> time 30))
 	(begin
-	  (glgui:draw-text-left (+ x 265) (+ y 3 16) 90 16 (string-append 
-	    (cond 
+	  (glgui:draw-text-left (+ x 265) (+ y 3 16) 90 16 (string-append
+	    (cond
 	      ((< time 60) (string-append (number->string (fix time)) "sec")) ;;Jonathan didn't like this
 	      ((and (> time 60) (< time 3600)) (string-append (number->string (fix (/ time 60))) "min"))
 	      ((and (> time 3600) (< time 86400)) (string-append (number->string (fix (/ time 3600))) "hr"))
@@ -466,9 +503,9 @@
       )
     )
     ;; This is if a message is replied to
-    (if (list-ref alert 4)	
+    (if (list-ref alert 4)
       (begin
-        (if (> (string-length (list-ref alert 4)) 0) 
+        (if (> (string-length (list-ref alert 4)) 0)
           (glgui:draw-pixmap-left (+ x 75 2) (- y_shift 7) 23 14 reply-arrow.img LightGray)
         )
         (set! reply (glgui:draw-text-left (+ x 75 2 25) (- y_shift 7) 150 16 (list-ref alert 4) ascii_16.fnt LightGray))
@@ -506,7 +543,7 @@
             (let ((str (list-ref alert 2)))
               (if (and (= (string-length str) 15) (string=? (substring str 0 15) "Transfer rooms?"))
                 (glgui-widget-set! gui:alert response-detail 'label "Could you cover my rooms?")
-                (glgui-widget-set! gui:alert response-detail 'label 
+                (glgui-widget-set! gui:alert response-detail 'label
                   (string-append "Please come to " src (if (or (= prio 2) (= prio -8)) " soon." " now!")))
               )
             )
@@ -551,7 +588,7 @@
         ;; Quickly log which message button was used [No logging of messages locally! - unsecure]
         ;; (log-remote (string-append "Message: " reply))
         ;; Send actual message (and replace all colons so we don't choke on them).
-        (rupi-cmd (store-ref "main" "RupiClient" #f) "SENDMESSAGE" (store-ref "main" "Key" #f) destination 
+        (rupi-cmd (store-ref "main" "RupiClient" #f) "SENDMESSAGE" (store-ref "main" "Key" #f) destination
           (string-replace-char reply #\: #\.))
         ;; Add message to chat store
         (store-set! "main" "ChatMessages" (append
@@ -570,16 +607,16 @@
            (destination (cadr (list-ref alerts selected-alert-number))))
       ;; Quickly log which message button was used [No logging of messages locally! - unsecure]
       ;; (log-remote (string-append "Message: " reply))
-      ;;REPLY: Reset the priority of the replied to message to (VAL-10) to make color darker 
+      ;;REPLY: Reset the priority of the replied to message to (VAL-10) to make color darker
       (alert-markseen selected-alert-number reply)
 
       ;; Check if this was a room transfer
       (let ((str (caddr (list-ref alerts selected-alert-number))))
         (if (string=? str "Transfer rooms?")
-          ;; Was a room transfer so deal with it 
+          ;; Was a room transfer so deal with it
           (let ((rc (store-ref "main" "RupiClient" #f))
                 (key (store-ref "main" "Key" #f)))
-            (rupi-cmd rc "SENDMESSAGE" key destination 
+            (rupi-cmd rc "SENDMESSAGE" key destination
               (if (char=? (string-ref reply 0) #\I) "Transfer rejected" "Transfer accepted"))
             ;; If I take the rooms
             (if (char=? (string-ref reply 0) #\O)
@@ -591,13 +628,13 @@
             )
           )
           ;;Just a message that needs replying to
-          (rupi-cmd (store-ref "main" "RupiClient" #f) "SENDMESSAGE" (store-ref "main" "Key" #f) destination 
+          (rupi-cmd (store-ref "main" "RupiClient" #f) "SENDMESSAGE" (store-ref "main" "Key" #f) destination
             (list reply (car (list-ref alerts selected-alert-number)))
           )
         )
       )
       ;;Needed otherwise new text doesn't show immediately
-      (glgui-widget-set! gui:messaging alert-list 'list (build-alert-list)) 
+      (glgui-widget-set! gui:messaging alert-list 'list (build-alert-list))
       ;; Finally, go back to messaging screen
       (log-remote "Screen: Messaging")
       (set! mode MODE_MESSAGING)
@@ -620,14 +657,14 @@
   )
 )
 
-;; Returns the row number of the message with the highest priority 
+;; Returns the row number of the message with the highest priority
 (define (highest-priority-message-row-get location)
   (let ((messages (store-ref "main" "AlertMessages")))
     (if (list-notempty? messages)
       (let loop ((i (- (length messages) 1)) (result (list -10 0)))
 	(if (< i 0) (list-ref result 1)
-	  (loop (- i 1)(let ((row (list-ref messages i))) 
-			(if (string=? (list-ref row 1) location) 
+	  (loop (- i 1)(let ((row (list-ref messages i)))
+			(if (string=? (list-ref row 1) location)
 			  (if (> (list-ref row 3) (list-ref result 0)) (list (list-ref row 3) i) result)
 			  result
 			)
@@ -646,8 +683,8 @@
     (if (list-notempty? messages)
       (let loop ((i (- (length messages) 1)) (result -10))
 	(if (< i 0) result
-	  (loop (- i 1)(if (string=? (list-ref (list-ref messages i) 1) location) 
-			(let ((row (list-ref messages i))) 
+	  (loop (- i 1)(if (string=? (list-ref (list-ref messages i) 1) location)
+			(let ((row (list-ref messages i)))
 			  (if (> (list-ref row 3) result) (list-ref row 3) result)
 			)
 			result
@@ -661,7 +698,7 @@
 )
 
 ;; This function updates the message list with the new entries received from the server
-(define (store-update-messages data) 
+(define (store-update-messages data)
   (store-set! "main" "LastUpdateTime" (car data))
   (store-set! "main" "LastUpdateTimeLocal" ##now) ;; This is needed in case Apple thinks their time is not NTP time
   (glgui-widget-set! gui:menu clock 'label (seconds->string (car data) "%T"))
@@ -671,8 +708,8 @@
       (glgui-widget-set! gui:messaging alert-list 'list (build-alert-list))
       (glgui-widget-set! gui:messaging chat-user-list 'list (build-chat-user-list))
       ;; Make sure to show latest message
-      (glgui-widget-set! gui:messaging alert-list 'offset 0) 
-      (glgui-widget-set! gui:messaging chat-user-list 'offset 0) 
+      (glgui-widget-set! gui:messaging alert-list 'offset 0)
+      (glgui-widget-set! gui:messaging chat-user-list 'offset 0)
       ;; Also add popup if not already on messaging screen
       (let ((prio (caddr (car (cdr data)))))
         (if (not (or (fx= mode MODE_MESSAGING) (fx= prio 0)))
@@ -683,7 +720,7 @@
               ;; For chat screen check receiver first
               (if (string=? (cadar msgs) (store-ref "main" "ChatReceiver" ""))
                 ;; The chat message list needs updating
-                (begin 
+                (begin
                   (glgui-widget-set! gui:chat chat-list 'list (build-chat-list (store-ref "main" "ChatReceiver")))
                   (glgui-widget-set! gui:chat-landscape chat-list-landscape 'list (glgui-widget-get gui:chat chat-list 'list))
                 )
@@ -747,7 +784,7 @@
       ;; The message list order is: TIMESTAMP, SOURCE, MESSAGE_TEXT, PRIORITY
       (store-set! "main" "AlertMessages" (append
         (list (if (= (length str) 1)
-          (list time (car mid) (car str) prio #f)      
+          (list time (car mid) (car str) prio #f)
           (list time (car mid) (car str) prio #f (cadr str))
         ))
         (store-ref "main" "AlertMessages" '())
@@ -774,13 +811,13 @@
     ;;Text response part
     (set! response-string (glgui-label gui:alert x (- y 175) w 40 "" ascii_24.fnt White))
     (glgui-widget-set! gui:alert response-string 'align GUI_ALIGNCENTER)
-  
+
     (set! response-detail (glgui-label gui:alert x (- y 210) w 40 "" ascii_24.fnt White))
     (glgui-widget-set! gui:alert response-detail 'align GUI_ALIGNCENTER)
     (set! response-vitals (glgui-label gui:alert (+ x 5) (- y 255) (- w 10) 40 "" ascii_20.fnt White))
     (set! response-vitals2 (glgui-label gui:alert (+ x 5) (- y 255 20) (- w 10) 40 "" ascii_20.fnt White))
     (set! response-vitals3 (glgui-label gui:alert (+ x 5) (- y 255 20 20) (- w 10) 40 "" ascii_20.fnt White))
-    
+
     ;; Buttons on the bottom to accept, ignore or return to main screen
     (set! ignore-alert-screen-button
       (glgui-button-string gui:alert 10 (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Ignore" ascii_24.fnt reply-callback)
@@ -792,7 +829,7 @@
       (glgui-button-string gui:alert 10 (+ gui:navigation-height 10) (- w 20) 30 "Return to Messages" ascii_24.fnt return-message-screen-button-callback)
     )
     (set! clear-alert-screen-button
-      (glgui-button-string gui:alert (+ (/ w 2) 10) (+ gui:navigation-height 10 40) (- (/ w 2) 20) 30 "Remove/Clear" ascii_24.fnt clear-message-button-callback)	
+      (glgui-button-string gui:alert (+ (/ w 2) 10) (+ gui:navigation-height 10 40) (- (/ w 2) 20) 30 "Remove/Clear" ascii_24.fnt clear-message-button-callback)
     )
   )
 )
@@ -845,7 +882,7 @@
     ;; Pre-defined quick text messages
     (set! gui:messaging-quicktext (make-glgui))
     (init-message-quicktext gui:messaging-quicktext x y)
-    ;; Or alternatively freetext entry using a keyboard 
+    ;; Or alternatively freetext entry using a keyboard
     (set! gui:messaging-keyboard (make-glgui))
     (init-message-keyboard gui:messaging-keyboard x y)
   )
@@ -853,18 +890,18 @@
   ;; Bottom row with secondary navigation buttons
   (glgui-button-string gui:chat 10 3
     (- (/ (glgui-width-get) 2) 20) 30 "Back" ascii_24.fnt return-messaging-button-callback)
-  (set! chat-input-button (glgui-button-string gui:chat (+ (/ (glgui-width-get) 2) 10) 3 
+  (set! chat-input-button (glgui-button-string gui:chat (+ (/ (glgui-width-get) 2) 10) 3
     (- (/ (glgui-width-get) 2) 20) 30 "Quicktext" ascii_24.fnt quicktext-button-callback))
 )
 
 ;; Make the on-screen keyboard for text entry
 (define (init-message-keyboard g x y)
   (let ((w (glgui-width-get))
-        (h (glgui-height-get)))    
+        (h (glgui-height-get)))
     ;; Prompt and message string
     (set! message-string (glgui-label g (+ x 5) (+ y (/ (glgui-width-get) 1.5) 5) (- w 65 5 5 5) 30 "" ascii_20.fnt White (color-shade White 0.1)))
     (glgui-widget-set! g message-string 'align GUI_ALIGNRIGHT)
-    
+
     ;; Add the keyboard and the send button.
     (set! keypad (glgui-ioskeypad g x y))
     (glgui-button-string g (- w 65 5) (+ y (/ (glgui-width-get) 1.5) 5) 65 30 "Send" ascii_24.fnt send-message-callback)
@@ -874,10 +911,10 @@
 )
 
 ;; This function makes the elements for a message reply or shows more details depending on the source
-(define (init-message-quicktext g x y) 
+(define (init-message-quicktext g x y)
   (let loop ((i 0))
     (if (< i 6)
-      (let ((w (/ (- (glgui-width-get) 60) 2)))	
+      (let ((w (/ (- (glgui-width-get) 60) 2)))
 	(glgui-button-string g (+ x 20) (+ y (* 45 i)) w 35 (list-ref message-texts (+ (* i 2) 0)) ascii_16.fnt send-message-callback)
 	(glgui-button-string g (+ x w 20 20) (+ y (* 45 i)) w 35 (list-ref message-texts (+ (* i 2) 1)) ascii_16.fnt send-message-callback)
 	(loop (+ i 1))
@@ -892,8 +929,8 @@
   (let ((chats (store-ref "main" "ChatMessages")))
     (if (list-notempty? chats)
       (let loop ((i 0) (result (list)) (people (list)))
-        (if (= i (length chats)) 
-          (begin 
+        (if (= i (length chats))
+          (begin
             (store-set! "main" "ChatUsers" people)
             result
           )
@@ -919,7 +956,7 @@
     (if (fx= (cadddr msg) 0)
       (glgui:draw-box x y 75 h (priority-color-get 1))
     )
-    ;; Find the approximate center of the height to shift the things up appropriately    
+    ;; Find the approximate center of the height to shift the things up appropriately
     (let ((y_shift (+ y (/ (- h 24) 2))))
       ;;Add the Source name
       (if (fx= (cadddr msg) 0)
@@ -933,8 +970,8 @@
       (let ((time (- (store-ref "main" "LastUpdateTime") (car msg))))
         (if (and time (> time 30))
           (begin
-            (glgui:draw-text-left (+ x 265) (+ y 3 16) 90 16 (string-append 
-              (cond 
+            (glgui:draw-text-left (+ x 265) (+ y 3 16) 90 16 (string-append
+              (cond
                 ((< time 60) (string-append (number->string (fix time)) "sec")) ;;Jonathan didn't like this
                 ((and (> time 60) (< time 3600)) (string-append (number->string (fix (/ time 60))) "min"))
                 ((and (> time 3600) (< time 86400)) (string-append (number->string (fix (/ time 3600))) "hr"))
@@ -946,7 +983,7 @@
       )
       ;; And finally the message itself
       (let ((str (string-split-width (caddr msg) 185 ascii_16.fnt)))
-        (if (= (length str) 1) 
+        (if (= (length str) 1)
           (glgui:draw-text-left (+ x 75) y_shift 185 24 (car str) ascii_16.fnt White)
           (begin
             (glgui:draw-text-left (+ x 75) (+ y 16 1) 185 24 (car str) ascii_16.fnt White)
@@ -979,7 +1016,7 @@
             (if (fx= mode MODE_USERS) (change-response-button gui:messaging-quicktext))
             ;; Got to chat screen
             (log-remote "Screen: Chat")
-            (set! mode MODE_CHAT) 
+            (set! mode MODE_CHAT)
           )
           (store-set! "main" "popup-text" "You can't send a message to yourself.")
         )
@@ -992,7 +1029,7 @@
   (let ((chats (store-ref "main" "ChatMessages")))
     (if (list-notempty? chats)
       (let loop ((i 0) (result (list)))
-        (if (= i (length chats)) 
+        (if (= i (length chats))
           result
           ;; Avoid accidential list reverse here, its already sorted so just append at the end.
           (loop (+ i 1) (if (string=? (cadr (list-ref chats i)) user) (append result (list (list-ref chats i))) result))
@@ -1011,7 +1048,7 @@
   (glgui-widget-set! gui:menu reminder-number 'hidden #f)
   ;; Restore previous height if response option currently shown
   (restore-chat-list-height)
-  ;; Hide the detail gui and switch screen to messaging  
+  ;; Hide the detail gui and switch screen to messaging
   (set! gui:messaging-detail-shown #f)
   (log-remote "Screen: Messaging")
   (set! mode MODE_MESSAGING)
@@ -1049,13 +1086,13 @@
         (lst-wgt chat-list))
     ;; Restore previous height if response option currently shown
     (if (eq? gui:messaging-detail-shown gui:messaging-quicktext)
-      (begin    
+      (begin
         (glgui-widget-set! gui lst-wgt 'h (+ (glgui-widget-get gui lst-wgt 'h) gui:messaging-quicktext-height))
         (glgui-widget-set! gui lst-wgt 'y (- (glgui-widget-get gui lst-wgt 'y) gui:messaging-quicktext-height))
       )
-    ) 
+    )
     (if (eq? gui:messaging-detail-shown gui:messaging-keyboard)
-      (begin    
+      (begin
         (glgui-widget-set! gui lst-wgt 'h (+ (glgui-widget-get gui lst-wgt 'h) gui:messaging-keyboard-height))
         (glgui-widget-set! gui lst-wgt 'y (- (glgui-widget-get gui lst-wgt 'y) gui:messaging-keyboard-height))
       )
@@ -1066,20 +1103,20 @@
 ;; Function to send a chat message
 (define (send-message-callback g w t x y)
   ;; Send the actual message
-  (if (eq? gui:messaging-detail-shown gui:messaging-quicktext) 
+  (if (eq? gui:messaging-detail-shown gui:messaging-quicktext)
     (reply-callback g w #f 0 0)
-    (begin 
+    (begin
       (glgui-widget-set! g message-string 'image (list (glgui-widget-get gui:messaging-keyboard message-string 'label)))
       (glgui-widget-set! g message-string 'label "")
       (reply-callback g message-string #f 0 0)
     )
   )
-  ;; And reset the chat list while hiding response option 
+  ;; And reset the chat list while hiding response option
   (let ((gui gui:chat)
         (button-wgt chat-input-button)
-        (im (if (eq? gui:messaging-detail-shown gui:messaging-quicktext) 
+        (im (if (eq? gui:messaging-detail-shown gui:messaging-quicktext)
           (list "Quicktext") (list "Keyboard")))
-        (cb (if (eq? gui:messaging-detail-shown gui:messaging-quicktext) 
+        (cb (if (eq? gui:messaging-detail-shown gui:messaging-quicktext)
           quicktext-button-callback keyboard-button-callback)))
     (restore-chat-list-height)
     (set! gui:messaging-detail-shown #f)
@@ -1109,7 +1146,7 @@
     )
     ;; Button to return to message screen
     (set! return-message-screen-button
-      (glgui-button-string gui:users 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Return to Messages" ascii_24.fnt return-message-screen-button-callback)	
+      (glgui-button-string gui:users 10 (+ gui:navigation-height 10) (- (glgui-width-get) 20) 30 "Return to Messages" ascii_24.fnt return-message-screen-button-callback)
     )
   )
 )
@@ -1136,7 +1173,7 @@
       (let loop ((i 0) (result (list)))
 	;;If we reached length, we return the result
 	(if (= i (length users)) result
-	  ;; this is the else case, which appends the list with another element 
+	  ;; this is the else case, which appends the list with another element
 	  (loop (+ i 1)(append result (list (user-list-element (list-ref users i) i))))
 	)
       )
@@ -1147,12 +1184,12 @@
 
 (define (user-list-element user idx)
   (lambda (g wgt x y w h s)
-    (define y_shift (+ y (/ (- h 24) 2)))    
+    (define y_shift (+ y (/ (- h 24) 2)))
     ;; Write Users and make Gray if not currently logged in
     (if gui:messaging-detail-shown ;;Highlight selected in DimGray [% Jonathan didn't like the Blue]
       (if (= idx selected-alert-number) (glgui:draw-box x y w h DimGray))
     )
-    (glgui:draw-text-left (+ x 5) y_shift 200 24 (car user) ascii_24.fnt (if (string=? (car user) (store-ref "main" "UserName" "")) Blue (if (= (cadr user) 1) White DarkGray)))  
+    (glgui:draw-text-left (+ x 5) y_shift 200 24 (car user) ascii_24.fnt (if (string=? (car user) (store-ref "main" "UserName" "")) Blue (if (= (cadr user) 1) White DarkGray)))
   )
 )
 
@@ -1160,7 +1197,7 @@
 ;;  TREND SCREEN RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
 ;; Initialize the trend gui parts
-(define gui:trends #f)	
+(define gui:trends #f)
 (define trend-traces '())
 (define (init-gui-trends)
   (set! gui:trends (make-glgui))
@@ -1190,8 +1227,8 @@
   (for-each (lambda (l) (gltrace:clear l)) trend-traces)
   ;; Define the trace label texts and colors
   (set! trend-label-texts (list "HR" "PR" "SpO2" "etCO2"
-                         "" "" "NIBPm" 
-                         "" "" "ARTm" 
+                         "" "" "NIBPm"
+                         "" "" "ARTm"
                          "RR" "BIS" "Temp"
                          "O2" "" "N2O" "" "AA" ""))
   (set! trend-trace-colors (list Green LightGreen White Orange Red Red Red Red Red Red Blue Yellow DarkRed
@@ -1260,7 +1297,7 @@
         (let ((trace (list-ref trend-traces i))
               (trend-values (store-ref or-name (string-append (list-ref trend-source-names i) "-trend"))))
           (if trend-values (let loop2 ((k 0))
-            (if (fx= k (f32vector-length trend-values)) 
+            (if (fx= k (f32vector-length trend-values))
               (let* ((y (- (glgui-height-get) gui:menu-height 200))
                      (last (f32vector-ref trend-values (fx- (f32vector-length trend-values) 1)))
                      (label-value (if (fl= last -32000.) #f last)))
@@ -1315,7 +1352,7 @@
 
 
 ;; Initialize the waveform gui parts
-(define gui:waves #f)	
+(define gui:waves #f)
 (define (init-gui-waves)
   (set! gui:waves (make-glgui))
 
@@ -1332,7 +1369,7 @@
   (set! temp_value (glgui-valuelabel gui:waves (- (glgui-width-get) 50) (- (glgui-height-get) gui:navigation-height 245) label_temp.img num_40.fnt White))
   (set! agent_value (glgui-valuelabel gui:waves (- (/ (glgui-width-get) 2) 50) (- (glgui-height-get) gui:navigation-height 245) label_agent.img num_40.fnt White))
   ;;(glgui-label g x y w h label fnt color)
-  (set! agent_name (glgui-label gui:waves 5 (- (glgui-height-get) gui:navigation-height 245) 60 24 "" ascii_24.fnt White))  
+  (set! agent_name (glgui-label gui:waves 5 (- (glgui-height-get) gui:navigation-height 245) 60 24 "" ascii_24.fnt White))
 
   ;; Define scales for Waveforms
   (set! ECG_min (- 0.5))(set! ECG_max 2)
@@ -1361,11 +1398,11 @@
   (set! pleth-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 65) 200 40 pleth-trace-ivue White))
   (set! co2-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 110) 200 40 co2-trace-ivue Orange))
   (set! art-wave (glgui-trace gui:waves 5 (- (glgui-height-get) gui:navigation-height 155) 200 40 art-trace-ivue Red))
-  
+
   ;; If I wanted labels to the side indicated low and high values the font needs to be set
   ;;(glgui-widget-set! gui:waves art_wave 'limfnt num_18.fnt)
 
-  ;; Screen Indicator 
+  ;; Screen Indicator
   (set! screenindicator (glgui-screenindicator gui:waves 0 (+ gui:navigation-height 40) (glgui-width-get) 20 White))
 
   ;; Bottom row with secondary navigation buttons
@@ -1468,7 +1505,7 @@
   )
   (if (fl> (fl- ##now rupi:last-wave-request) rupi:wave-request-frequency)
     (let ((s5? (store-ref or-name "s5?")))
-      (set! rupi:last-wave-request ##now)	
+      (set! rupi:last-wave-request ##now)
       ;; Request new data from network
       (let* ((rupi (store-ref "main" "RupiClient" #f))(pin (store-ref "main" "Key"))
 	      (data (rupi-cmd rupi "GETWAVES" pin or-name)))
@@ -1501,13 +1538,13 @@
 	  )
 	)
       )
-      
+
       ;; Update the Trend Numerics
       (let ((hr-val (store-ref or-name "hr"))
 	    (hr-src (store-ref or-name "hr_source")))
 	(glgui-widget-set! gui:waves hr_value 'label (if hr-val (number->string (fix hr-val)) ""))
 	(if hr-src
-	  (glgui-widget-set! gui:waves hr_value 'color (cond 
+	  (glgui-widget-set! gui:waves hr_value 'color (cond
 	    ((string=? hr-src hr-str-s5) Green)((string=? hr-src spo2-str-s5) White)((string=? hr-src "BP1") Red)(else DarkGray))
 	  )
 	)
@@ -1522,7 +1559,7 @@
       )
       (let ((nibp-sys (store-ref or-name "nibp_sys")) (nibp-dia (store-ref or-name "nibp_dia"))
 	    (nibp-mean (store-ref or-name "nibp_mean")))
-	(glgui-widget-set! gui:waves nibp_value 'label 
+	(glgui-widget-set! gui:waves nibp_value 'label
 	  (if (and nibp-mean nibp-sys nibp-dia)
 	    (string-append (number->string (fix nibp-sys)) "/" (number->string (fix nibp-dia)) " (" (number->string (fix nibp-mean)) ")")
 	    ""
@@ -1532,7 +1569,7 @@
       (let ((art-mean (store-ref or-name "p1_mean")) (art-dia (store-ref or-name "p1_dia")) (art-sys (store-ref or-name "p1_sys")))
 	(glgui-widget-set! gui:waves art_value 'label (if art-mean (if (> art-mean 200) (number->string (fix art-mean)) "") #f))
 	;;The < ART_dia<200 removes showing the ARTline bag pressure
-	(if (and art-mean art-sys art-dia (< art-dia 200)) 
+	(if (and art-mean art-sys art-dia (< art-dia 200))
 	  (begin
 	    (glgui-widget-set! gui:waves nibp_value 'label (string-append (number->string (fix art-sys)) "/" (number->string (fix art-dia)) " (" (number->string (fix art-mean)) ")"))
 	    (glgui-widget-set! gui:waves nibp_value 'image label_art.img)
@@ -1657,7 +1694,7 @@
 ;;  SIMPLIFIED HORIZONTAL WAVEFORM SCREEN FUNCTIONS
 ;; -----------------------------------------------------------------------------
 ;; Initialize the landscape waveform gui parts
-(define gui:waves-landscape #f)	
+(define gui:waves-landscape #f)
 (define (init-gui-waves-landscape)
   (set! gui:waves-landscape (make-glgui))
 
@@ -1673,15 +1710,15 @@
   (set! nibp_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 240) label_nibp.img num_40.fnt Red))
   (set! temp_value-landscape (glgui-valuelabel gui:waves-landscape (- (glgui-height-get) 50) (- (glgui-width-get) 280) label_temp.img num_40.fnt White))
   (set! agent_value-landscape (glgui-valuelabel gui:waves-landscape (- (/ (glgui-height-get) 2) 50) (- (glgui-width-get) 280) label_agent.img num_40.fnt White))
-  (set! agent_name-landscape (glgui-label gui:waves-landscape 85 (- (glgui-width-get) 280) 60 24 "" ascii_24.fnt White))  
+  (set! agent_name-landscape (glgui-label gui:waves-landscape 85 (- (glgui-width-get) 280) 60 24 "" ascii_24.fnt White))
 
   ;;Place the Trace Widgets
   (set! ecg-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 60) 350 40 ecg-trace-ivue Green))
   (set! pleth-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 105) 350 40 pleth-trace-ivue White))
   (set! co2-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 150) 350 40 co2-trace-ivue Orange))
   (set! art-wave-landscape (glgui-trace gui:waves-landscape 10 (- (glgui-width-get) 195) 350 40 art-trace-ivue Red))
-  
-  ;; Screen Indicator 
+
+  ;; Screen Indicator
   (set! screenindicator-landscape (glgui-screenindicator gui:waves-landscape 0 5 (glgui-height-get) 20 White))
   (set! location-landscape (glgui-label gui:waves-landscape 10 (- (glgui-width-get) 30) 70 25 "Room" ascii_24.fnt White))
 
@@ -1696,7 +1733,7 @@
 ;;  ROOM SUBSCRIPTION SCREEN RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
 ;; Initialize the room subscription gui parts
-(define gui:rooms #f)	
+(define gui:rooms #f)
 (define (init-gui-rooms)
   (set! gui:rooms (make-glgui))
 
@@ -1723,7 +1760,7 @@
 
     ;; Bottom row with secondary navigation buttons
     (set! pacu-button
-      (glgui-button-string gui:rooms (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) 
+      (glgui-button-string gui:rooms (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10)
 	(- (/ (glgui-width-get) 2) 20) 30 "Show PACU" ascii_24.fnt pacu-button-callback)
     )
     (set! transfer-button
@@ -1733,12 +1770,12 @@
 )
 
 (define (transfer-button-callback g w t x y)
-  (if (> (length (store-ref "main" "myRooms" '())) 0) 
+  (if (> (length (store-ref "main" "myRooms" '())) 0)
     (begin
       (let ((curh (glgui-widget-get g room-list 'h))
 	    (cury (glgui-widget-get g room-list 'y)))
-	
-	(glgui-widget-set! g room-list 'h (if (< curh (/ (glgui-height-get) 2)) (* curh 2) (/ curh 2))) 
+
+	(glgui-widget-set! g room-list 'h (if (< curh (/ (glgui-height-get) 2)) (* curh 2) (/ curh 2)))
 	(glgui-widget-set! g room-list 'y (if (< curh (/ (glgui-height-get) 2)) (- cury curh) (+ cury (/ curh 2))))
       )
       (glgui-widget-set! g transfer-button 'color (if (= (glgui-widget-get g transfer-button 'color) White) Blue White))
@@ -1752,7 +1789,7 @@
 
 (define (transfer-user-list-callback g w t x y)
   (let ((users (store-ref "main" "Users")))
-    (if users 
+    (if users
       (let ((receiver (car (list-ref users (fix (glgui-widget-get g w 'current))))))
 	(rupi-cmd (store-ref "main" "RupiClient" #f) "OFFERROOMS" (store-ref "main" "Key" #f) receiver)
 	;; Also give the user some indication that rooms were send
@@ -1768,7 +1805,7 @@
 
 (define (pacu-button-callback g w t x y)
   (let ((color (glgui-widget-get g w 'color)))
-    (glgui-widget-set! g w 'color (if (= color White) Blue White)) 
+    (glgui-widget-set! g w 'color (if (= color White) Blue White))
     (update-room-lists)
     (glgui-widget-set! g room-list 'offset 0)
   )
@@ -1782,7 +1819,7 @@
       (let loop ((i 0) (result (list)))
         ;;If we reached length, we return the result
         (if (= i (length rooms)) result
-	   ;; this is the else case, which appends the list with another element 
+	   ;; this is the else case, which appends the list with another element
 	   (loop (+ i 1)(append result (list (room-list-element (list-ref rooms i)))))
         )
       )
@@ -1804,16 +1841,16 @@
 	   (color (if (and myrooms (member (car room) myrooms)) White (if (list-notempty? users) LightSlateGray Black)))
 	   (user-name (store-ref "main" "UserName"))
 	   (rooms-send (store-ref "main" "RoomSendTime")))
-      (glgui:draw-text-left (+ x 3) y_shift 82 24 (car room) ascii_24.fnt color)   
+      (glgui:draw-text-left (+ x 3) y_shift 82 24 (car room) ascii_24.fnt color)
       (if (> num-users 0)
 	(let loop ((i 0))
 	  (if (not (or (= i num-users) (= i 5)))
 	    (begin
-	      (if (< i 2) (glgui:draw-text-left (+ x 85 (* i 75)) (+ y (/ h 2)) 70 16 (list-ref users i) ascii_16.fnt 
+	      (if (< i 2) (glgui:draw-text-left (+ x 85 (* i 75)) (+ y (/ h 2)) 70 16 (list-ref users i) ascii_16.fnt
 		(if (string=? (list-ref users i) user-name) White LightSlateGray)))
-	      (if (and (> i 1)(< i 4)) (glgui:draw-text-left (+ x 85 (* (- i 2) 75)) (+ y 2) 70 16 (list-ref users i) ascii_16.fnt 
+	      (if (and (> i 1)(< i 4)) (glgui:draw-text-left (+ x 85 (* (- i 2) 75)) (+ y 2) 70 16 (list-ref users i) ascii_16.fnt
 		(if (string=? (list-ref users i) user-name) White LightSlateGray)))
-	      (if (= i 4) (glgui:draw-text-left (+ x 85 (* (- i 2) 75)) (+ y 2) 70 16 
+	      (if (= i 4) (glgui:draw-text-left (+ x 85 (* (- i 2) 75)) (+ y 2) 70 16
 		(string-append "(+" (number->string (- num-users 4)) "...)") ascii_16.fnt White)
 	      )
 	      (loop (+ i 1))
@@ -1887,7 +1924,7 @@
 ;; -----------------------------------------------------------------------------
 ;;  REMINDER RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
-(define gui:reminder #f)	
+(define gui:reminder #f)
 (define (init-gui-reminder)
   (set! gui:reminder (make-glgui))
 
@@ -1908,7 +1945,7 @@
 
 (define (reminder-list-callback g w t x y)
   ;; Edit an entry
-  (if (and (< x 265) (> x 230)) 
+  (if (and (< x 265) (> x 230))
     (let* ((cur (fix (glgui-widget-get g w 'current)))
 	   (r (store-ref "main" "Reminders"))
 	   (entry (list-ref r cur))
@@ -1922,7 +1959,7 @@
           (glgui-widget-set! gui:reminder-setup hour 'value (string->number (seconds->string (caaddr entry) "%H")))
 	  (glgui-widget-set! gui:reminder-setup minute 'value (fix (/ (string->number (seconds->string (caaddr entry) "%M")) 5)))
 	  (glgui-widget-set! gui:reminder-setup repeat 'value (- (length gui:reminder-repeat-minutes-list) (length (member (number->string (car (cdaddr entry))) gui:reminder-repeat-minutes-list))))
-          (time-change-button-callback gui:reminder-setup w t x y) 
+          (time-change-button-callback gui:reminder-setup w t x y)
 	)
 	(begin
           (phase-button-unselect)
@@ -1931,12 +1968,12 @@
 	)
       )
       ;;Log which screen is used
-      (log-remote "Screen: ReminderSetup")      
+      (log-remote "Screen: ReminderSetup")
       (set! mode MODE_REMINDER_SETUP)
     )
   )
   ;; Delete an entry
-  (if (and (< x 310) (> x 270)) 
+  (if (and (< x 310) (> x 270))
     (let ((r (store-ref "main" "Reminders"))
 	  (cur (fix (glgui-widget-get g w 'current))))
       (if (and r (>= cur 0))
@@ -1968,7 +2005,7 @@
   )
   (let ((minute-pos (+ 1 (fix (/ (string->number (seconds->string ##now "%M")) 5)))))
     (if (>= minute-pos 12)
-      (begin 
+      (begin
         (glgui-widget-set! gui:reminder-setup minute 'value 0)
         (glgui-widget-set! gui:reminder-setup hour 'value (+ (glgui-widget-get gui:reminder-setup hour 'value) 1))
       )
@@ -1984,8 +2021,8 @@
   (time-change-button-callback gui:reminder-setup w t x y)
 
   ;; Don't show add reminder setup screen if we are not subscribed to at least one room
-  (if (list-notempty? (store-ref "main" "myRooms")) 
-    (begin 
+  (if (list-notempty? (store-ref "main" "myRooms"))
+    (begin
       (log-remote "Screen: ReminderSetup")
       (set! mode MODE_REMINDER_SETUP)
     )
@@ -2000,14 +2037,14 @@
 	   (loop (+ i 1)(append result (list (reminder-list-element (list-ref reminders i)))))
         )
       )
-      (list) 
+      (list)
     )
   )
 )
 
 (define (reminder-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 70 24 (car entry) ascii_24.fnt White)  
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 70 24 (car entry) ascii_24.fnt White)
     (if (list-notempty? (caddr entry))
       (let ((then (caaddr entry)))
         (glgui:draw-text-left (+ x 85) (+ y 5) 140 16 (string-append (seconds->string then "%H:%M") " (in "
@@ -2018,7 +2055,7 @@
       )
       (glgui:draw-pixmap-left (+ x 85) (+ y 5) 50 21 (list-ref phase-labels (caddr entry)) White)
     )
-    (glgui:draw-text-left (+ x 85) (+ y 30) 150 24 (cadr entry) ascii_24.fnt White)    
+    (glgui:draw-text-left (+ x 85) (+ y 30) 150 24 (cadr entry) ascii_24.fnt White)
 
     ;;Delete and Edit buttons
     (glgui:draw-pixmap-left (+ x 225) (+ y 10) 40 40 edit.img White)
@@ -2035,7 +2072,7 @@
 (define gui:reminder-task-list-pos 0)
 
 ;; And now the reminder setup screen
-(define gui:reminder-setup #f)	
+(define gui:reminder-setup #f)
 (define (init-gui-reminder-setup)
   (set! gui:reminder-setup (make-glgui))
 
@@ -2047,7 +2084,7 @@
     )
 
     (store-set! "main" "task-names" '("Check Room" "Draw ABG" "Meeting"))
-    (glgui-label gui:reminder-setup (+ x (/ (glgui-width-get) 2)) y 40 16 "Task" ascii_16.fnt White)    
+    (glgui-label gui:reminder-setup (+ x (/ (glgui-width-get) 2)) y 40 16 "Task" ascii_16.fnt White)
     (set! reminder-task-list
       (glgui-list gui:reminder-setup (+ x (/ (glgui-width-get) 2)) (- y (* 3 40)) (- (/ (glgui-width-get) 2) 10) (* 3 40) 40 (build-reminder-task-list) reminder-task-list-callback)
     )
@@ -2072,11 +2109,11 @@
     (glgui-widget-set! gui:reminder-setup repeat 'callback time-change-button-callback)
     (set! repeat-line (glgui-pixmap gui:reminder-setup (+ x 145) (- y 15) repeat.img))
   )
-  
+
   ;; Phase Selector Row
   (let ((x 230)(y 160))
     (glgui-label gui:reminder-setup (+ x 5 10) (+ y 90 35 3) 100 16 "Phase" ascii_16.fnt White)
-    (set! phase-selector 
+    (set! phase-selector
       (let loop ((i 0) (result (list)))
         (if (= i (length phase-labels)) result
 	   (loop (+ i 1)(append result (list (glgui-button gui:reminder-setup (+ x 5) (- (+ y 93) (* i 35)) 65 30 (list-ref phase-labels i) phase-button-callback))))
@@ -2084,7 +2121,7 @@
       )
     )
   )
-  
+
   ;; Bottom row with secondary navigation buttons
   (glgui-button-string gui:reminder-setup 10 (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Cancel" ascii_24.fnt reminder-cancel-button-callback)
   (glgui-button-string gui:reminder-setup (+ (/ (glgui-width-get) 2) 10) (+ gui:navigation-height 10) (- (/ (glgui-width-get) 2) 20) 30 "Save" ascii_24.fnt reminder-save-button-callback)
@@ -2112,7 +2149,7 @@
 (define (reminder-room-list-element room idx)
   (lambda (g wgt x y w h s)
     (let ((y_shift (+ y (/ (- h 24) 2))))
-      (glgui:draw-text-left (+ x 5) y_shift 100 24 room ascii_24.fnt (if (= idx gui:reminder-room-list-pos) gui:active-color gui:inactive-color))   
+      (glgui:draw-text-left (+ x 5) y_shift 100 24 room ascii_24.fnt (if (= idx gui:reminder-room-list-pos) gui:active-color gui:inactive-color))
     )
   )
 )
@@ -2139,7 +2176,7 @@
 (define (reminder-task-list-element room idx)
   (lambda (g wgt x y w h s)
     (let ((y_shift (+ y (/ (- h 24) 2))))
-      (glgui:draw-text-left (+ x 5) y_shift 130 24 room ascii_24.fnt (if (= idx gui:reminder-task-list-pos) gui:active-color gui:inactive-color))   
+      (glgui:draw-text-left (+ x 5) y_shift 130 24 room ascii_24.fnt (if (= idx gui:reminder-task-list-pos) gui:active-color gui:inactive-color))
     )
   )
 )
@@ -2147,8 +2184,8 @@
 ;; Time Change Functions
 (define (time-change-button-callback g w t x y)
   ;; Update the fields
-  (glgui-widget-set! g hour 'colorvalue gui:active-color)  
-  (glgui-widget-set! g minute 'colorvalue gui:active-color)  
+  (glgui-widget-set! g hour 'colorvalue gui:active-color)
+  (glgui-widget-set! g minute 'colorvalue gui:active-color)
   (let ((repeat-minute-pos (glgui-widget-get g repeat 'value)))
     (glgui-widget-set! g repeat 'colorvalue (if (= repeat-minute-pos 0) gui:inactive-color gui:active-color))
     (glgui-widget-set! g repeat-line 'color (if (= repeat-minute-pos 0) gui:inactive-color gui:active-color))
@@ -2161,7 +2198,7 @@
 (define (time-selection-unselect)
   (let ((g gui:reminder-setup)
 	(c gui:inactive-color))
-    (glgui-widget-set! g hour 'colorvalue c)  
+    (glgui-widget-set! g hour 'colorvalue c)
     (glgui-widget-set! g minute 'colorvalue c)
     (glgui-widget-set! g repeat 'colorvalue c)
     (glgui-widget-set! g repeat-line 'color c)
@@ -2172,7 +2209,7 @@
 (define (phase-button-unselect)
   (let loop ((i 0))
     (if (not (= i (length phase-selector)))
-      (begin 
+      (begin
 	(glgui-widget-set! gui:reminder-setup (list-ref phase-selector i) 'color gui:inactive-color)
 	(loop (+ i 1))
       )
@@ -2217,7 +2254,7 @@
 	  )
 	)
 	(let loop ((i 0) (phase-val 0))
-	  (if (= i (length phase-selector)) 
+	  (if (= i (length phase-selector))
 	    phase-val
 	    (loop (+ i 1) (if (= (glgui-widget-get g (list-ref phase-selector i) 'color) gui:active-color) i phase-val))
 	  )
@@ -2279,9 +2316,9 @@
 )
 
 (define (phonebook-select-callback g w t x y)
-  (if (and (not (glgui-widget-get g phonebook-edit-button 'hidden)) (fx> x 155) (fx< x 310)) 
+  (if (and (not (glgui-widget-get g phonebook-edit-button 'hidden)) (fx> x 155) (fx< x 310))
     (let* ((login (store-ref "main" "UserName"))
-           (lst (list-keep (list-keep (store-ref "main" "Users" '()) (lambda (l) (fx= (cadr l) 1))) 
+           (lst (list-keep (list-keep (store-ref "main" "Users" '()) (lambda (l) (fx= (cadr l) 1)))
              (lambda (l) (not (string=? (car l) login)))))
            (cur (glgui-widget-get g w 'current)))
       (if (and (fx< cur (length lst)) voip:enabled)
@@ -2357,7 +2394,7 @@
           (thisuser (store-ref "main" "UserName" "")))
       (if (list-notempty? users)
         (let loop ((i 0) (result (list)))
-          (if (= i (length users)) 
+          (if (= i (length users))
             result
             (loop (+ i 1)
               (let ((entry (list-ref users i)))
@@ -2378,25 +2415,25 @@
   (let ((phones (store-ref "main" "Phonebook")))
     (if phones
       (let loop ((i 0) (result (list)))
-        (if (= i (length phones)) 
+        (if (= i (length phones))
          result
          (loop (+ i 1)(append result (list (phonebook-list-element (list-ref phones i)))))
         )
       )
-      (list) 
+      (list)
     )
   )
 )
-  
+
 (define (phonebook-list-element entry)
   (lambda (g wgt x y w h s)
-    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 145 24 (car entry) ascii_24.fnt White)   
-    (if (string=? (cadr entry) "VOIP") 
-      (glgui:draw-pixmap-left (+ x 155) (+ y 2) 76 24 voip-small.img (if voip:enabled gui:active-color gui:inactive-color)) 
-      (glgui:draw-text-left (+ x 155) (+ y (/ (- h 24) 2)) (- (glgui-width-get) 155 10) 24 (cadr entry) ascii_24.fnt White)  
+    (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 145 24 (car entry) ascii_24.fnt White)
+    (if (string=? (cadr entry) "VOIP")
+      (glgui:draw-pixmap-left (+ x 155) (+ y 2) 76 24 voip-small.img (if voip:enabled gui:active-color gui:inactive-color))
+      (glgui:draw-text-left (+ x 155) (+ y (/ (- h 24) 2)) (- (glgui-width-get) 155 10) 24 (cadr entry) ascii_24.fnt White)
     )
     (if (glgui-widget-get g phonebook-edit-button 'hidden)
-      (begin 
+      (begin
         (glgui:draw-pixmap-left (+ x 255) (+ y 2) 24 24 edit-small.img White)
         (glgui:draw-pixmap-left (+ x 285) (+ y 2) 24 24 delete-small.img White)
       )
@@ -2471,7 +2508,7 @@
 ;; -----------------------------------------------------------------------------
 ;;  VOIP SCREEN RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
-(define gui:voip #f)	
+(define gui:voip #f)
 (define (init-gui-voip)
   (set! gui:voip (make-glgui))
   (let ((x 10)(y (- (glgui-height-get) gui:menu-height 24 3))(w (glgui-width-get)))
@@ -2482,7 +2519,7 @@
     ;; IP info
     (set! voip-ip-label (glgui-label gui:voip (+ (/ w 2) x) (+ gui:navigation-height 20 30) (- (/ w 2) 20) 16 "IP:" ascii_16.fnt LightGray))
 
-    ;; Buttons on the bottom to accept or ignore call. 
+    ;; Buttons on the bottom to accept or ignore call.
     (set! accept-voip-button
       (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- (/ w 2) 20) 30 "Accept" ascii_24.fnt accept-voip-callback)
     )
@@ -2491,11 +2528,11 @@
     )
     (set! terminate-voip-button
       (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Hang up / Disconnect" ascii_24.fnt terminate-voip-callback)
-    ) 
-    (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)    
+    )
+    (glgui-widget-set! gui:voip terminate-voip-button 'hidden #t)
     (set! return-phonebook-button
       (glgui-button-string gui:voip x (+ gui:navigation-height 10) (- w 20) 30 "Back to Phonebook" ascii_24.fnt return-phonebook-callback)
-    ) 
+    )
     (glgui-widget-set! gui:voip return-phonebook-button 'hidden #t)
   )
 )
@@ -2517,13 +2554,13 @@
   (set! voip:ring #f)
   (hide-voip-init-buttons #t)
   (let ((ip (store-ref "main" "VOIPipaddr")))
-    (if ip (begin 
-      (glgui-widget-set! g voip-state-label 'label "CALL ACTIVE")  
-      ;;Initialize our side of VOIP, parameters are IP volume 
+    (if ip (begin
+      (glgui-widget-set! g voip-state-label 'label "CALL ACTIVE")
+      ;;Initialize our side of VOIP, parameters are IP volume
       (rtaudio-start ip voip:volume)
       ;;Tell the other side to open their VOIP too
       ;;Syntax is (CALL pin DestinationName host-ipaddr state)
-      (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) 
+      (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f)
         (store-ref "main" "VOIPcaller") (host-ipaddr) 1)
     ))
   )
@@ -2545,7 +2582,7 @@
   (glgui-widget-set! g voip-state-label 'label "CONNECTION CLOSED")
   (rtaudio-stop)
   (let ((caller (store-ref "main" "VOIPcaller")))
-    (if caller  
+    (if caller
       (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) caller (host-ipaddr) 0)
     )
   )
@@ -2562,7 +2599,7 @@
   (set! mode MODE_VOIP)
   ;; Make the call
   (rupi-cmd (store-ref "main" "RupiClient" #f) "CALL" (store-ref "main" "Key" #f) caller (host-ipaddr) 9)
-  ;; Init the audio parts  
+  ;; Init the audio parts
   (audiofile-forceplay audio:phone)
   (set! voip:ring (fl+ ##now 4.))
   (set! voip:ring-count 3)
@@ -2584,7 +2621,7 @@
     )
   )
   (if (fx= state 9)
-    (begin 
+    (begin
       ;; Add the Call to the Chat log
       (store-set! "main" "ChatMessages" (append
         (list (list ##now caller (string-append "Received VOIP call by " caller) 1))
@@ -2597,7 +2634,7 @@
       (glgui-widget-set! gui:voip voip-caller-label 'label (string-append "Call from: " caller))
       (log-remote "Screen: VOIP")
       (set! mode MODE_VOIP)
-      ;; Init the audio parts  
+      ;; Init the audio parts
       (audiofile-forceplay audio:phone)
       (set! voip:ring (fl+ ##now 4.))
       (set! voip:ring-count 3)
@@ -2621,15 +2658,15 @@
 ;; -----------------------------------------------------------------------------
 
 ;; Initialize the main gui parts
-(define gui:menu #f)	
+(define gui:menu #f)
 (define gui:empty #f)	;; Used if I don't want any gui elements to be shown - else case for messaging details not shown
 (define (init-gui-menu)
     (set! gui:menu (make-glgui))
     (set! gui:empty (make-glgui))
-    
+
     ;; Top menu bar with title
     (glgui-menubar gui:menu 0 (- (glgui-height-get) gui:menu-height) (glgui-width-get) gui:menu-height)
-  
+
     (set! title (glgui-label gui:menu 5 (- (glgui-height-get) 28) 200 24 "" ascii_24.fnt White))
     ;; Clock in upper right corner
     (set! clock (glgui-label gui:menu (- (glgui-width-get) 60) (- (glgui-height-get) 24) 60 16 "" ascii_16.fnt White))
@@ -2641,7 +2678,7 @@
     (glgui-widget-set! gui:menu navigation-bar 'value mode)
     (glgui-widget-set! gui:menu navigation-bar 'toggle-normal-color gui:toggle-normal-color)
     (glgui-widget-set! gui:menu navigation-bar 'toggle-selected-color gui:toggle-selected-color)
-    
+
     ;; Number of messages
     ;;glgui-label g x y w h label fnt color
     (set! message-number (glgui-label gui:menu (* MODE_MESSAGING (/ (glgui-width-get) (length icon-list))) 22 64 24 "0" ascii_24.fnt White))
@@ -2655,7 +2692,7 @@
 ;; -----------------------------------------------------------------------------
 ;;  POPUP RELATED FUNCTIONS
 ;; -----------------------------------------------------------------------------
-(define gui:popup #f)	
+(define gui:popup #f)
 (define (init-gui-popup)
     (set! gui:popup (make-glgui))
     ;; Message popup bubble
@@ -2718,7 +2755,7 @@
 	  (store-set! "main" "LogoutCount" (fx+ lc 1))
 	  (if (fx> lc min_count)
 	    (begin
-	      ;; Logout 
+	      ;; Logout
               (rupi-logout)
               ;; Terminate the app after showing popup.
               (set! rupi:addr #f)
@@ -2737,8 +2774,8 @@
 	;; Hide popups if currently shown
 	(hide-popup)
 	;; Log which screen is used
-	(log-remote (string-append "Screen: " 
-	  (cond 
+	(log-remote (string-append "Screen: "
+	  (cond
 	    ((fx= newmode MODE_OVERVIEW) "Overview")
 	    ((fx= newmode MODE_MESSAGING) "Messaging")
 	    ((fx= newmode MODE_REMINDER) "Reminder")
@@ -2754,7 +2791,7 @@
 )
 
 ;; Number of yet unanswered alert messages for the menu icon
-(define (unanswered-message-number-get) 
+(define (unanswered-message-number-get)
 (+ ;; Add number of unanswered chat messages and pages
   (let ((chats (store-ref "main" "ChatMessages")))
     (if (list-notempty? chats)
@@ -2806,11 +2843,11 @@
 ;; -----------------------------------------------------------------------------
 ;;  NETWORK COMMUNICATION FUNCTIONALITY
 ;; -----------------------------------------------------------------------------
-(define gui:setup #f)	
+(define gui:setup #f)
 (define (init-gui-setup)
   (set! gui:setup (make-glgui))
   (let ((x 0)(y 0)(h (glgui-height-get))(w (glgui-width-get))(g gui:setup))
-    (glgui-pixmap g (/ (fx- w (car telePORT-logo.img)) 2) (- h (cadr telePORT-logo.img) 20) telePORT-logo.img)  
+    (glgui-pixmap g (/ (fx- w (car telePORT-logo.img)) 2) (- h (cadr telePORT-logo.img) 20) telePORT-logo.img)
     ;;Header row
     (glgui-label g (+ x 10) 350 (- w 20) 24 "Please set your VitalNode" ascii_24.fnt White)
     (glgui-label g (+ x 10) 320 (- w 20) 24 "server name:" ascii_24.fnt White)
@@ -2829,7 +2866,7 @@
 
 (define (server-name-callback g wgt t x y)
   (hide-popup)
-  (set! rupi:addr 
+  (set! rupi:addr
     (with-exception-catcher
       (lambda (e) #f)
       (lambda () (car (host-info-addresses (host-info (glgui-widget-get gui:setup server-name 'label)))))
@@ -2847,10 +2884,10 @@
 
 ;; Log some data to the status store
 (define (log-remote str)
-  (if (string? str) 
+  (if (string? str)
     (let ((buf (store-ref "main" "LogBuffer" '())))
       ;; We submit logs in Message thread now
-      (store-set! "main" "LogBuffer" (append buf (list str))) 
+      (store-set! "main" "LogBuffer" (append buf (list str)))
       (log-status str)
     )
     (log-warning str)
@@ -2889,7 +2926,7 @@
       (rupi-cmd rc "REGISTERTOKEN" (store-ref store "Key") (pushnotification-gettoken)) ;; Register for potential push notifications
     )
     (store-set! store "RupiClient" rc) ;;stores the handle to a RUPI client
-    (let ((data (rupi-cmd rc "GETMYROOMS" (store-ref store "Key")))) 
+    (let ((data (rupi-cmd rc "GETMYROOMS" (store-ref store "Key"))))
        (store-set! store "myRooms" data)) ;; Load our subscribed rooms from the last logout
     (let ((data (rupi-cmd rc "GETROOMS" (store-ref store "Key"))))
        (store-set! store "Rooms" (if (list-notempty? data) data '())))
@@ -2920,7 +2957,7 @@
                   )
                 )
               )
-            ) 
+            )
           )
         )
         (if (not app:suspended) (begin
@@ -2936,11 +2973,11 @@
                 (if (not (glgui-widget-get gui:phonebook phonebook-edit-button 'hidden))
                   (glgui-widget-set! gui:phonebook phonebook-list 'list (build-voip-phonebook-list))
                 )
-              ) 
+              )
             )
           )
           (let ((data (rupi-cmd rupi "GETROOMS" key)))
-            (if (list-notempty? data) 
+            (if (list-notempty? data)
               (begin
                 (store-set! store "Rooms" (sort-rooms data))
                 (glgui-widget-set! gui:rooms room-list 'list (build-room-list))
@@ -2992,8 +3029,8 @@
 
 ;; logout function, so we transfer our internal state back to the server
 (define (rupi-logout)
-  (rupi-cmd (rupi-client 0 rupi:key rupi:addr rupi:port) "LOGOUT" 
-    (store-ref "main" "Key") (store-ref "main" "LastUpdateTime") 
+  (rupi-cmd (rupi-client 0 rupi:key rupi:addr rupi:port) "LOGOUT"
+    (store-ref "main" "Key") (store-ref "main" "LastUpdateTime")
     (store-ref "main" "AlertMessages") (store-ref "main" "ChatMessages")
   )
   ;; Delete the file which would log us in again automatically
@@ -3022,10 +3059,10 @@
                                (member user-name (cadr (list-ref rooms i))))
             (append result (list (list-ref rooms i))) result))
         ))
-    )   
+    )
 #|
     ;; Some sorting dark Magic: First rooms I have, then rooms that are uncovered, finally rooms covered by others.
-    (append 
+    (append
       (let loop ((i 0) (result (list)))
 	(if (= i (length rooms)) result
 	    (loop (+ i 1)(if (member user-name (cadr (list-ref rooms i)))(append result (list (list-ref rooms i))) result))
@@ -3074,9 +3111,9 @@
   (lambda (w h)
     ;; If we don't run on the phone the window size needs to be limited to iPhone <=3 size
     (if (or (string=? (system-platform) "macosx")
-	    (string=? (system-platform) "linux") 
-            (string=? (system-platform) "android") 
-            (string=? (system-platform) "win32")) 
+	    (string=? (system-platform) "linux")
+            (string=? (system-platform) "android")
+            (string=? (system-platform) "win32"))
     	      (make-window 320 480)
     )
     ;; Our gui will be designed for portrait layout
@@ -3087,10 +3124,10 @@
     (init-gui-menu)
     (init-gui-popup)
     ;; Get the server hostname
-    (if (file-exists? hostname-file) 
+    (if (file-exists? hostname-file)
         (set! rupi:hostname (with-input-from-file hostname-file (lambda () (read-line))))
     )
-    (set! rupi:addr 
+    (set! rupi:addr
       (with-exception-catcher
         (lambda (e) #f)
         (lambda () (car (host-info-addresses (host-info rupi:hostname))))
@@ -3110,7 +3147,7 @@
         ;; Also need to initialize the setup gui
         (init-gui-setup)
       )
-      (begin 
+      (begin
         (set! gui:login (make-glgui))
         (glgui-box gui:login 0 0 (glgui-width-get) (glgui-height-get) (color-shade Red 0.4))
         (store-set! "main" "popup-text" (list "NO CONNECTION" "FAILURE: Can't find the VitalNode. Please check the Wifi connection is active. We will quit now"))
@@ -3118,10 +3155,10 @@
       )
     )
     ;; I want logfiles so the logile directory needs to be made here
-    (if (not (file-exists? log:path)) (create-directory log:path)) 
+    (if (not (file-exists? log:path)) (create-directory log:path))
     ;; Load the login-file if we crashed and log us back in
-    (if (file-exists? login-file) 
-      (begin 
+    (if (file-exists? login-file)
+      (begin
         (store-set! "main" "Key" (with-input-from-file login-file (lambda () (read-line))))
         (delete-file login-file)
         (log-remote (string-append "Automatic login after crash [" (store-ref "main" "Key" "") "]"))
@@ -3132,13 +3169,13 @@
 ;;
 ;; events (and their handling) - Here updates are done after guis are already defined
 ;;
-  (lambda (t x y) 
+  (lambda (t x y)
     ;; Rotation change events
     (if (or (fx= mode MODE_WAVES) (fx= mode MODE_CHAT))
       (orientation-event t x y)
     )
     ;; Keyboard events
-    (if (fx= t EVENT_KEYRELEASE) 
+    (if (fx= t EVENT_KEYRELEASE)
       (begin
         ;; These are key presses, in case of ESC exit
         (if (fx= x EVENT_KEYESCAPE)
@@ -3157,7 +3194,7 @@
 	      (glgui-widget-set! gui:messaging-keyboard message-string 'label (string-append oldstr (string (integer->char x))))
 	    )
 	    ;; Backspace
-	    (if (and (fx= x 3) (fx> (string-length oldstr) 0)) 
+	    (if (and (fx= x 3) (fx> (string-length oldstr) 0))
               (glgui-widget-set! gui:messaging-keyboard message-string 'label (substring oldstr 0 (- (string-length oldstr) 1)))
 	    )
 	    ;; Return
@@ -3165,16 +3202,16 @@
 	      (send-message-callback (if (orientation-landscape?) gui:chat-landscape gui:messaging-keyboard) message-string #f 0 0)
 	    )
             ;; Update the message string in the landscape version too
-            (glgui-widget-set! gui:chat-landscape message-string-landscape 'label 
+            (glgui-widget-set! gui:chat-landscape message-string-landscape 'label
               (glgui-widget-get gui:messaging-keyboard message-string 'label)
             )
 	  )
 	)
       )
-    ) 
+    )
     ;; Add something for the battery level
-    (if (fx= t EVENT_BATTERY) 
-      (begin  
+    (if (fx= t EVENT_BATTERY)
+      (begin
 	(store-set! "main" "battery" x)
 	(glgui-widget-set! gui:menu battery 'value x)
       )
@@ -3220,7 +3257,7 @@
         (begin
           (set! voip:ring (fl+ ##now 4.))
           (set! voip:ring-count (fx- voip:ring-count 1))
-          (audiofile-forceplay audio:phone) 
+          (audiofile-forceplay audio:phone)
         )
       )
     ))
@@ -3247,18 +3284,18 @@
 	(show-popup)
       )
       (if (and text (not hidden))
-        (glgui-widget-set! gui:popup popup-timer 'w 
+        (glgui-widget-set! gui:popup popup-timer 'w
           (fix (* (glgui-widget-get gui:popup popup-text 'w ) (fl/ (fl- timeout (fl- ##now tstamp)) timeout))))
       )
       ;; We do a hack here: The ##now-3.0 is because the rupi timout in Login takes 3 sec and we still want the popup.
-      (if (and (not hidden) 
+      (if (and (not hidden)
                (fl> (fl- (if (and rupi:error (fx= mode MODE_LOGIN)) (fl- ##now 2.) ##now) tstamp) (if (glgui-widget-get gui:popup popup-box 'callback) timeout (fl/ timeout 2.)))
           )
         (begin
           (hide-popup)
           (if (and (not rupi:addr) (not (fx= mode MODE_SETUP)))
             (force-terminate) ;;(terminate) doesn't do it on the iPod/iPhone
-          ) 
+          )
         )
       )
     )
@@ -3269,14 +3306,14 @@
         (begin
           (set! gui:alertcheck-tstamp ##now)
           (store-set! "main" "AlertMessages"
-            (maps (lambda (lst) (if (fl> (fl- ##now (car lst)) (if (fx< (cadddr lst) 0) gui:alert-expire-answered-age gui:alert-expire-unanswered-age)) 
-              '() 
-              lst)) 
+            (maps (lambda (lst) (if (fl> (fl- ##now (car lst)) (if (fx< (cadddr lst) 0) gui:alert-expire-answered-age gui:alert-expire-unanswered-age))
+              '()
+              lst))
               (store-ref "main" "AlertMessages" '())
             )
           )
-          (glgui-widget-set! gui:messaging alert-list 'list (build-alert-list)) 
-          (glgui-widget-set! gui:messaging alert-list 'offset 0) 
+          (glgui-widget-set! gui:messaging alert-list 'list (build-alert-list))
+          (glgui-widget-set! gui:messaging alert-list 'offset 0)
         )
       )
     )
@@ -3297,7 +3334,7 @@
 	      (let ((lstmsg (store-ref "main" "LastUpdateTimeLocal" 0.))) ;; Use local time to avoid clock drift problems.
 	        (if (and (fl> lstmsg 0.) (fl> (fl- ##now lstmsg) age))
 	          (let* ((delta-time (fix (fl- ##now lstmsg)))
-                   (logstr (string-append "No communication with VitalNode for " 
+                   (logstr (string-append "No communication with VitalNode for "
 		                         (number->string delta-time) "sec")))
 	            (log-status logstr)
 	            (glgui-widget-set! gui:menu clock 'label "OFFLINE")
@@ -3338,7 +3375,7 @@
     ;;
     (glgui-event (if (fx= mode MODE_LOGIN)
       (list gui:login gui:popup)
-      (list 
+      (list
         (cond ((fx= mode MODE_OVERVIEW) gui:overview)
               ((fx= mode MODE_WAVES) (if (orientation-landscape?) gui:waves-landscape gui:waves))
               ((fx= mode MODE_MESSAGING) gui:messaging)
@@ -3361,7 +3398,7 @@
     ) t x y)
 
     ;; Try this to see if it reduces CPU usage
-    (##gc)                      ;; This calls the garbage collector 
+    (##gc)                      ;; This calls the garbage collector
     (if (and (fx= t EVENT_REDRAW) (not (fx= mode MODE_CHAT)))
       (thread-sleep! 0.04) ;; If all we do is redraw sleep a bit more 40usec (10 was from normal sleep)
     )
@@ -3370,13 +3407,13 @@
   ;; termination
   ;;
   (lambda ()
-    (rupi-logout) 
+    (rupi-logout)
     #t
   )
   ;;
   ;; suspension
   ;;
-  (lambda () 
+  (lambda ()
     (if (fx= mode MODE_WAVES) (begin
       (set! mode MODE_OVERVIEW)
       (orientation-set-portrait!)
@@ -3384,7 +3421,7 @@
     (if (fx= mode MODE_TRENDS) (set! mode MODE_OVERVIEW))
     (glgui-suspend)
   )
-  (lambda () 
+  (lambda ()
    (glgui-resume)
   )
 ) ;;eof
