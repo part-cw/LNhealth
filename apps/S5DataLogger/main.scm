@@ -44,7 +44,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define delta-time-update 1) ;;sec
 (define trend-time 1800) ;;sec
 (define quit-armed #f)
-(define cardioq? #f) (define neurosense? #t)
 
 ;; -----------------------------------------------------------------------------
 ;;  MAIN GUI
@@ -276,14 +275,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ((string=? (system-platform) "macosx") (detect-usb-serial))
       ((string=? (system-platform) "win32") "COM1")
       (else "/dev/tty.iap"))) '("Waveforms" ("ECG1" "PLETH" "CO2" "ENT")) '("Debug" #f))
-    ;; Initialize the CardioQ monitor plugin
-    (if cardioq? (make-instance store "cardioq" "monitor" `("Port" ,(cond
-      ((string=? (system-platform) "linux") "/dev/ttyUSB1")
-      ((string=? (system-platform) "win32") "COM2")
-      (else "/dev/tty.iap"))) '("Waveforms" ("ECG1" "PLETH" "CO2" "ENT")) '("Debug" #f)))
-    ;; Initialize a Neurosense monitor plugin
-    (if neurosense? (make-instance store "Neurosense" "neurosense"
-       '("IP" "195.14.195.100") '("Port" 5001)))
 
     ;; Initialize all of our output plugins
     (make-instance store "WAVEECG" "waveoutput" '("Source" "ECG1"))
@@ -294,7 +285,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ,(append (list "time_str") s5parser:physdatavalues_basic
                s5parser:physdatavalues_ext1 s5parser:physdatavalues_ext2
                s5parser:physdatavalues_ext3
-               (if cardioq? cardioq:parameters '()) (if neurosense? neurosense:parameters '())
                (list "marker" "alarm1_text" "alarm2_text"))))
 
     ;;Make sure that scheduler actually runs !!!
