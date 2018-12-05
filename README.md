@@ -7,3 +7,4 @@ This project houses open-source (BSD licensed) health-related applications, crea
 * [LNhealth](apps/LNhealth): A mobile health platform supporting sensing, data collection, and interoperable data exchange
 * [telePORT](apps/telePORT): A remote Portable Operating Room Tracker application
   - A compiled version is available on [Google Play](https://play.google.com/store/apps/details?id=org.ecemgroup.teleport) and [Apple's App Store](https://itunes.apple.com/ca/app/part-teleport/id600593433) .
+* [S5DataLogger](apps/S5DataLogger): A generic waveform and numerics data logger for GE/Dates S/5 patient monitors
