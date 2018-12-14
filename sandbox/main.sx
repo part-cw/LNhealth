@@ -60,46 +60,6 @@
                    (dbsave filename (uiget 'cryptokey) db))))
   
   ;; Calculate risk scores
-  (calc-hospital-score ,(lambda ()
-                          (let ((waz (dbget 'zscore #f))
-                                (bcs (dbget 'comascore #f))
-                                (hiv (dbget 'hiv #f))
-                                (score 0.0))
-                            (if waz
-                              (if (and hiv (not (string=? hiv "Unknown")))
-                                ;; Use first formula: logit[Pr(In-patient mortality)]=-4.280-0.254*WAZ+2.509*(BCS<5)+1.320*(HIV+).
-                                (begin
-                                  ;; Calculate formula
-                                  (set! score (- (- 4.28) (* waz 0.254)))
-                                  (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.509)))
-                                  (if (string=? hiv "Positive") (set! score (+ score 1.32))))
-                                ;; Use third formula: logit[Pr(In-patient mortality)]=-4.197 -0.303*WAZ+2.429*(BCS<5)
-                                (begin
-                                  ;; Calculate formula
-                                  (set! score (- (- 4.197) (* waz 0.303)))
-                                  (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.429)))))
-                              ;; No WAZ, use MUAC instead
-                              (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
-                                     (mnum (string->number muac)))
-                                (if (and hiv (not (string=? hiv "Unknown")))
-                                  ;; Use second formula: logit[Pr(In-patient mortality)]=-0.5233 -0.0245*muac+2.5403*(BCS<5)+ 1.3333*(HIV+)
-                                  (begin
-                                    ;; Calculate formula
-                                    (set! score (- (- 0.5233) (* mnum 0.0245)))
-                                    (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.5403)))
-                                    (if (string=? hiv "Positive") (set! score (+ score 1.3333))))
-                                  ;; Use fourth formula: logit[Pr(In-patient mortality)]=0.3032 -0.0294*muac+2.4668*(BCS<5)
-                                  (begin
-                                    ;; Calculate formula
-                                    (set! score (- 0.3032 (* mnum 0.0294)))
-                                    (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 2.4668)))))))
-                                  
-                            ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
-                            (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
-
-                            ;; Floor to two decimal places
-                            (ffloor score 0.01))))
-  
   (calc-discharge-score ,(lambda ()
                           (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
                                  (sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
@@ -151,66 +111,6 @@
                             ;; Floor to two decimal places
                             (ffloor score 0.01))))
   
-  ;; Use a list of thresholds to determine whether a factor is a little, moderate or high contribution to the risk
-  (classify-factor ,(lambda (threshvar value str)
-                      (let ((thresholds (uiget threshvar)))
-                        (cond
-                          ((not value)
-                            ;; Add item to the end of the string
-                            (uiset 'missingrisk
-                              (let ((missing (uiget 'missingrisk)))
-                                (if (fx= (string-length missing) 0)
-                                  str
-                                  (string-append missing ", " str)))))
-                          ((<= value (cadr thresholds))
-                            (uiset 'highrisk (append (uiget 'highrisk) (list str))))
-                          ((< value (cadddr thresholds))
-                            (uiset 'moderaterisk (append (uiget 'moderaterisk) (list str))))
-                          (else
-                            (uiset 'littlerisk (append (uiget 'littlerisk) (list str))))))))
-                           
-  ;; Determine which category each risk factor is in and add it to the list
-  (make-summary-items ,(lambda ()
-                         (uiset 'littlerisk '())
-                         (uiset 'moderaterisk '())
-                         (uiset 'highrisk '())
-                         (uiset 'missingrisk "")
-                         
-                         (let* ((hosp (dbget 'lasthosp #f))
-                                (hospnum (if hosp (+ (list-pos (uiget 'hosp_options '()) hosp) 1) #f))
-                                (hospstr (if hosp
-                                           (string-append "Hospitalized " hosp)
-                                           "Last hospitalization not answered")))
-                           (lnhealth-sxrun 'classify-factor 'hosp_thresholds hospnum hospstr))
-                         
-                         (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
-                                (muacnum (if muac (string->number muac) #f))
-                                (muacstr (string-append "Mid-upper arm circumference" (if muac (string-append ": " muac " mm") ""))))
-                           (lnhealth-sxrun 'classify-factor 'muac_thresholds muacnum muacstr))
-                                
-                         (let* ((z (dbget 'zscore #f))
-                                (zstr (string-append "Weight for age z-score" (if z (string-append ": " (lnhealth-sxrun 'float->stringz z 1)) ""))))
-                           (lnhealth-sxrun 'classify-factor 'waz_thresholds z zstr))
-                         
-                         (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
-                                (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
-                                (spnum (if sp (string->number sp) #f))
-                                (spstr (string-append "SpO2" (if sp (string-append ": " sp " %") ""))))
-                           (lnhealth-sxrun 'classify-factor 'spo2_thresholds spnum spstr))
-                                
-                         (let* ((bcs (dbget 'comascore #f))
-                                (bscstr (string-append "Blantyre coma score" (if bcs (string-append ": " (number->string bcs)) ""))))
-                           (lnhealth-sxrun 'classify-factor 'bcs_thresholds bcs bscstr))
-                           
-                         (let* ((hiv (dbget 'hiv #f))
-                                (hivnum (cond
-                                          ((not (string? hiv)) #f)
-                                          ((string=? hiv "Positive") 0)
-                                          ((string=? hiv "Negative") 1)
-                                          (else #f)))
-                                (hivstr (string-append "HIV status" (if hiv (string-append ": " hiv) ""))))
-                           (lnhealth-sxrun 'classify-factor 'hiv_thresholds hivnum hivstr))))
-  
   ;; Load an image file to use within a custom widget
   (load-image ,(lambda (file)
                  (let* ((sandbox (uiget 'sandbox #f))
@@ -239,11 +139,11 @@
     (uiset 'button-color (color-rgb 101 196 102))
         
     ;; Load fonts
-    (uiset 'fnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 18))
-    (uiset 'smlfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 20))
+    (uiset 'fnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 20))
+    (uiset 'smlfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 24))
     (uiset 'bigfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 40))
-    (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 25))
-    (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 20))
+    (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 30))
+    (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 24))
                
     ;; Load the localization csv table to translate between languages, used by spo2spotcheck
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
@@ -426,7 +326,7 @@
   #f
   #f
   (spacer height 20)
-  (label size small text "In-hospital mortality + post-discharge")
+  (label size small text "Post-discharge")
   (label size small text "mortality prediction application")
   (spacer height 15)
   (label text "For children 6 months to 5 years old")
@@ -434,9 +334,9 @@
   (label text "infectious illness")
   (spacer height 45)
 ;;  (box yofs 36 h 172)
-  (textentry text "Username:" id login_uname keycb ,(lambda () (uiget 'nospacecb)))
+  (textentry indent 0.32 text "Username:" id login_uname keycb ,(lambda () (uiget 'nospacecb)))
   (spacer height 15)
-  (textentry text "Password:" id login_pw password #t keycb ,(lambda () (uiget 'nospacecb)))
+  (textentry indent 0.32 text "Password:" id login_pw password #t keycb ,(lambda () (uiget 'nospacecb)))
   (spacer height 53)
   (box yofs 36 h 146)
   (button h 75 size header indent 0.05 rounded #t text "LOGIN" action
@@ -471,7 +371,8 @@
 ;;  (box yofs 195 h 79)
   (label text "Pediatric Anesthesia Research Team")
   (spacer height 5)
-  (label text "THE UNIVERSITY OF BRITISH COLUMBIA")
+  (label text "THE UNIVERSITY OF")
+  (label text "BRITISH COLUMBIA")
   (spacer)
 ;;  (box yofs 16 h 61)
  )
@@ -547,12 +448,12 @@
                           'demog)))
                   (list "Enter an ID for the Child." (list "OK" #f))))))
    (spacer height 34)
-   (textentry id childid text "Enter Child ID:" indent 0.35 keypad numint)
+   (textentry id childid text "Enter Child ID:" indent 0.40 keypad numint)
    (spacer height 55)
    (box yofs 42 h 74)
-   (textentry id last name #t text "Surname:")
+   (textentry indent 0.32 id last name #t text "Surname:")
    (spacer height 20)
-   (textentry id first name #t text "First Name:")
+   (textentry indent 0.32 id first name #t text "First Name:")
    (spacer)
    (box yofs 10 h 157)
    (spacer height 50)
@@ -619,9 +520,9 @@
    (label size small text ,(lambda () (string-append "Child ID: " (dbget 'childid ""))))
    (spacer height 73)
 ;;   (box left #t yofs 62 h 43)
-   (textentry id last name #t text "Surname:")
+   (textentry indent 0.32 id last name #t text "Surname:")
    (spacer height 20)
-   (textentry id first name #t text "First Name:")
+   (textentry indent 0.32 id first name #t text "First Name:")
    (spacer)
    (box yofs 10 h 157)
  )
@@ -634,9 +535,8 @@
               'editchild))
    ("Next" ,(lambda ()
               (lnhealth-sxrun 'save-child)
-              (if (and (sane  'infection (lambda (str) #t) "Enter whether there is a suspected infection" "")
-                       (sane  'lasthosp (lambda (str) #t) "Enter the time since last hospitalization" ""))
-                ;; First question answered
+              (if (sane  'lasthosp (lambda (str) #t) "Enter the time since last hospitalization" "")
+                ;; Last question answered
                 (let* ((sex (dbget 'sex #f))
                        (date (lnhealth-sxrun 'getnotemptystring 'date))
                        (age (dbget 'age #f)))
@@ -670,24 +570,19 @@
                                                              "risk will be less precise."))))))
                          (list message (list "Continue" 'anthro) (list "Fix" #f))))))
                 (list (uiget  'errmsg) (list "OK" #f)))))
-   (spacer height 51)
-   (label text "Suspected infection")
-   (spacer height 5)
-   (radiobox id infection left ("Yes" "1" #f) right ("No" "0" ("This app is only valid for children with a suspected infection: probabilities will not be calculated" ("OK" #f))))
-   (spacer height 60)
-   (box left #t yofs 50 h 95)
+   (spacer height 61)
    (label text "Sex")
    (spacer height 5)
    (radiobox id sex left ("Male" "1" #f) right ("Female" "0" #f))
-   (spacer height 60)
-   (box right #t yofs 50 h 95)
+   (spacer height 70)
+   (box right #t yofs 60 h 95)
    (label text "Birth Date")
    (spacer height 10)
    (dropdown text "Year of Birth" id yob entries ,(lambda () (uiget 'recent_years)))
    (spacer height 10)
    (dropdown text "Month of Birth" id mob entries ,(lambda () (uiget 'months)))
    (spacer height 10)
-   (label size small align center text ,(lambda ()
+   (label align center text ,(lambda ()
                              (string-append "Calculated Age: "
                              ;; Calculate years between dob and current date
                              (let ((year (dbget 'yob #f))
@@ -713,8 +608,8 @@
                                  (begin
                                    (dbset 'age #f)
                                    ""))))))
-   (spacer height 65)
-   (box left #t yofs 50 h ,(lambda ()
+   (spacer height 75)
+   (box left #t yofs 60 h ,(lambda ()
                              (let ((dh1 (if (uiget "yob:expanded") 336 0))
                                    (dh2 (if (uiget "mob:expanded") 576 0)))
                                (+ 193 dh1 dh2))))
@@ -795,7 +690,8 @@
    (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm" units "mm")
 ;;   (box right #t yofs 169 h 77)
    (spacer height 49)
-   (label size small text "Calculated weight for age z-score")
+   (label size small text "Calculated")
+   (label size small text "weight for age z-score")
    (spacer height 10)
    (label size big text ,(lambda () (let ((weight (dbget 'weight #f))
                                           (age (dbget 'age #f))
@@ -810,7 +706,7 @@
                                           (dbset 'zscore #f)
                                           " ")))))
    (spacer)
-   (box yofs 18 h 100)
+   (box yofs 18 h 130)
  )
  
   ;; Oxygen saturation from another device
@@ -930,7 +826,7 @@
           (if (or id (lnhealth-sxrun 'getnotemptystring 'spo2med) (stget "SP_Median" #f))
             ;; If tablet based SpO2 being done or is already done, don't allow manual
             '(spacer height 0)
-            `(button height 30 rounded #t indent 0.2 text "SpO2 from another device" action ,(lambda ()
+            `(button height 30 rounded #t text "SpO2 from another device" action ,(lambda ()
                 (if (uiget 'invalidspo2)
                   (begin
                      (stclear "SP_Median")
@@ -969,15 +865,17 @@
                 (if bcs
                   (if hiv
                     (begin
-                      (lnhealth-sxrun 'make-summary-items)
-                      'summary)
+                      (lnhealth-sxrun 'save-child)
+                      (let ((dscore (lnhealth-sxrun 'calc-discharge-score)))
+                        (dbset 'dischargescore dscore))
+                      'risk)
                     (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
                            (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
                            (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
                       (cond
                         ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
                         ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
-                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" (begin (lnhealth-sxrun 'make-summary-items) 'summary)) (list "Fix" #f))))))
+                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" 'risk) (list "Fix" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
    (spacer height 50)
    (label size small text "Blantyre coma scale")
@@ -1013,7 +911,7 @@
                                             (dbset 'comascore #f)
                                             "")))))
    (spacer height 56)
-   (box left #t yofs 48 h ,(lambda () (+ 420
+   (box left #t yofs 48 h ,(lambda () (+ 445
                                          (if (uiget "eye:expanded") 96 0)
                                          (if (uiget "motor:expanded") 144 0)
                                          (if (uiget "verbal:expanded") 144 0)
@@ -1025,163 +923,13 @@
    (box right #t yofs 16 h ,(lambda () (if (uiget "hiv:expanded") 245 101)))
  )
   
-  ;; Summary screen
- (summary
-   "Summary"
-   ("Back" ,(lambda ()
-              (lnhealth-sxrun 'save-child)
-              'clinical))
-   ("Next" ,(lambda ()
-              (lnhealth-sxrun 'save-child)
-              (if (string=? (dbget 'infection "0") "1")
-                (let ((hscore (lnhealth-sxrun 'calc-hospital-score))
-                      (dscore (lnhealth-sxrun 'calc-discharge-score)))
-                  (dbset 'hospitalscore hscore)
-                  (dbset 'dischargescore dscore)
-                  'risk)
-                ;; No infection, blinded, no probabilities
-                'blinded)))
-   (spacer height 10)
-   (label indent 0.1 align left text ,(lambda ()
-     (let* ((sex (dbget 'sex ""))
-            (sexstr (cond
-                      ((string=? sex "1") "Male")
-                      ((string=? sex "0") "Female")
-                      (else #f)))
-            (a (dbget 'age #f))
-            (w (dbget 'weight #f)))
-     (string-append (if sexstr sexstr)
-                    (if a (string-append (if sexstr ", " "") (lnhealth-sxrun 'format-age a) " old") "")
-                    (if w (string-append (if (or a sexstr) ", " "") w " kg") "")))))
-   (spacer height 15)
-   (label size small align center text "Risk Factors:")
-   ,(lambda ()
-      (if (fx= (length (uiget 'highrisk)) 0)
-        '(spacer height 0)
-        '(spacer height 45)))
-   ,(lambda ()
-      (if (fx= (length (uiget 'highrisk)) 0)
-        '(spacer height 0)
-        `(label size small align center text "High Contribution to Risk")))
-   ,(lambda ()
-      (if (fx= (length (uiget 'highrisk)) 0)
-        '(spacer height 0)
-        '(face state 0)))
-   ,(lambda ()
-      (if (fx= (length (uiget 'highrisk)) 0)
-        '(spacer height 0)
-        '(spacer height 15)))
-   ,(lambda ()
-      (let ((hr (uiget 'highrisk)))
-        (if (fx> (length hr) 0)
-          (let ((str (string-mapconcat hr "\n\n")))
-            `(label align center text ,str))
-          '(spacer height 0))))
-   ,(lambda ()
-      (if (fx= (length (uiget 'highrisk)) 0)
-        '(spacer height 0)
-        '(spacer height 20)))
-   ,(lambda ()
-      (let ((lhr (length (uiget 'highrisk))))
-        (if (fx= lhr 0)
-          '(spacer height 0)
-          (let ((bh (+ 55 (* 36 lhr))))
-            `(box yofs 0 h ,bh border ,Red)))))
-   ,(lambda ()
-      (if (fx= (length (uiget 'moderaterisk)) 0)
-        '(spacer height 0)
-        '(spacer height 45)))
-   ,(lambda ()
-      (if (fx= (length (uiget 'moderaterisk)) 0)
-        '(spacer height 0)
-        `(label size small align center text "Moderate Contribution to Risk")))
-   ,(lambda ()
-      (if (fx= (length (uiget 'moderaterisk)) 0)
-        '(spacer height 0)
-        '(face state 1)))
-   ,(lambda ()
-      (if (fx= (length (uiget 'moderaterisk)) 0)
-        '(spacer height 0)
-        '(spacer height 15)))
-   ,(lambda ()
-      (let ((mr (uiget 'moderaterisk)))
-        (if (fx> (length mr) 0)
-          (let ((str (string-mapconcat mr "\n\n")))
-            `(label align center text ,str))
-          '(spacer height 0))))
-   ,(lambda ()
-      (if (fx= (length (uiget 'moderaterisk)) 0)
-        '(spacer height 0)
-        '(spacer height 20)))
-   ,(lambda ()
-      (let ((lmr (length (uiget 'moderaterisk))))
-        (if (fx= lmr 0)
-          '(spacer height 0)
-          (let ((bh (+ 55 (* 36 lmr))))
-            `(box yofs 0 h ,bh border ,Yellow)))))
-   ,(lambda ()
-      (if (fx= (length (uiget 'littlerisk)) 0)
-        '(spacer height 0)
-        '(spacer height 45)))
-   ,(lambda ()
-      (if (fx= (length (uiget 'littlerisk)) 0)
-        '(spacer height 0)
-        `(label size small align center text "Little Contribution to Risk")))
-   ,(lambda ()
-      (if (fx= (length (uiget 'littlerisk)) 0)
-        '(spacer height 0)
-        '(face state 2)))
-   ,(lambda ()
-      (if (fx= (length (uiget 'littlerisk)) 0)
-        '(spacer height 0)
-        '(spacer height 15)))
-   ,(lambda ()
-      (let ((lr (uiget 'littlerisk)))
-        (if (fx> (length lr) 0)
-          (let ((str (string-mapconcat lr "\n\n")))
-            `(label align center text ,str))
-          '(spacer height 0))))
-   ,(lambda ()
-      (if (fx= (length (uiget 'littlerisk)) 0)
-        '(spacer height 0)
-        '(spacer height 20)))
-   ,(lambda ()
-      (let ((llr (length (uiget 'littlerisk))))
-        (if (fx= llr 0)
-          '(spacer height 0)
-          (let ((bh (+ 55 (* 36 llr))))
-            `(box yofs 0 h ,bh border ,Green)))))
-   ,(lambda ()
-      (if (fx= (string-length (uiget 'missingrisk)) 0)
-        '(spacer height 0)
-        '(spacer height 38)))
-   ,(lambda ()
-      (let ((mr (uiget 'missingrisk)))
-        (if (fx> (string-length mr) 0)
-          (let ((str (string-append "Missing: " mr)))
-            `(label align center text ,str))
-          '(spacer height 0))))
-   (spacer height 38)
-   (button h 75 size header indent 0.05 rounded #t text "Calculate Mortality Risk" action
-      ,(lambda ()
-         (lnhealth-sxrun 'save-child)
-         (if (string=? (dbget 'infection "0") "1")
-           (let ((hscore (lnhealth-sxrun 'calc-hospital-score))
-                 (dscore (lnhealth-sxrun 'calc-discharge-score)))
-              (dbset 'hospitalscore hscore)
-              (dbset 'dischargescore dscore)
-              'risk)
-           ;; No infection, blinded, no probabilities
-           'blinded)))
- )
-  
   ;; Risk screen
  (risk
    "Risk"
    ("Back" ,(lambda ()
               (lnhealth-sxrun 'save-child)
-              'summary))
-   ("Start Again" ,(lambda ()
+              'clinical))
+   ("Restart" ,(lambda ()
                      (lnhealth-sxrun 'save-child)
                      (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                      (dbclear 'childid)
@@ -1192,25 +940,7 @@
                      (stclear "HR_Median")
                      (stclear "SP_Timestamp")
                      'menu))
-   (spacer height 77)
-   (label size small text "In Hospital Risk of Mortality")
-   (spacer)
-   (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
-                                       (if score
-                                         (if (<= score 3.0) "Low" "High")
-                                         "Not Calculated"))))
-   (spacer)
-   (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
-                                       (if score
-                                         (if (<= score 3.0) "< 1 %" "> 15 %")
-                                         ""))))
-   (spacer height 22)
-   (help action help-in-hospital)
-   (spacer height 92)
-   (box yofs 78 h 240 border ,(lambda () (let ((score (dbget 'hospitalscore #f)))
-                                           (if score
-                                             (if (<= score 3.0) Green Red)
-                                             #f))))
+   (spacer height 140)
    (label size small text "Post-Discharge Risk of Mortality")
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
@@ -1225,39 +955,10 @@
    (spacer height 22)
    (help action help-post-discharge)
    (spacer height 80)
-   (box yofs 65 h 240 border ,(lambda () (let ((score (dbget 'dischargescore #f)))
+   (box yofs 65 h 244 border ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                            (if score
                                              (if (<= score 3.5) Green Red)
                                              #f))))
- )
- 
-  ;; Help page for in-hospital mortality
-  (help-in-hospital
-   "In-Hospital Risk"
-   ("Back" risk)
-   #f
-   (spacer height 77)
-   (label size small text "In Hospital Risk of Mortality")
-   (spacer)
-   (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
-                                       (if score
-                                         (if (<= score 3.0) "Low" "High")
-                                         "Not Calculated"))))
-   (spacer)
-   (label size big text ,(lambda () (let ((score (dbget 'hospitalscore #f)))
-                                       (if score
-                                         (if (<= score 3.0) "< 1 %" "> 15 %")
-                                         ""))))
-   (spacer)
-   (scale thresholds ,(lambda () (uiget 'inhospital_thresholds)) value ,(lambda () (let ((score (dbget 'hospitalscore #f)))
-                                                                                     (if score (- score) #f))))
-   (spacer height 70)
-   (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3%. "
-                                          "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
-                                          "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
-                                          "the risk cut-off (3%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
-   (spacer)
-   (box yofs 9 h 553)
  )
   
   ;; Help page for post-discharge mortality
@@ -1265,7 +966,7 @@
    "Post-Discharge Risk"
    ("Back" risk)
    #f
-   (spacer height 64)
+   (spacer height 40)
    (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3.5%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
                                           "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
@@ -1285,40 +986,8 @@
    (spacer)
    (scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                                                                 (if score (- score) #f))))
-   (spacer height 35)
-   (box h 595)
- )
-  
- ;; Blinded risk screen
- (blinded
-   "Risk"
-   ("Back" ,(lambda ()
-              (lnhealth-sxrun 'save-child)
-              'summary))
-   ("Start Again" ,(lambda ()
-                     (lnhealth-sxrun 'save-child)
-                     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
-                     (dbclear 'childid)
-                     (dbclear 'first)
-                     (dbclear 'last)
-                     (spo2spot-reset)
-                     (stclear "SP_Median")
-                     (stclear "HR_Median")
-                     (stclear "SP_Timestamp")
-                     'menu))
-   (spacer height 162)
-   (label size small text "In Hospital Risk of Mortality")
-   (spacer)
-   (label text "No proven or suspected infection")
-   (label text "so no probabilities calculated.")
-   (spacer height 176)
-   (box yofs 162 h 114)
-   (label size small text "Post-Discharge Risk of Mortality")
-   (spacer)
-   (label text "No proven or suspected infection")
-   (label text "so no probabilities calculated.")
-   (spacer)
-   (box yofs 16 h 114)
+   (spacer height 20)
+   (box h 625)
  )
 )
   
