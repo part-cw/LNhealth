@@ -15,6 +15,24 @@
                          ((or (char=? f #\+) (string=? str "0")) str)
                          (else (string-append "+" str))))))
   
+  ;; Check that a study ID is valid
+  (valid-id ,(lambda (id)
+    (let ((len (string-length id)))
+      (let loop ((i 0) (letter? #t))
+        (if (fx< i len)
+          (let ((c (string-ref id i)))
+            (cond
+              ;; Valid ID letters
+              ((and (fx< i 4) (char-alphabetic? c))
+                (loop (+ i 1) #t))
+              ;; Valid digit
+              ((and (fx> i 2) (char-numeric? c))
+                 (loop (+ i 1) #f))
+              ;; Character invalid
+              (else #f)))
+          ;; All characters valid, make sure it ended in a digit
+          (not letter?))))))
+
   ;; Calculate a z-score
   (z-score ,(lambda (age weight boy?)
               (let* ((data (uiget (if boy? 'zboys 'zgirls)))
@@ -110,6 +128,24 @@
 
                             ;; Floor to two decimal places
                             (ffloor score 0.01))))
+
+  ;; Go to the printing page if everything is filled in
+  (goto-printing ,(lambda ()
+                    (let ((phone (lnhealth-sxrun 'getnotemptystring 'phone))
+                          (phone2 (lnhealth-sxrun 'getnotemptystring 'phone2))
+                          (facility (dbget 'facility)))
+                      (if (and facility (string=? facility "Other"))
+                        (set! facility (lnhealth-sxrun 'getnotemptystring 'custom_facility)))
+                      (cond
+                        ((and phone phone2 (not (string=? phone phone2)))
+                          (list "Phone numbers do not match" (list "OK" #f)))
+                        ((and (dbget 'sms_consent) (or (not phone) (not phone2)))
+                          (list "The phone number must be entered twice." (list "OK" #f)))
+                        ((not facility)
+                          (list "No referral facility chosen, please choose one." (list "OK" #f)))
+                        (else
+                          (lnhealth-sxrun 'save-child)
+                          'printing)))))
   
   ;; Load an image file to use within a custom widget
   (load-image ,(lambda (file)
@@ -291,6 +327,43 @@
      (uiset 'nospacecb (lambda (floc fid str)
                           (if (and (string? str) (fx> (string-length str) 0) (char=? (string-ref str (fx- (string-length str) 1)) #\space))
                             (xxset floc fid (substring str 0 (fx- (string-length str) 1))))))
+
+     ;; Keypad after char callback procedure for the study ID
+     (uiset 'idcb (lambda (floc fid str)
+                    (let ((len (string-length str)))
+                      (let loop ((i 0) (newstr ""))
+                        (if (fx< i len)
+                          (let ((c (string-ref str i)))
+                            (if (or (char-alphabetic? c)
+                                    (char-numeric? c))
+                              (loop (+ i 1) (string-append newstr (string c)))
+                              (loop (+ i 1) newstr)))
+                          (xxset floc fid (string-upcase newstr)))))))
+
+     (uiset 'site "Mbarara Regional Referral Hospital")
+
+     ;; Setup referral region trees, table with keys of district, values of pairs of district table and sub district list. Each district table has keys of sub district, values of facilities in the sub district.
+     (let* ((locations (cdr (csv-read (string-append (uiget 'sandbox "") (system-pathseparator) "mbarara_facilities.csv"))))
+            (locationstb (make-table init: #f))
+            (locationdistricts '()))
+       (let dloop ((d 0))
+         (if (fx< d (length locations))
+           (let* ((row (list-ref locations d))
+                  (district (car row))
+                  (districtentry (table-ref locationstb district #f))
+                  (districttb (if districtentry (car districtentry) (make-table init: #f)))
+                  (sublist (if districtentry (cdr districtentry) '()))
+                  (sub (cadr row))
+                  (faclist (table-ref districttb sub '()))
+                  (fac (caddr row)))
+             ;; Add facility to the list, add sub district to list, add entries into tables, add district to list
+             (table-set! districttb sub (append faclist (list fac)))
+             (table-set! locationstb district (cons districttb (if (list-pos sublist sub) sublist (append sublist (list sub)))))
+             (if (not (list-pos locationdistricts district)) (set! locationdistricts (append locationdistricts (list district))))
+             (dloop (+ d 1)))
+           (begin
+             (uiset 'locationtb locationstb)
+             (uiset 'districts (sort locationdistricts string<?))))))
   ))
   
   (onevent ,(lambda (t x y) (spo2spot-event)))
@@ -350,6 +423,7 @@
                  (fx= admin-pwhash (string=?-hash login-pw))))
              (result (begin
                (dbclear 'childid)
+               (dbclear 'childid2)
                (dbclear 'first)
                (dbclear 'last)
                (dbclear  'login_uname)
@@ -413,10 +487,8 @@
    (spacer height 115)
    (image file "load.png")
    (spacer height 20)
-;;   (box yofs 179 h 96)
    (button h 75 size header indent 0.05 rounded #t text "Load Child File" action ,(lambda () 'load))
    (spacer)
-;;   (box yofs 10 h 96)
  )
 
  ;; New screen
@@ -425,15 +497,21 @@
    ("Back" menu)
    ("Next" ,(lambda ()
               (let ((id (lnhealth-sxrun 'getnotemptystring 'childid))
+                    (id2 (lnhealth-sxrun 'getnotemptystring 'childid2))
                     (first (dbget 'first))
                     (last (dbget 'last)))
-                (if id
-                  (let ((db (uiget  'database))
-                        (register (dbget 'register '())))
-                    (if (member id register)
-                      (list "ID already used." (list "OK" #f))
-                      (begin
+                (cond
+                  ((or (not id) (not id2)) (list "Enter the Study ID twice." (list "OK" #f)))
+                  ((not (string=? id id2)) (list "The two Study ID's do not match." (list "OK" #f)))
+                  ((not (lnhealth-sxrun 'valid-id id)) (list (string-append id " is not a valid ID.") (list "OK" #f)))
+                  (else
+                    (let ((db (uiget  'database))
+                          (register (dbget 'register '())))
+                      (if (member id register)
+                        (list "ID already used." (list "OK" #f))
+                        (begin
                           (dbclear 'childid)
+                          (dbclear 'childid2)
                           (dbclear 'first)
                           (dbclear 'last)
                           (uiset  'admin-database db)
@@ -442,15 +520,19 @@
                           (if first (dbset  'first first))
                           (if last (dbset  'last last))
                           (uiset 'new #t)
-                          ;; Set the current date
+                          ;; Set the current date and facility
                           (dbset 'date (seconds->string ##now "%Y-%m-%d"))
+                          (dbset 'site (uiget 'site))
+                          (dbset 'include_dates #t)
                           (lnhealth-sxrun 'save-child)
-                          'demog)))
-                  (list "Enter an ID for the Child." (list "OK" #f))))))
+                          'demog))))))))
    (spacer height 34)
-   (textentry id childid text "Enter Child ID:" indent 0.40 keypad numint)
+   (textentry id childid text "Study ID:" indent 0.45 keycb ,(lambda () (uiget 'idcb)))
+   (spacer height 20)
+   (textentry id childid2 text "Confirm Study ID:" indent 0.45 keycb ,(lambda () (uiget 'idcb)))
+   (spacer)
+   (box yofs 10 h 157)
    (spacer height 55)
-   (box yofs 42 h 74)
    (textentry indent 0.32 id last name #t text "Surname:")
    (spacer height 20)
    (textentry indent 0.32 id first name #t text "First Name:")
@@ -479,7 +561,7 @@
                               (sptime (dbget 'sptime)))
                           (if (and sp hr)
                             (spo2spot-load hr sp sptime)))
-                        'editchild)
+                        'childmenu)
                       (list (string-append "File " filename " missing.") (list "OK" #f))))
                   (list "Select a child by ID" (list "OK" #f))))))
    (spacer height 50)
@@ -499,25 +581,82 @@
    (spacer height 10)
  )
   
- ;; Edit child name
- (editchild
-   "Edit Child"
-   ("Back" ,(lambda ()
+ ;; Child menu
+ (childmenu
+   "Child"
+   ("Exit" ,(lambda ()
               (lnhealth-sxrun 'save-child)
               (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
               (dbclear 'childid)
+              (dbclear 'childid2)
               (dbclear 'first)
               (dbclear 'last)
               (spo2spot-reset)
               (stclear "SP_Median")
               (stclear "HR_Median")
               (stclear "SP_Timestamp")
-              (if (uiget 'new #f) 'menu 'load)))
+              'menu))
+   #f
+   (spacer height 44)
+   (image file "small_child.png")
+   (spacer height 20)
+   (button h 75 size header indent 0.05 rounded #t text "Edit Child" action ,(lambda () 'editchild))
+   (spacer height 115)
+   ,(lambda ()
+      (if (dbget 'dischargescore)
+        '(label size small text "Post-Discharge Risk of Mortality:")
+        '(label size small text "Assessment Incomplete")))
+   (spacer height 5)
+   ,(lambda ()
+      (let ((score (dbget 'dischargescore)))
+        (cond
+          ((not score)
+            '(label size small text "No score yet"))
+          ((<= score 3.5)
+            '(label size small text "Low"))
+          (else
+            '(label size small text "High")))))
+  (spacer height 20)
+  ,(lambda ()
+      (let ((score (dbget 'dischargescore)))
+        (if (and score (> score 3.5))
+          '(image file "referral.png")
+          '(spacer height 0))))
+  (spacer height 20)
+  ,(lambda ()
+      (let ((score (dbget 'dischargescore)))
+        (if (and score (> score 3.5))
+          `(button h 75 size header indent 0.05 rounded #t text "Referral" action ,(lambda () 'referral))
+          '(spacer height 0))))
+   (spacer)
+ )
+
+ ;; Edit child name
+ (editchild
+   "Edit Child"
+   ("Back" ,(lambda ()
+              (if (uiget 'new #f)
+                (begin
+                  (lnhealth-sxrun 'save-child)
+                  (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+                  (dbclear 'childid)
+                  (dbclear 'childid2)
+                  (dbclear 'first)
+                  (dbclear 'last)
+                  (spo2spot-reset)
+                  (stclear "SP_Median")
+                  (stclear "HR_Median")
+                  (stclear "SP_Timestamp")
+                  (lnhealth-sxrun 'save-child)
+                  'menu)
+                (begin
+                  (lnhealth-sxrun 'save-child)
+                  'childmenu))))
    ("Next" ,(lambda ()
               (lnhealth-sxrun 'save-child)
               'demog))
    (spacer height 53)
-   (label size small text ,(lambda () (string-append "Child ID: " (dbget 'childid ""))))
+   (label size small text ,(lambda () (string-append "Study ID: " (dbget 'childid ""))))
    (spacer height 73)
 ;;   (box left #t yofs 62 h 43)
    (textentry indent 0.32 id last name #t text "Surname:")
@@ -933,6 +1072,7 @@
                      (lnhealth-sxrun 'save-child)
                      (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                      (dbclear 'childid)
+                     (dbclear 'childid2)
                      (dbclear 'first)
                      (dbclear 'last)
                      (spo2spot-reset)
@@ -988,6 +1128,130 @@
                                                                                 (if score (- score) #f))))
    (spacer height 20)
    (box h 625)
+ )
+
+ ;; Referral info collection
+ (referral
+   "Referral"
+   ("Back" ,(lambda ()
+              ;; Check that phone numbers match
+              (let ((phone (lnhealth-sxrun 'getnotemptystring 'phone))
+                    (phone2 (lnhealth-sxrun 'getnotemptystring 'phone2)))
+                (cond
+                  ((and phone phone2 (not (string=? phone phone2)))
+                     (list "Phone numbers do not match" (list "OK" #f)))
+                  ((or (and phone (not phone2)) (and phone2 (not phone)))
+                     (list "The phone number must be entered twice." (list "OK" #f)))
+                  (else
+                    (lnhealth-sxrun 'save-child)
+                    'childmenu)))))
+   ("Print" ,(lambda () (lnhealth-sxrun 'goto-printing)))
+   (spacer)
+   (checkbox id sms_consent indent 0.1 text "Consent to SMS referral reminders?")
+   (spacer height 10)
+   ,(lambda ()
+      (if (dbget 'sms_consent)
+        (begin
+          '(textentry id phone indent 0.4 text "Phone:"  keypad numint))
+        (begin
+          (dbclear 'phone)
+          '(spacer height 0))))
+   (spacer height 10)
+  ,(lambda ()
+      (if (dbget 'sms_consent)
+        (begin
+          '(textentry id phone2 indent 0.4 text "Confirm Phone:"  keypad numint))
+        (begin
+          (dbclear 'phone2)
+          '(spacer height 0))))
+   (spacer)
+   (label text "Choose the preferred referral facility:")
+   (spacer height 10)
+   (dropdown id district text "Choose District" entries ,(lambda () (uiget 'districts)))
+   (spacer height 10)
+   ,(lambda ()
+     (if (dbget 'district)
+       `(dropdown id sub text "Choose Health Sub District" entries ,(lambda ()
+                                                                      (let* ((locationtb (uiget 'locationtb))
+                                                                             (districtentry (table-ref locationtb (dbget 'district) #f))
+                                                                             (districttb (if districtentry (car districtentry) (make-table init: #f)))
+                                                                             (sublist (if districtentry (cdr districtentry) '())))
+                                                                        (uiset 'districttb districttb)
+                                                                        (sort sublist string<?))))
+       '(spacer height 0)))
+   (spacer height 10)
+   ,(lambda ()
+     (if (and (dbget 'sub) (uiget 'districttb))
+       `(dropdown id facility text "Choose Health Facility" entries ,(lambda ()
+                                                                      (let* ((districttb (uiget 'districttb))
+                                                                             (faclist (table-ref districttb (dbget 'sub) '())))
+                                                                        (append (sort faclist string<?) (list "Other")))))
+       '(spacer height 0)))
+   (spacer height 10)
+   ,(lambda ()
+     (if (and (dbget 'facility) (string=? (dbget 'facility) "Other"))
+       `(textentry id custom_facility text "Other:")
+       '(spacer height 0)))
+   (spacer)
+   (button h 75 size header indent 0.05 rounded #t text "REFERRAL PRINTING" action ,(lambda () (lnhealth-sxrun 'goto-printing)))
+ )
+
+  ;; Referral summary page
+ (printing
+  "Referral"
+  ("Back" referral)
+  ("Done" childmenu)
+  (spacer)
+  (label align left text ,(lambda () (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last ""))))
+  (spacer height 4)
+  (label align left text ,(lambda () (string-append "DOB: " (dbget 'dob "          ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "0") "Female" "")))))
+  (spacer height 4)
+  (label align left text ,(lambda () (string-append "Admission Date: ")))
+  (spacer height 4)
+  (label align left text ,(lambda () (string-append "Admitting Hospital: ")))
+  (spacer height 4)
+  (label align left text ,(lambda () (string-append "Discharge Date: " (seconds->string (current-time-seconds) "%Y-%m-%d"))))
+  (spacer height 4)
+  (label align left text ,(lambda () (string-append "Post-Discharge Risk of Mortality: " (number->string (dbget 'dischargescore)) "%")))
+  (spacer height 4)
+  (label align left text ,(lambda () (string-append "Referral Health Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
+                                                                                   (if facility
+                                                                                     (if (string=? facility "Other")
+                                                                                       (dbget 'custom_facility "")
+                                                                                       facility))))))
+  (spacer)
+  (label align left size small indent 0.05 text ,(lambda () (string-append "If discharged today (" (seconds->string (current-time-seconds) "%Y-%m-%d") "),")))
+  (spacer height 4)
+  (label align left size small indent 0.05 text "referral dates are:")
+  (spacer height 10)
+  (label align left size small text ,(lambda () (string-append (seconds->string (+ (current-time-seconds) 172800) "%A, %Y-%m-%d"))))
+  (spacer height 4)
+  (label align left size small text ,(lambda () (string-append (seconds->string (+ (current-time-seconds) 604800) "%A, %Y-%m-%d"))))
+  (spacer height 4)
+  (label align left size small text ,(lambda () (string-append (seconds->string (+ (current-time-seconds) 1209600) "%A, %Y-%m-%d"))))
+  (spacer height 60)
+  (checkbox id include_dates text "Include referral dates")
+  (spacer height 10)
+  (button h 75 size header indent 0.05 rounded #t text "COPY INFO FOR PRINTING" action
+    ,(lambda ()
+       (clipboard-copy (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last "") "\n"
+                                      "DOB: " (dbget 'dob "          ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "0") "Female" "")) "\n"
+                                      "Admission Date: " (dbget 'date "") "\n"
+                                      "Admitting Hospital: " (dbget 'site "") "\n"
+                                      "Discharge Date: " (seconds->string (current-time-seconds) "%Y-%m-%d") "\n"
+                                      "Post-Discharge Risk of Mortality: " (number->string (dbget 'dischargescore)) "%\n"
+                                      "Referral Health Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
+                                                                      (if facility
+                                                                        (if (string=? facility "Other")
+                                                                          (dbget 'custom_facility "")
+                                                                          facility)))
+                                      (if (dbget 'include_dates)
+                                        (string-append "\nReferral Dates:\n"
+                                                       (seconds->string (+ (current-time-seconds) 172800) "%A, %Y-%m-%d") "\n"
+                                                       (seconds->string (+ (current-time-seconds) 604800) "%A, %Y-%m-%d") "\n"
+                                                       (seconds->string (+ (current-time-seconds) 1209600) "%A, %Y-%m-%d") "\n")
+                                        "")))
+       (list "Referral info copied. Paste into the printer app." (list "OK" #f))))
  )
 )
   
