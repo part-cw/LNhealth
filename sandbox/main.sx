@@ -203,6 +203,9 @@
     (uiset 'cryptokey '#u8(134 102 230 27 13 87 122 120 138 103 53 192 70 93 200 53 121 202 33 85 28 187 73 219))
     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                
+    ;; Hospital sites
+    (uiset 'sites (list "Mbarara Regional Referral Hospital" "Holy Innocents Children's Hospital" "Jinja Regional Referral Hospital" "Masaka Regional Referral Hospital"))
+
     ;; Make a list of the last 6 years
     (let loop ((d (string->number (seconds->string ##now "%Y"))) (i 0) (years '()))
       (if (fx< i 7)
@@ -339,31 +342,6 @@
                               (loop (+ i 1) (string-append newstr (string c)))
                               (loop (+ i 1) newstr)))
                           (xxset floc fid (string-upcase newstr)))))))
-
-     (uiset 'site "Mbarara Regional Referral Hospital")
-
-     ;; Setup referral region trees, table with keys of district, values of pairs of district table and sub district list. Each district table has keys of sub district, values of facilities in the sub district.
-     (let* ((locations (cdr (csv-read (string-append (uiget 'sandbox "") (system-pathseparator) "mbarara_facilities.csv"))))
-            (locationstb (make-table init: #f))
-            (locationdistricts '()))
-       (let dloop ((d 0))
-         (if (fx< d (length locations))
-           (let* ((row (list-ref locations d))
-                  (district (car row))
-                  (districtentry (table-ref locationstb district #f))
-                  (districttb (if districtentry (car districtentry) (make-table init: #f)))
-                  (sublist (if districtentry (cdr districtentry) '()))
-                  (sub (cadr row))
-                  (faclist (table-ref districttb sub '()))
-                  (fac (caddr row)))
-             ;; Add facility to the list, add sub district to list, add entries into tables, add district to list
-             (table-set! districttb sub (append faclist (list fac)))
-             (table-set! locationstb district (cons districttb (if (list-pos sublist sub) sublist (append sublist (list sub)))))
-             (if (not (list-pos locationdistricts district)) (set! locationdistricts (append locationdistricts (list district))))
-             (dloop (+ d 1)))
-           (begin
-             (uiset 'locationtb locationstb)
-             (uiset 'districts (sort locationdistricts string<?))))))
   ))
   
   (onevent ,(lambda (t x y) (spo2spot-event)))
@@ -414,13 +392,11 @@
   (box yofs 36 h 146)
   (button h 75 size header indent 0.05 rounded #t text "LOGIN" action
     ,(lambda () 
-      (let* ((admin-uname  (dbget  'admin_uname))
-             (admin-pwhash (dbget  'admin_pwhash))
-             (login-pw     "321")
-             (login-uname  "para")
-             (admin-ok (and admin-uname login-uname login-pw
-                 (string=? admin-uname login-uname)
-                 (fx= admin-pwhash (string=?-hash login-pw))))
+      (let* ((usernames (dbget 'usernames '()))
+             (login-uname (lnhealth-sxrun 'getnotemptystring 'login_uname))
+             (login-pw (lnhealth-sxrun 'getnotemptystring 'login_pw))
+             (user (assoc login-uname usernames))
+             (user-ok (and login-uname login-pw user (fx= (cadr user) (string=?-hash login-pw))))
              (result (begin
                (dbclear 'childid)
                (dbclear 'childid2)
@@ -428,18 +404,43 @@
                (dbclear 'last)
                (dbclear  'login_uname)
                (dbclear  'login_pw)
-               (if admin-ok 'menu
-                 (if (and (dbget  'delete_uname) login-uname login-pw
-                          (string=? (dbget  'delete_uname) login-uname)
-                          (fx= (dbget  'delete_pwhash) (string=?-hash login-pw)))
+               (if user-ok
+                 ;; Setup referral region trees, table with keys of district, values of pairs of district table and sub district list. Each district table has keys of sub district, values of facilities in the sub district.
+                 (let* ((site (dbget 'site "Mbarara Regional Referral Hospital"))
+                        (filename (cond
+                                    ((or (string=? site "Mbarara Regional Referral Hospital") (string=? site "Holy Innocents Children's Hospital")) "mbarara_facilities.csv")
+                                    ((string=? site "Jinja Regional Referral Hospital") "jinja_facilities.csv")
+                                    ((string=? site "Masaka Regional Referral Hospital") "masaka_facilities.csv")))
+                        (locations (cdr (csv-read (string-append (uiget 'sandbox "") (system-pathseparator) filename))))
+                        (locationstb (make-table init: #f))
+                        (locationdistricts '()))
+                   (uiset 'login_uname login-uname)
+                   (let dloop ((d 0))
+                     (if (fx< d (length locations))
+                       (let* ((row (list-ref locations d))
+                              (district (car row))
+                              (districtentry (table-ref locationstb district #f))
+                              (districttb (if districtentry (car districtentry) (make-table init: #f)))
+                              (sublist (if districtentry (cdr districtentry) '()))
+                              (sub (cadr row))
+                              (faclist (table-ref districttb sub '()))
+                              (fac (caddr row)))
+                         ;; Add facility to the list, add sub district to list, add entries into tables, add district to list
+                         (table-set! districttb sub (append faclist (list fac)))
+                         (table-set! locationstb district (cons districttb (if (list-pos sublist sub) sublist (append sublist (list sub)))))
+                         (if (not (list-pos locationdistricts district)) (set! locationdistricts (append locationdistricts (list district))))
+                         (dloop (+ d 1)))
+                       (begin
+                         (uiset 'locationtb locationstb)
+                         (uiset 'districts (sort locationdistricts string<?)))))
+                   'menu)
+                 (if (and (dbget  'admin_uname) login-uname login-pw
+                          (string=? (dbget  'admin_uname) login-uname)
+                          (fx= (dbget  'admin_pwhash) (string=?-hash login-pw)))
                    'adminmenu
                    `(,"Invalid login" ("OK" #f)))))))
-        (dbset  'delete_uname "admin")
-        (dbset  'delete_pwhash (string=?-hash "lacey"))
-        (dbsave (uiget 'adminpath) (uiget 'cryptokey) (uiget  'database))
         (uiset  'new #t)
         (uiset  'spo2_manual #f)
-        (uiset  'admin (if admin-ok #t #f))
         result)))
   (spacer height 140)
 ;;  (box yofs 195 h 79)
@@ -454,9 +455,17 @@
  ;; Menu for deleting all data
  (adminmenu
    "Admin Menu"
-   ("Logout" ,(lambda () 'main))
+   ("Logout" ,(lambda ()
+                (dbsave (uiget 'adminpath) (uiget 'cryptokey) (uiget  'database))
+                'main))
    #f
-   (spacer height 200)
+   (spacer)
+   (label text "Choose the study site for this tablet:")
+   (spacer height 15)
+   (dropdown text "Hospital" id site entries ,(lambda () (uiget 'sites)))
+   (spacer height 100)
+   (button h 75 size header indent 0.05 rounded #t size header text "Add User" action ,(lambda () 'adduser))
+   (spacer height 100)
    (button h 75 size header indent 0.05 rounded #t size header text "Delete All Data" action
       ,(lambda ()
         (list "Are you sure you wish to delete all records?" (list "Yes"
@@ -475,6 +484,45 @@
           (list "No" 'adminmenu))))
  )
   
+  (adduser
+   "Add User"
+   ("Back" adminmenu)
+   #f
+   (spacer height 50)
+   (textentry indent 0.4 location ui text "Username:" id new_username keycb ,(lambda () (uiget 'nospacecb)))
+   (spacer height 15)
+   (textentry indent 0.4 location ui text "Password:" id new_password password #t keycb ,(lambda () (uiget 'nospacecb)))
+   (spacer height 15)
+   (textentry indent 0.4 location ui text "Confirm Password:" id new_password2 password #t keycb ,(lambda () (uiget 'nospacecb)))
+   (spacer)
+   (button h 75 size header indent 0.05 rounded #t size header text "Save New User" action
+       ,(lambda ()
+          (let ((user (uiget 'new_username ""))
+                (password (uiget 'new_password ""))
+                (password2 (uiget 'new_password2 "")))
+            (if (and (fx> (string-length user) 0) (fx> (string-length password) 0) (fx> (string-length password2) 0))
+              (if (string=? password password2)
+                (let ((usernames (dbget 'usernames '())))
+                  (if (assoc user usernames)
+                    (list "Error. User already exists." (list "OK" #f))
+                    (begin
+                      (dbset 'usernames (append usernames (list (list user (string=?-hash password)))))
+                      (dbsave (uiget 'adminpath) (uiget 'cryptokey) (uiget  'database))
+                      (uiclear 'new_username)
+                      (uiclear 'new_password)
+                      (uiclear 'new_password2)
+                      (list "User successfully saved" (list "OK" #f)))))
+                (list "Error. Passwords do not match." (list "OK" #f)))
+              (list "Error. Missing fields. Please fill in all fields." (list "OK" #f))))))
+   (spacer)
+   (label text ,(lambda ()
+                  (let ((users (dbget 'usernames '())))
+                    (string-append "Current Users:\n"
+                                   (if (fx= (length users) 0)
+                                     "None yet"
+                                     (string-mapconcat users "\n" car))))))
+  )
+
  ;; Main menu
  (menu
    "Start"
@@ -597,6 +645,8 @@
               (stclear "SP_Timestamp")
               'menu))
    #f
+   (spacer height 10)
+   (label text ,(lambda () (string-append (lnhealth-sxrun 'getnotemptystring 'first) " " (lnhealth-sxrun 'getnotemptystring 'last))))
    (spacer height 44)
    (image file "small_child.png")
    (spacer height 20)
@@ -1193,6 +1243,8 @@
        `(textentry id custom_facility text "Other:")
        '(spacer height 0)))
    (spacer)
+   (label text ,(lambda () (string-append "User: " (uiget 'login_uname ""))))
+   (spacer)
    (button h 75 size header indent 0.05 rounded #t text "REFERRAL PRINTING" action ,(lambda () (lnhealth-sxrun 'goto-printing)))
  )
 
@@ -1212,7 +1264,7 @@
   (spacer height 4)
   (label align left text ,(lambda () (string-append "Discharge Date: " (seconds->string (current-time-seconds) "%Y-%m-%d"))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Post-Discharge Risk of Mortality: " (number->string (dbget 'dischargescore)) "%")))
+  (label align left text ,(lambda () (string-append "Post-Discharge Risk of Mortality: " (number->string (fix (round (dbget 'dischargescore)))) "%")))
   (spacer height 4)
   (label align left text ,(lambda () (string-append "Referral Health Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
                                                                                    (if facility
