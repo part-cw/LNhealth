@@ -214,7 +214,7 @@
     (uiset 'origgui lnhealth:gui)
                
     (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
-    (uiset 'cryptokey parasync:key)
+    (uiset 'cryptokey parasync-key)
     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                
     ;; Hospital sites
