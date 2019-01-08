@@ -1,6 +1,14 @@
 
 `( 
 
+  (load-fieldmap ,(lambda (filename)
+    (let ((file (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) filename)))
+       (if (file-exists? file)
+         (map (lambda (entry)
+                  (append (list (string->symbol (car entry))) (cdr entry)))
+              (csv-read file))
+         #f))))
+
   ;; Change empty string to false
   (getnotemptystring ,(lambda (field)
                         (let ((val (dbget field "")))
@@ -131,6 +139,12 @@
 
   ;; Go to the printing page if everything is filled in
   (goto-printing ,(lambda ()
+                    (dbset 'disnurse (uiget 'login_uname ""))
+                    (dbset 'disdate (seconds->string ##now "%Y-%m-%d"))
+                    (dbset 'ref1date (seconds->string (+ (current-time-seconds) 172800) "%Y-%m-%d"))
+                    (dbset 'ref2date (seconds->string (+ (current-time-seconds) 604800) "%Y-%m-%d"))
+                    (dbset 'ref3date (seconds->string (+ (current-time-seconds) 1209600) "%Y-%m-%d"))
+                    (lnhealth-sxrun 'save-child)
                     (let ((phone (lnhealth-sxrun 'getnotemptystring 'phone))
                           (phone2 (lnhealth-sxrun 'getnotemptystring 'phone2))
                           (facility (dbget 'facility)))
@@ -200,7 +214,7 @@
     (uiset 'origgui lnhealth:gui)
                
     (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
-    (uiset 'cryptokey '#u8(134 102 230 27 13 87 122 120 138 103 53 192 70 93 200 53 121 202 33 85 28 187 73 219))
+    (uiset 'cryptokey parasync:key)
     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                
     ;; Hospital sites
@@ -218,13 +232,16 @@
     (uiset 'hosp_options (list "Less than 7 DAYS ago" "7 to 30 DAYS ago" "30 DAYS to 1 YEAR ago" "more than 1 YEAR ago" "Never"))
                
     ;; Lists of options for Blantyre coma scale
-    (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow "))
+    (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow"))
     (uiset 'motor_options (list "Localizes painful stimulus" "Withdraws limb from\npainful stimulus" "No response or\ninappropriate response"))
     (uiset 'verbal_options (list "Cries appropriately with pain\n(or speaks if verbal)" "Moan or abnormal cry with pain" "No vocal response to pain"))
                
     ;; Load the z-score data
     (uiset 'zboys (map (lambda (entry) (map string->number (cdr entry))) (cdr (csv-read (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "zscore_boys.csv")))))
     (uiset 'zgirls (map (lambda (entry) (map string->number (cdr entry))) (cdr (csv-read (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "zscore_girls.csv")))))
+
+    (uiset 'progress 0.)
+    (uiset 'pmessage "Please Wait")
 
     ;; Register background box widget
     (uiform-register 'box
@@ -342,6 +359,10 @@
                               (loop (+ i 1) (string-append newstr (string c)))
                               (loop (+ i 1) newstr)))
                           (xxset floc fid (string-upcase newstr)))))))
+
+     ;; Load field maps for upload
+     (uiset 'assessmentfieldmap (lnhealth-sxrun 'load-fieldmap "assessmentfieldmap.csv"))
+     (uiset 'identfieldmap (lnhealth-sxrun 'load-fieldmap "identfieldmap.csv"))
   ))
   
   (onevent ,(lambda (t x y) (spo2spot-event)))
@@ -415,6 +436,7 @@
                         (locationstb (make-table init: #f))
                         (locationdistricts '()))
                    (uiset 'login_uname login-uname)
+                   (uiset 'site site)
                    (let dloop ((d 0))
                      (if (fx< d (length locations))
                        (let* ((row (list-ref locations d))
@@ -528,15 +550,18 @@
    "Start"
    ("Logout" ,(lambda () 'main))
    #f
-   (spacer height 44)
-   (image file "small_child.png")
-   (spacer height 20)
-   (button h 75 size header indent 0.05 rounded #t text "Add New Child" action ,(lambda () 'newchild))
-   (spacer height 115)
-   (image file "load.png")
-   (spacer height 20)
-   (button h 75 size header indent 0.05 rounded #t text "Load Child File" action ,(lambda () 'load))
    (spacer)
+   (image file "small_child.png")
+   (spacer height 10)
+   (button h 75 size header indent 0.05 rounded #t text "Add New Child" action ,(lambda () 'newchild))
+   (spacer height 50)
+   (image file "load.png")
+   (spacer height 10)
+   (button h 75 size header indent 0.05 rounded #t text "Load Child File" action ,(lambda () 'load))
+   (spacer height 50)
+   (image file "upload.png")
+   (spacer height 10)
+   (button h 75 size header indent 0.05 rounded #t text "Upload" action send)
  )
 
  ;; New screen
@@ -565,6 +590,8 @@
                           (uiset  'admin-database db)
                           (uiset  'database (make-table))
                           (dbset  'childid id)
+                          (dbset  'childid2 id2)
+                          (spo2spot-folder-set! id)
                           (if first (dbset  'first first))
                           (if last (dbset  'last last))
                           (uiset 'new #t)
@@ -603,6 +630,7 @@
                         (uiset 'new #f)
                         (uiset  'admin-database db)
                         (uiset  'database (dbload filename (uiget 'cryptokey)))
+                        (spo2spot-folder-set! sel)
                         ;; Populate SpO2 page with saved values
                         (let ((sp (lnhealth-sxrun 'getnotemptystring 'spo2med))
                               (hr (lnhealth-sxrun 'getnotemptystring 'hrmed))
@@ -644,7 +672,10 @@
               (stclear "HR_Median")
               (stclear "SP_Timestamp")
               'menu))
-   #f
+   ("Complete" ,(lambda ()
+                  (lnhealth-sxrun 'save-child)
+                  (uiset 'completed #f)
+                  'send-archive))
    (spacer height 10)
    (label text ,(lambda () (string-append (lnhealth-sxrun 'getnotemptystring 'first) " " (lnhealth-sxrun 'getnotemptystring 'last))))
    (spacer height 44)
@@ -697,7 +728,6 @@
                   (stclear "SP_Median")
                   (stclear "HR_Median")
                   (stclear "SP_Timestamp")
-                  (lnhealth-sxrun 'save-child)
                   'menu)
                 (begin
                   (lnhealth-sxrun 'save-child)
@@ -762,7 +792,7 @@
    (spacer height 61)
    (label text "Sex")
    (spacer height 5)
-   (radiobox id sex left ("Male" "1" #f) right ("Female" "0" #f))
+   (radiobox id sex left ("Male" "1" #f) right ("Female" "2" #f))
    (spacer height 70)
    (box right #t yofs 60 h 95)
    (label text "Birth Date")
@@ -951,10 +981,14 @@
                                                                     #f))))
                 (let ((sp (stget "SP_Median" ""))
                       (hr (stget "HR_Median" ""))
-                      (sptime (stget "SP_Timestamp" #f)))
+                      (sptime (stget "SP_Timestamp" #f))
+                      (sqi (stget "SP_SQI" #f))
+                      (filepath (stget "SP_Data" #f)))
                   (if (fx> (string-length sp) 0) (dbset 'spo2med sp))
                   (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
                   (if sptime (dbset 'sptime sptime))
+                  (if (fx> (string-length sqi) 0) (dbset 'sqi sqi))
+                  (if filepath (dbset 'spo2files filepath))
                   (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
                   (lnhealth-sxrun 'save-child)
                   'anthro))))
@@ -978,10 +1012,14 @@
                                       (if (and sp0 (fx> (string-length sp0) 0))
                                         ;; Just recorded SpO2
                                         (let ((hr (stget "HR_Median" #f))
-                                              (sptime (stget "SP_Timestamp" #f)))
+                                              (sptime (stget "SP_Timestamp" #f))
+                                              (sqi (stget "SP_SQI" #f))
+                                              (filepath (stget "SP_Data" #f)))
                                           (dbset 'spo2med sp0)
                                           (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
-                                          (if sptime (dbset 'sptime sptime))))
+                                          (if sptime (dbset 'sptime sptime))
+                                          (if (fx> (string-length sqi) 0) (dbset 'sqi sqi))
+                                          (if filepath (dbset 'spo2files filepath))))
                                       (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
                                       'clinical)
                                     (begin
@@ -1064,7 +1102,11 @@
                       (cond
                         ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
                         ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
-                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" 'risk) (list "Fix" #f))))))
+                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" (lambda ()
+                                                                                                                    (let ((dscore (lnhealth-sxrun 'calc-discharge-score)))
+                                                                                                                      (dbset 'dischargescore dscore))
+                                                                                                                    'risk))
+                                                                                                (list "Fix" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
    (spacer height 50)
    (label size small text "Blantyre coma scale")
@@ -1193,6 +1235,8 @@
                   ((or (and phone (not phone2)) (and phone2 (not phone)))
                      (list "The phone number must be entered twice." (list "OK" #f)))
                   (else
+                    (dbset 'disnurse (uiget 'login_uname ""))
+                    (dbset 'disdate (seconds->string ##now "%Y-%m-%d"))
                     (lnhealth-sxrun 'save-child)
                     'childmenu)))))
    ("Print" ,(lambda () (lnhealth-sxrun 'goto-printing)))
@@ -1276,11 +1320,11 @@
   (spacer height 4)
   (label align left size small indent 0.05 text "referral dates are:")
   (spacer height 10)
-  (label align left size small text ,(lambda () (string-append (seconds->string (+ (current-time-seconds) 172800) "%A, %Y-%m-%d"))))
+  (label align left size small text ,(lambda () (seconds->string (+ (current-time-seconds) 172800) "%A, %Y-%m-%d")))
   (spacer height 4)
-  (label align left size small text ,(lambda () (string-append (seconds->string (+ (current-time-seconds) 604800) "%A, %Y-%m-%d"))))
+  (label align left size small text ,(lambda () (seconds->string (+ (current-time-seconds) 604800) "%A, %Y-%m-%d")))
   (spacer height 4)
-  (label align left size small text ,(lambda () (string-append (seconds->string (+ (current-time-seconds) 1209600) "%A, %Y-%m-%d"))))
+  (label align left size small text ,(lambda () (seconds->string (+ (current-time-seconds) 1209600) "%A, %Y-%m-%d")))
   (spacer height 60)
   (checkbox id include_dates text "Include referral dates")
   (spacer height 10)
@@ -1305,6 +1349,110 @@
                                         "")))
        (list "Referral info copied. Paste into the printer app." (list "OK" #f))))
  )
+
+ (send
+   "Upload"
+   ("Back" ,(lambda ()
+              (uiset 'uploading #f)
+              (uiset 'progress 0.)
+              'menu))
+   #f
+    (spacer height 100)
+    (button h 75 size header indent 0.05 rounded #t text "Upload" action
+      ,(lambda ()
+         (upload-all-data)
+         'send))
+    (spacer)
+    ,(lambda ()
+        (let ((up (uiget  'uploading #f)))
+          (cond
+             ((not up)
+               '(spacer height 0))
+             ((fx= up 1)
+               '(label text "Uploading..."))
+             ((fx= up 2)
+               '(label text "Upload Complete"))
+             ((fx= up 3)
+               '(label text "Upload Failed - Check Wi-Fi"))
+             ((fx= up 0)
+               '(label text "No Data Stored")))))
+    (spacer)
+    ,(lambda ()
+        (let ((up (uiget  'uploading #f)))
+          (if (and up (fx= up 1))
+            `(label text ,(lambda () (uiget 'pmessage)))
+            '(spacer height 0))))
+    (spacer height 10)
+    ,(lambda ()
+        (let ((up (uiget  'uploading #f)))
+          (if (and up (fx= up 1))
+            `(progress value ,(lambda () (uiget 'progress)))
+            '(spacer height 0))))
+  )
+
+  (send-archive
+    "Complete"
+    ("Cancel" ,(lambda ()
+                (uiset 'uploading #f)
+                (uiset 'progress 0.)
+                'childmenu))
+    #f
+    (spacer height 100)
+    ,(lambda ()
+       (let ((up (uiget  'uploading 0)))
+         (if (and (uiget 'completed) (fx= up 2))
+           '(spacer height 75)
+           `(button h 75 size header indent 0.05 rounded #t text " Final Upload" action
+             ,(lambda ()
+               (upload-data (list (dbget 'childid)) #t)
+               'send-archive)))))
+    (spacer)
+    ,(lambda ()
+        (let ((up (uiget  'uploading #f)))
+          (cond
+             ((not up)
+               '(spacer height 0))
+             ((fx= up 1)
+               '(label text "Uploading..."))
+             ((fx= up 2)
+               '(label text "Upload Complete"))
+             ((fx= up 3)
+               '(label text "Upload Failed - Check Wi-Fi"))
+             ((fx= up 0)
+               '(label text "No Data Stored")))))
+    (spacer)
+    ,(lambda ()
+        (let ((up (uiget  'uploading #f)))
+          (if (and up (fx= up 1))
+            `(label text ,(lambda () (uiget 'pmessage)))
+            '(spacer height 0))))
+    (spacer height 10)
+    ,(lambda ()
+        (let ((up (uiget  'uploading #f)))
+          (if (and up (fx= up 1))
+            `(progress value ,(lambda () (uiget 'progress)))
+            '(spacer height 0))))
+    ,(lambda ()
+        (let ((up (uiget  'uploading 0)))
+          (if (and (uiget 'completed) (fx= up 2))
+           `(button h 75 size header indent 0.05 rounded #t text "Archive" action
+             ,(lambda ()
+                (let ((id (dbget 'childid)))
+                  (lnhealth-sxrun 'save-child)
+                  (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+                  (dbset 'register (list-delete-item (dbget 'register '()) id))
+                  (dbclear 'childid)
+                  (dbclear 'childid2)
+                  (dbclear 'first)
+                  (dbclear 'last)
+                  (dbsave (uiget 'adminpath) (uiget 'cryptokey) (uiget 'database))
+                  (spo2spot-reset)
+                  (stclear "SP_Median")
+                  (stclear "HR_Median")
+                  (stclear "SP_Timestamp")
+                  'menu)))
+           '(spacer height 0))))
+  )
 )
   
 ;; eof
