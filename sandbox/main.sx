@@ -1300,11 +1300,11 @@
   (spacer)
   (label align left text ,(lambda () (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last ""))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "DOB: " (dbget 'dob "          ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "0") "Female" "")))))
+  (label align left text ,(lambda () (string-append "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Admission Date: ")))
+  (label align left text ,(lambda () (string-append "Admission Date: " (dbget 'date ""))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Admitting Hospital: ")))
+  (label align left text ,(lambda () (string-append "Admitting Hospital: " (dbget 'site ""))))
   (spacer height 4)
   (label align left text ,(lambda () (string-append "Discharge Date: " (seconds->string (current-time-seconds) "%Y-%m-%d"))))
   (spacer height 4)
@@ -1331,7 +1331,7 @@
   (button h 75 size header indent 0.05 rounded #t text "COPY INFO FOR PRINTING" action
     ,(lambda ()
        (clipboard-copy (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last "") "\n"
-                                      "DOB: " (dbget 'dob "          ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "0") "Female" "")) "\n"
+                                      "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")) "\n"
                                       "Admission Date: " (dbget 'date "") "\n"
                                       "Admitting Hospital: " (dbget 'site "") "\n"
                                       "Discharge Date: " (seconds->string (current-time-seconds) "%Y-%m-%d") "\n"
