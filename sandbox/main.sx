@@ -466,7 +466,7 @@
         result)))
   (spacer height 140)
 ;;  (box yofs 195 h 79)
-  (label text "Pediatric Anesthesia Research Team")
+  (label text "Digital Health Innovation Lab")
   (spacer height 5)
   (label text "THE UNIVERSITY OF")
   (label text "BRITISH COLUMBIA")
@@ -1011,9 +1011,9 @@
                                     (begin
                                       (if (and sp0 (fx> (string-length sp0) 0))
                                         ;; Just recorded SpO2
-                                        (let ((hr (stget "HR_Median" #f))
+                                        (let ((hr (stget "HR_Median" ""))
                                               (sptime (stget "SP_Timestamp" #f))
-                                              (sqi (stget "SP_SQI" #f))
+                                              (sqi (stget "SP_SQI" ""))
                                               (filepath (stget "SP_Data" #f)))
                                           (dbset 'spo2med sp0)
                                           (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
