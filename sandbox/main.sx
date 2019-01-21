@@ -982,7 +982,7 @@
                 (let ((sp (stget "SP_Median" ""))
                       (hr (stget "HR_Median" ""))
                       (sptime (stget "SP_Timestamp" #f))
-                      (sqi (stget "SP_SQI" #f))
+                      (sqi (stget "SP_SQI" ""))
                       (filepath (stget "SP_Data" #f)))
                   (if (fx> (string-length sp) 0) (dbset 'spo2med sp))
                   (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
