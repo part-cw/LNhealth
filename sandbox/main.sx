@@ -153,6 +153,8 @@
                       (cond
                         ((and phone phone2 (not (string=? phone phone2)))
                           (list "Phone numbers do not match" (list "OK" #f)))
+                        ((and phone phone2 (not (fx= (string-length phone) 10)))
+                          (list "Phone number must be 10 digits starting with a 0." (list "OK" #f)))
                         ((and (dbget 'sms_consent) (or (not phone) (not phone2)))
                           (list "The phone number must be entered twice." (list "OK" #f)))
                         ((not facility)
@@ -359,6 +361,22 @@
                               (loop (+ i 1) (string-append newstr (string c)))
                               (loop (+ i 1) newstr)))
                           (xxset floc fid (string-upcase newstr)))))))
+
+     ;; Keypad after char callback procedure for the phone numbers, always have format 0XXXXXXXXX
+     (uiset 'phonecb (lambda (floc fid str)
+                       (if (string? str)
+                         (let ((len (string-length str)))
+                           ;; Add '0' to the start if not already there
+                           (if (or (fx= len 0) (not (char=? (string-ref str 0) #\0)))
+                             (begin
+                               (set! len (+ len 1))
+                               (set! str (string-append "0" str))))
+                           ;; Reduce to 10 characters
+                           (if (fx> len 10)
+                             (set! str (substring str 0 10)))
+                           (xxset floc fid str))
+                         ;; If no value, set to 0
+                         (xxset floc fid "0"))))
 
      ;; Load field maps for upload
      (uiset 'assessmentfieldmap (lnhealth-sxrun 'load-fieldmap "assessmentfieldmap.csv"))
@@ -1231,7 +1249,9 @@
                     (phone2 (lnhealth-sxrun 'getnotemptystring 'phone2)))
                 (cond
                   ((and phone phone2 (not (string=? phone phone2)))
-                     (list "Phone numbers do not match" (list "OK" #f)))
+                     (list "Phone numbers do not match." (list "OK" #f)))
+                  ((and phone phone2 (not (fx= (string-length phone) 10)))
+                     (list "Phone number must be 10 digits starting with a 0." (list "OK" #f)))
                   ((or (and phone (not phone2)) (and phone2 (not phone)))
                      (list "The phone number must be entered twice." (list "OK" #f)))
                   (else
@@ -1245,16 +1265,20 @@
    (spacer height 10)
    ,(lambda ()
       (if (dbget 'sms_consent)
-        (begin
-          '(textentry id phone indent 0.4 text "Phone:"  keypad numint))
+        (let ((ph (dbget 'phone "")))
+          (if (fx= (string-length ph) 0)
+            (dbset 'phone "0"))
+          `(textentry id phone indent 0.4 text "Phone:"  keypad numint keycb ,(lambda () (uiget 'phonecb))))
         (begin
           (dbclear 'phone)
           '(spacer height 0))))
    (spacer height 10)
   ,(lambda ()
       (if (dbget 'sms_consent)
-        (begin
-          '(textentry id phone2 indent 0.4 text "Confirm Phone:"  keypad numint))
+        (let ((ph2 (dbget 'phone2 "")))
+          (if (fx= (string-length ph2) 0)
+            (dbset 'phone2 "0"))
+          `(textentry id phone2 indent 0.4 text "Confirm Phone:"  keypad numint keycb ,(lambda () (uiget 'phonecb))))
         (begin
           (dbclear 'phone2)
           '(spacer height 0))))
@@ -1268,16 +1292,16 @@
        `(dropdown id sub text "Choose Health Sub District" entries ,(lambda ()
                                                                       (let* ((locationtb (uiget 'locationtb))
                                                                              (districtentry (table-ref locationtb (dbget 'district) #f))
-                                                                             (districttb (if districtentry (car districtentry) (make-table init: #f)))
                                                                              (sublist (if districtentry (cdr districtentry) '())))
-                                                                        (uiset 'districttb districttb)
                                                                         (sort sublist string<?))))
        '(spacer height 0)))
    (spacer height 10)
    ,(lambda ()
-     (if (and (dbget 'sub) (uiget 'districttb))
+     (if (and (dbget 'sub) (dbget 'district))
        `(dropdown id facility text "Choose Health Facility" entries ,(lambda ()
-                                                                      (let* ((districttb (uiget 'districttb))
+                                                                      (let* ((locationtb (uiget 'locationtb))
+                                                                             (districtentry (table-ref locationtb (dbget 'district) #f))
+                                                                             (districttb (if districtentry (car districtentry) (make-table init: #f)))
                                                                              (faclist (table-ref districttb (dbget 'sub) '())))
                                                                         (append (sort faclist string<?) (list "Other")))))
        '(spacer height 0)))
@@ -1298,56 +1322,69 @@
   ("Back" referral)
   ("Done" childmenu)
   (spacer)
-  (label align left text ,(lambda () (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last ""))))
+  (label align left indent 0.05 text ,(lambda () (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last ""))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")))))
+  (label align left indent 0.05 text ,(lambda () (string-append "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Admission Date: " (dbget 'date ""))))
+  (label align left indent 0.05 text ,(lambda ()
+                            (let* ((date0 (dbget 'date ""))
+                                   (date (if (fx> (string-length date0) 0) (seconds->string (string->seconds date0 "%Y-%m-%d") "%B %e, %Y") "")))
+                              (string-append "Admission Date: " date))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Admitting Hospital: " (dbget 'site ""))))
+  (label align left indent 0.05 text "Discharging Hospital:")
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Discharge Date: " (seconds->string (current-time-seconds) "%Y-%m-%d"))))
+  (label align left indent 0.05 text ,(lambda ()
+                            (let ((site (dbget 'site "")))
+                                (if (string-suffix? "Hospital" site) (substring site 0 (- (string-length site) 9)) site))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Post-Discharge Risk of Mortality: " (number->string (fix (round (dbget 'dischargescore)))) "%")))
+  (label align left indent 0.05 text ,(lambda () (string-append "Discharge Date: " (seconds->string (current-time-seconds) "%B %e, %Y"))))
   (spacer height 4)
-  (label align left text ,(lambda () (string-append "Referral Health Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
+  (label align left indent 0.05 text "Post-discharge Vulnerability: High")
+  (spacer height 4)
+  (label align left indent 0.05 text ,(lambda () (string-append "Referral Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
                                                                                    (if facility
                                                                                      (if (string=? facility "Other")
                                                                                        (dbget 'custom_facility "")
                                                                                        facility))))))
   (spacer)
-  (label align left size small indent 0.05 text ,(lambda () (string-append "If discharged today (" (seconds->string (current-time-seconds) "%Y-%m-%d") "),")))
+  (label align left indent 0.05 text "If discharged today")
   (spacer height 4)
-  (label align left size small indent 0.05 text "referral dates are:")
+  (label align left indent 0.05 text ,(lambda () (seconds->string (current-time-seconds) "%A, %B %e, %Y")))
+  (spacer height 4)
+  (label align left indent 0.05 text "referral dates are:")
   (spacer height 10)
-  (label align left size small text ,(lambda () (seconds->string (+ (current-time-seconds) 172800) "%A, %Y-%m-%d")))
+  (label align left indent 0.05 text ,(lambda () (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y"))))
   (spacer height 4)
-  (label align left size small text ,(lambda () (seconds->string (+ (current-time-seconds) 604800) "%A, %Y-%m-%d")))
+  (label align left indent 0.05 text ,(lambda () (string-append "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y"))))
   (spacer height 4)
-  (label align left size small text ,(lambda () (seconds->string (+ (current-time-seconds) 1209600) "%A, %Y-%m-%d")))
+  (label align left indent 0.05 text ,(lambda () (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y"))))
   (spacer height 60)
   (checkbox id include_dates text "Include referral dates")
   (spacer height 10)
   (button h 75 size header indent 0.05 rounded #t text "COPY INFO FOR PRINTING" action
     ,(lambda ()
-       (clipboard-copy (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last "") "\n"
-                                      "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")) "\n"
-                                      "Admission Date: " (dbget 'date "") "\n"
-                                      "Admitting Hospital: " (dbget 'site "") "\n"
-                                      "Discharge Date: " (seconds->string (current-time-seconds) "%Y-%m-%d") "\n"
-                                      "Post-Discharge Risk of Mortality: " (number->string (dbget 'dischargescore)) "%\n"
-                                      "Referral Health Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
-                                                                      (if facility
-                                                                        (if (string=? facility "Other")
-                                                                          (dbget 'custom_facility "")
-                                                                          facility)))
-                                      (if (dbget 'include_dates)
-                                        (string-append "\nReferral Dates:\n"
-                                                       (seconds->string (+ (current-time-seconds) 172800) "%A, %Y-%m-%d") "\n"
-                                                       (seconds->string (+ (current-time-seconds) 604800) "%A, %Y-%m-%d") "\n"
-                                                       (seconds->string (+ (current-time-seconds) 1209600) "%A, %Y-%m-%d") "\n")
-                                        "")))
-       (list "Referral info copied. Paste into the printer app." (list "OK" #f))))
+       (let* ((adate0 (dbget 'date ""))
+              (adate (if (fx> (string-length adate0) 0) (seconds->string (string->seconds adate0 "%Y-%m-%d") "%B %e, %Y") ""))
+              (site0 (dbget 'site ""))
+              (site (if (string-suffix? "Hospital" site0) (substring site0 0 (- (string-length site0) 9)) site0)))
+         (clipboard-copy (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last "") "\n"
+                                        "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")) "\n"
+                                        "Admission Date: " adate "\n"
+                                        "Discharging Hospital: " site "\n"
+                                        "Discharge Date: " (seconds->string (current-time-seconds) "%B %e, %Y") "\n"
+                                        "Post-discharge Vulnerability: High\n"
+                                        "Referral Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
+                                                                        (if facility
+                                                                          (if (string=? facility "Other")
+                                                                            (dbget 'custom_facility "")
+                                                                            facility)))
+                                        (if (dbget 'include_dates)
+                                          (string-append "\nDates for scheduled follow-up:\n"
+                                                         "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y") "\n"
+                                                         "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y") "\n"
+                                                         "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y") "\n")
+                                          "")))
+         (list "Referral info copied. Paste into the printer app." (list "OK" #f)))))
  )
 
  (send
