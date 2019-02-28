@@ -51,6 +51,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Turn on timestamp for button callback set to when button is pressed down
 (define rrate:timeonbuttondown? #f)
 (define (rrate-set-timeonbuttondown onbuttondown?) (set! rrate:timeonbuttondown? onbuttondown?))
+;; Hide or show the Exit button after RR confirm
+(define rrate:no-exit? #f)
+(define (rrate-have-exit exit?) (set! rrate:no-exit? (not exit?)))
+
 
 ;; Standard fonts, to switch back to if switching languages
 (define rrate:stfnt_12.fnt text_12.fnt)
@@ -1496,7 +1500,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (rrate:go-to-stage 3))
         (begin
           (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
-          (if rrate:cancelproc (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
+          (if (and rrate:cancelproc (not rrate:no-exit?)) (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
           (if rrate:doneproc (rrate:doneproc))))
      )
    ))
@@ -1548,7 +1552,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
               (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
               (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
-              (if rrate:cancelproc (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
+              (if (rrate:cancelproc (not rrate:no-exit?)) (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
               (if rrate:doneproc (rrate:doneproc))))
             (upload (lambda () (rrate:redcap-upload #t (lambda (result) (if result (goback))))))
             (savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt (lambda xargs
