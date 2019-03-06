@@ -1552,7 +1552,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               (glgui-widget-set! rrate:cont rrate:nobutton 'hidden #t)
               (glgui-widget-set! rrate:cont rrate:yesbutton 'hidden #t)
               (glgui-widget-set! rrate:cont rrate:restartbutton 'hidden #f)
-              (if (rrate:cancelproc (not rrate:no-exit?)) (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
+              (if (and rrate:cancelproc (not rrate:no-exit?)) (glgui-widget-set! rrate:cont rrate:exitbutton 'hidden #f))
               (if rrate:doneproc (rrate:doneproc))))
             (upload (lambda () (rrate:redcap-upload #t (lambda (result) (if result (goback))))))
             (savebutton (glgui-button-local rrate:cont (- w 146) 6 140 32 "SAVE" text_20.fnt (lambda xargs
