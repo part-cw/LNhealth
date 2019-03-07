@@ -138,14 +138,3 @@ private void jConfirmationDialog(String msg, String ok, String cancel) {
   }
 */
 }
-
-@Override
-public void onActivityResult(int requestCode, int resultCode, Intent data) {
-  if (rSharevitals.getResults(requestCode, resultCode, data)){ //process Intent data
-
-  } else {
-    rSharevitals.svsData.setResultVIndex(requestCode, -1);
-    Toast.makeText(this,String.format("WARNING: No valid vital sign obtained"),
-                   Toast.LENGTH_SHORT).show();
-  }
-}
