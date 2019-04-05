@@ -5,7 +5,7 @@
     (let ((file (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) filename)))
        (if (file-exists? file)
          (map (lambda (entry)
-                  (append (list (string->symbol (car entry))) (cdr entry)))
+                  (append (list (string->symbol (car entry))) (map string-remove-quotes (cdr entry))))
               (csv-read file))
          #f))))
 
@@ -139,11 +139,17 @@
 
   ;; Go to the printing page if everything is filled in
   (goto-printing ,(lambda ()
-                    (dbset 'disnurse (uiget 'login_uname ""))
-                    (dbset 'disdate (seconds->string ##now "%Y-%m-%d"))
-                    (dbset 'ref1date (seconds->string (+ (current-time-seconds) 172800) "%Y-%m-%d"))
-                    (dbset 'ref2date (seconds->string (+ (current-time-seconds) 604800) "%Y-%m-%d"))
-                    (dbset 'ref3date (seconds->string (+ (current-time-seconds) 1209600) "%Y-%m-%d"))
+                    (let ((d1 (+ (current-time-seconds) 172800))
+                          (d2 (+ (current-time-seconds) 604800))
+                          (d3 (+ (current-time-seconds) 1209600)))
+                       (dbset 'disnurse (uiget 'login_uname ""))
+                       (dbset 'disdate (seconds->string ##now "%Y-%m-%d"))
+                       (dbset 'ref1date (seconds->string d1 "%Y-%m-%d"))
+                       (dbset 'ref1datef (seconds->string d1 "%A, %B %e, %Y"))
+                       (dbset 'ref2date (seconds->string d2 "%Y-%m-%d"))
+                       (dbset 'ref2datef (seconds->string d2 "%A, %B %e, %Y"))
+                       (dbset 'ref3date (seconds->string d3 "%Y-%m-%d"))
+                       (dbset 'ref3datef (seconds->string d3 "%A, %B %e, %Y")))
                     (lnhealth-sxrun 'save-child)
                     (let ((phone (lnhealth-sxrun 'getnotemptystring 'phone))
                           (phone2 (lnhealth-sxrun 'getnotemptystring 'phone2))
@@ -233,6 +239,12 @@
     ;; Options for time since last hospitalization
     (uiset 'hosp_options (list "Less than 7 DAYS ago" "7 to 30 DAYS ago" "30 DAYS to 1 YEAR ago" "more than 1 YEAR ago" "Never"))
                
+    ;; Options for social questions
+    (uiset 'water_options (list "Protected spring" "Bore hole" "Municipal water" "Open source (unprotected, stagnant water, dam)" "Slow running water" "Fast running water"))
+    (uiset 'net_options (list "Never" "Sometimes" "Always"))
+    (uiset 'momedu_options (list "No school" "<= P3" "P4-P7" "S1-S6" "Post secondary (including post S4 technical school)" "Don't know"))
+    (uiset 'travel_options (list "< 30 minutes" "30 minutes - 1 hour" "1 - 2 hours" "2 - 3 hours" "3 - 4 hours" "4 - 8 hours" "> 8 hours"))
+
     ;; Lists of options for Blantyre coma scale
     (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow"))
     (uiset 'motor_options (list "Localizes painful stimulus" "Withdraws limb from\npainful stimulus" "No response or\ninappropriate response"))
@@ -782,7 +794,7 @@
                      (list "Invalid current date, enter as YYYY-MM-DD" (list "OK" #f))
                      (if (and sex date age)
                        ;; Everything filled in, go to next page
-                       'anthro
+                       'social
                        (let ((message (cond
                                          ;; Missing sex and age
                                          ((and (not sex) (not age))
@@ -805,7 +817,7 @@
                                               (string-append "Missing child's birth date. "
                                                              "MUAC will be used instead. The in-hospital mortality "
                                                              "risk will be less precise."))))))
-                         (list message (list "Continue" 'anthro) (list "Fix" #f))))))
+                         (list message (list "Continue" 'social) (list "Fix" #f))))))
                 (list (uiget  'errmsg) (list "OK" #f)))))
    (spacer height 61)
    (label text "Sex")
@@ -857,17 +869,55 @@
    (box right #t yofs 25 h ,(lambda () (if (uiget "lasthosp:expanded") 340 105)))
  )
   
+ (social
+   "Social Data"
+   ("Back" ,(lambda ()
+              (lnhealth-sxrun 'save-child)
+              'demog))
+   ("Next" ,(lambda ()
+              (if (and (sane 'watersource (lambda (str) #t) "Enter the water source" "")
+                       (sane 'waterpure (lambda (str) #t) "Enter whether you boil, filter or disinfect your water" "")
+                       (sane 'bednet (lambda (str) #t) "Enter the mosquito net" "")
+                       (sane 'momedu (lambda (str) #t) "Enter the education level" "")
+                       (sane 'traveldist (lambda (str) #t) "Enter the travel time" ""))
+                (begin
+                  (lnhealth-sxrun 'save-child)
+                  'anthro)
+                (list (uiget  'errmsg) (list "OK" #f)))))
+   (spacer)
+   (label text "Primary water source for drinking water")
+   (spacer height 10)
+   (dropdown "Choose One" id watersource entries ,(lambda () (uiget 'water_options)))
+   (spacer)
+   (label text "Do you boil, filter (good sand/ceramic) or disinfect (using bleach/waterguard) all drinking water?")
+   (spacer height 10)
+   (radiobox id waterpure left ("Yes" "1" #f) right ("No" "0" #f))
+   (spacer)
+   (label text "Does your child sleep under\na mosquito net?")
+   (spacer height 10)
+   (dropdown "Choose One" id bednet entries ,(lambda () (uiget 'net_options)))
+   (spacer)
+   (label text "What is the education level\nof the child's mother?")
+   (spacer height 10)
+   (dropdown "Choose One" id momedu entries ,(lambda () (uiget 'momedu_options)))
+   (spacer)
+   (label text "How long did it take you to\ntravel to the hospital?")
+   (spacer height 10)
+   (dropdown "Choose One" id traveldist entries ,(lambda () (uiget 'travel_options)))
+ )
+
  ;; Anthropometric screen
  (anthro
    "Anthropometric Data"
    ("Back" ,(lambda ()
               (lnhealth-sxrun 'save-child)
-              'demog))
+              'social))
    ("Next" ,(lambda ()
               (lnhealth-sxrun 'save-child)
               (let* ((z (dbget 'zscore #f))
                      (weight (lnhealth-sxrun 'getnotemptystring 'weight))
                      (muac (lnhealth-sxrun 'getnotemptystring 'muac))
+                     (temp (lnhealth-sxrun 'getnotemptystring 'temp))
                      (returnvalue #f)
                      (completeproc (lambda ()
                                       (if (and weight (not (sanestring-weight-kg weight)))
@@ -879,19 +929,20 @@
                                                   "Please enter either weight or MUAC. Without these the risk scores cannot be calculated."
                                                   "Weight for age score cannot be calculated without age. Please enter MUAC.")
                                                 (list "OK" #f))
-                                          (if (and z muac)
+                                          (if (and z muac temp)
                                             ;; All complete
                                             (begin
                                               (uiset 'origgui lnhealth:gui)
                                               (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
                                               (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
                                               'pulseox)
-                                            ;; Missing one or the other
+                                            ;; Missing something
                                             (list
                                                (cond
                                                  ((not weight) "Missing weight. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
                                                  ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
-                                                 (else "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise."))
+                                                 ((not muac) "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise.")
+                                                 (else "Please enter the temperature."))
                                                (list "Continue" (lambda ()
                                                                   (uiset 'origgui lnhealth:gui)
                                                                   (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
@@ -923,9 +974,9 @@
    (spacer height 32)
    (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg" units "kg")
    (spacer height 31)
-;;   (box left #t yofs 71 h 76)
    (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm" units "mm")
-;;   (box right #t yofs 169 h 77)
+   (spacer height 31)
+   (textentry indent 0.7 text "Temperature:" id temp keypad numfloat default "C" units "C")
    (spacer height 49)
    (label size small text "Calculated")
    (label size small text "weight for age z-score")
@@ -1106,9 +1157,10 @@
                   (uiset 'invalidspo2 #f)))
               (lnhealth-sxrun 'save-child)
               (let ((bcs (dbget 'comascore #f))
+                    (momhiv (dbget 'momhiv #f))
                     (hiv (dbget 'hiv #f)))
                 (if bcs
-                  (if hiv
+                  (if (and hiv momhiv)
                     (begin
                       (lnhealth-sxrun 'save-child)
                       (let ((dscore (lnhealth-sxrun 'calc-discharge-score)))
@@ -1120,13 +1172,9 @@
                       (cond
                         ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
                         ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
-                        (else (list "Missing HIV Status. The risk scores will be less precise." (list "Continue" (lambda ()
-                                                                                                                    (let ((dscore (lnhealth-sxrun 'calc-discharge-score)))
-                                                                                                                      (dbset 'dischargescore dscore))
-                                                                                                                    'risk))
-                                                                                                (list "Fix" #f))))))
+                        (else (list "Missing HIV Status. Please enter both the maternal and child HIV status." (list "OK" #f))))))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
-   (spacer height 50)
+   (spacer height 30)
    (label size small text "Blantyre coma scale")
    (spacer)
    (label align left text "Eye Movement")
@@ -1159,17 +1207,21 @@
                                           (begin
                                             (dbset 'comascore #f)
                                             "")))))
-   (spacer height 56)
-   (box left #t yofs 48 h ,(lambda () (+ 445
+   (spacer height 31)
+   (box left #t yofs 23 h ,(lambda () (+ 441
                                          (if (uiget "eye:expanded") 96 0)
                                          (if (uiget "motor:expanded") 144 0)
                                          (if (uiget "verbal:expanded") 144 0)
                                          (if (dbget 'comascore) 40 0))))
-   (label align left text "HIV status")
+   (label text "HIV status")
    (spacer height 10)
-   (dropdown id hiv entries ("Positive" "Negative" "Unknown"))
+   (dropdown label "Maternal" id momhiv entries ("Positive" "Negative" "Unknown"))
+   (spacer height 10)
+   (dropdown label "Child" id hiv entries ("Positive" "Negative" "Unknown"))
    (spacer)
-   (box right #t yofs 16 h ,(lambda () (if (uiget "hiv:expanded") 245 101)))
+   (box right #t yofs 16 h ,(lambda () (+ 160
+                                         (if (uiget "momhiv:expanded") 144 0)
+                                         (if (uiget "hiv:expanded") 144 0))))
  )
   
   ;; Risk screen
