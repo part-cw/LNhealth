@@ -954,9 +954,7 @@
                                         (list "Invalid weight. Please correct it" (list "OK" #f))
                                         (if (and (not z) (not muac))
                                           ;: No MUAC or WAZ, cannot continue
-                                          (list (if (not weight)
-                                                  "Please enter either weight or MUAC. Without these the risk scores cannot be calculated."
-                                                  "Weight for age score cannot be calculated without age. Please enter MUAC.")
+                                          (list "Please enter all variables. Without these the risk scores cannot be calculated."
                                                 (list "OK" #f))
                                           (if (and z muac temp)
                                             ;; All complete
