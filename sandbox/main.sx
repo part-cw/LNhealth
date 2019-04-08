@@ -85,52 +85,91 @@
                        (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)))
                    (dbsave filename (uiget 'cryptokey) db))))
   
+  ;; Mean and standard deviations to use to centre and scale variables
+  (create-scale-table ,(lambda ()
+                         (let ((tb (make-table init: #f)))
+                           ;; Entries have mean and then SD
+                           (table-set! tb "muac" (cons 140.4573055 16.75147685))
+                           (table-set! tb "waz" (cons -1.175595455 1.733614018))
+                           (table-set! tb "spo2" (cons 93.23795066 6.802892684))
+                           (table-set! tb "lasthosp" (cons 3.972675522 1.239386626))
+                           (table-set! tb "bcs" (cons 0.094497154 0.292574653))
+                           (table-set! tb "hiv" (cons 0.037191651 0.189267078))
+                           (table-set! tb "momhiv" (cons 0.121062619 0.326261947))
+                           (table-set! tb "watersource" (cons 0.176470588 0.381292399))
+                           (table-set! tb "waterpure" (cons 0.708918406 0.45434727))
+                           (table-set! tb "bednet" (cons 2.533586338 0.752565243))
+                           (table-set! tb "momedu" (cons 2.803795066 1.13171342))
+                           (table-set! tb "traveldist" (cons 2.264895636 0.825997211))
+                           (table-set! tb "temp2" (cons 1447.743492 98.20992618))
+                           (uiset 'scaling tb))))
+
+  (center-scale ,(lambda (fieldname val)
+                   (let ((entry (table-ref (uiget 'scaling) fieldname)))
+                     (if entry
+                       (let ((mean (car entry))
+                             (sd (cdr entry)))
+                         (/ (- val mean) sd))
+                       (begin
+                         (log-error "Failed to find scaling for " fieldname)
+                         val)))))
+
   ;; Calculate risk scores
   (calc-discharge-score ,(lambda ()
                           (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
+                                 (muacnum (if muac (string->number muac) 0))
+                                 (muact (lnhealth-sxrun 'center-scale "muac" muacnum))
+                                 (waz (dbget 'zscore #f))
+                                 (wazt (lnhealth-sxrun 'center-scale "waz" waz))
                                  (sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
                                  (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
+                                 (spnum (if sp (string->number sp) 0))
+                                 (spt (lnhealth-sxrun 'center-scale "spo2" spnum))
                                  (hospopts (uiget 'hosp_options '()))
                                  (hosp (dbget 'lasthosp #f))
                                  (hospnum (+ (list-pos hospopts hosp) 1))
+                                 (hospt (lnhealth-sxrun 'center-scale "lasthosp" hospnum))
                                  (bcs (dbget 'comascore #f))
+                                 (bcst (lnhealth-sxrun 'center-scale "bcs" (if (and (number? bcs) (fx< bcs 5)) 1. 0.)))
                                  (hiv (dbget 'hiv #f))
-                                 (score 0.0))
-                            (if sp
-                              (let ((spnum (string->number sp)))
-                                (if muac
-                                  (let ((mnum (string->number muac)))
-                                    (if (and hiv (not (string=? hiv "Unknown")))
-                                      ;; Use first formula: logit[Pr(In-patient mortality)]= 7.8497 +(-0.0471*muac) -0.0407(SpO2) - 0.281(Time since last hospitalization) + 0.9827(HIV+) + 0.8774(BCS<5)
-                                      (begin
-                                        (set! score (- 7.8497 (* mnum 0.0471)))
-                                        (set! score (- score (* spnum 0.0407)))
-                                        (set! score (- score (* hospnum 0.281)))
-                                        (if (string=? hiv "Positive") (set! score (+ score 0.9827)))
-                                        (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 0.8774))))
-                                  
-                                      ;; Use fourth formula: logit[Pr(In-patient mortality)]= 8.3221 - 0.0495(muac) - 0.0412(SpO2) + 0.8224(BCS<5) - 0.2841*(Time since last hospitalization)
-                                      (begin
-                                        (set! score (- 8.3221 (* mnum 0.0495)))
-                                        (set! score (- score (* spnum 0.0412)))
-                                        (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 0.8224)))
-                                        (set! score (- score (* hospnum 0.2841))))))
-                                  ;; Use third formula: logit[Pr(In-patient mortality)]= 2.2858 - 0.0454(SpO2) - 0.3179(Time) +1.1533(HIV+) + 0.9247(BCS<5) - 0.3016(WAZ) - 0.0336(Age in months)
-                                  (let ((waz (dbget 'zscore #f))
-                                        (age (dbget 'age #f)))
-                                    (set! score (- 2.2858 (* spnum 0.0454)))
-                                    (set! score (- score (* hospnum 0.3179)))
-                                    (if (string=? hiv "Positive") (set! score (+ score 1.1533)))
-                                    (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 0.9247)))
-                                    (set! score (- score (* waz 0.3016)))
-                                    (set! score (- score (* age 12 0.0336))))))
-                              ;; Use second formula: logit[Pr(In-patient mortality)]= 4.529 + (-0.0506*muac) + 1.0549*(BCS<5) - 0.2593*(Time since last hospitalization) + 1.1143*(HIV+)
-                              (let ((mnum (string->number muac)))
-                                (set! score (- 4.529 (* mnum 0.0506)))
-                                (if (and (number? bcs) (fx< bcs 5)) (set! score (+ score 1.0549)))
-                                (set! score (- score (* hospnum 0.2593)))
-                                (if (string=? hiv "Positive") (set! score (+ score 1.1143)))))
-                            
+                                 (hivt (lnhealth-sxrun 'center-scale "hiv" (if (and (string? hiv) (string=? hiv "Positive")) 1. 0.)))
+                                 (momhiv (dbget 'momhiv #f))
+                                 (momhivt (lnhealth-sxrun 'center-scale "momhiv" (if (and (string? momhiv) (string=? momhiv "Unknown")) 1. 0.)))
+                                 (wateropts (uiget 'water_options '()))
+                                 (water (dbget 'watersource #f))
+                                 (waterind (+ (list-pos wateropts water) 1))
+                                 (watert (lnhealth-sxrun 'center-scale "watersource" (if (fx= waterind 2) 1. 0.)))
+                                 (pure (dbget 'waterpure #f))
+                                 (purenum (if pure (string->number pure) 0))
+                                 (puret (lnhealth-sxrun 'center-scale "waterpure" purenum))
+                                 (netopts (uiget 'net_options '()))
+                                 (bednet (dbget 'bednet #f))
+                                 (netnum (+ (list-pos netopts bednet) 1))
+                                 (nett (lnhealth-sxrun 'center-scale "bednet" netnum))
+                                 (eduopts (uiget 'momedu_options '()))
+                                 (momedu (dbget 'momedu #f))
+                                 (momedunum (+ (list-pos eduopts momedu) 1))
+                                 (momedut (lnhealth-sxrun 'center-scale "momedu" momedunum))
+                                 (travelopts (uiget 'travel_options '()))
+                                 (traveldist (dbget 'traveldist #f))
+                                 (travelind (+ (list-pos travelopts traveldist) 1))
+                                 ;; Group travel time responses
+                                 (travelnum (if (fx> travelind 2)
+                                              (if (fx> travelind 5) 4 3)
+                                              travelind))
+                                 (travelt (lnhealth-sxrun 'center-scale "traveldist" travelnum))
+                                 (temp (lnhealth-sxrun 'getnotemptystring 'temp))
+                                 (tempnum (if temp (string->number temp) 0))
+                                 (temp2 (* tempnum tempnum))
+                                 (temp2t (lnhealth-sxrun 'center-scale "temp2" temp2))
+                                 (score -3.214063319))
+
+                            ;; Currently assume all variable are available
+                            ;; Add positive coefficients, subtract negative ones
+                            (set! score (+ score (* bcst 0.128376701) (* hivt 0.153679396) (* travelt 0.134578194) (* momhivt 0.041557107) (* watert 0.170080257)))
+                            (set! score (- score (* muact 0.252396925) (* wazt 0.225603341) (* spt 0.211672495) (* hospt 0.116558307) (* puret 0.019881807)
+                                                 (* nett 0.014920737) (* momedut 0.032607766) (* temp2t 0.086806429)))
+
                             ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
                             (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
 
@@ -224,6 +263,9 @@
     (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
     (uiset 'cryptokey parasync-key)
     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
+
+    ;; Load scaling table
+    (lnhealth-sxrun 'create-scale-table)
                
     ;; Hospital sites
     (uiset 'sites (list "Mbarara Regional Referral Hospital" "Holy Innocents Children's Hospital" "Jinja Regional Referral Hospital" "Masaka Regional Referral Hospital"))
@@ -723,20 +765,20 @@
         (cond
           ((not score)
             '(label size small text "No score yet"))
-          ((<= score 3.5)
+          ((<= score 4.0)
             '(label size small text "Low"))
           (else
             '(label size small text "High")))))
   (spacer height 20)
   ,(lambda ()
       (let ((score (dbget 'dischargescore)))
-        (if (and score (> score 3.5))
+        (if (and score (> score 4.0))
           '(image file "referral.png")
           '(spacer height 0))))
   (spacer height 20)
   ,(lambda ()
       (let ((score (dbget 'dischargescore)))
-        (if (and score (> score 3.5))
+        (if (and score (> score 4.0))
           `(button h 75 size header indent 0.05 rounded #t text "Referral" action ,(lambda () 'referral))
           '(spacer height 0))))
    (spacer)
@@ -796,28 +838,15 @@
                        ;; Everything filled in, go to next page
                        'social
                        (let ((message (cond
-                                         ;; Missing sex and age
-                                         ((and (not sex) (not age))
-                                            (string-append "Missing sex and calculation of child's age. "
-                                                           "MUAC will be used instead. The in-hospital mortality "
-                                                           "risk will be less precise."))
                                          ((not sex)
-                                            (string-append "Missing sex. "
-                                                           "MUAC must be used instead. The in-hospital mortality "
-                                                           "risk will be less precise."))
+                                            (string-append "Missing sex."))
                                          ((not date)
-                                            (string-append "Missing current date, cannot calculate child's age. "
-                                                           "MUAC will be used instead. The in-hospital mortality "
-                                                           "risk will be less precise."))
+                                            (string-append "Missing current date, cannot calculate child's age."))
                                          ((not age)
                                             (if (and (dbget 'mob #f) (dbget 'yob #f))
-                                              (string-append "Invalid child's birth date. "
-                                                             "MUAC will be used instead. The in-hospital mortality "
-                                                             "risk will be less precise.")
-                                              (string-append "Missing child's birth date. "
-                                                             "MUAC will be used instead. The in-hospital mortality "
-                                                             "risk will be less precise."))))))
-                         (list message (list "Continue" 'social) (list "Fix" #f))))))
+                                              (string-append "Invalid child's birth date.")
+                                              (string-append "Missing child's birth date."))))))
+                         (list message (list "OK" #f))))))
                 (list (uiget  'errmsg) (list "OK" #f)))))
    (spacer height 61)
    (label text "Sex")
@@ -939,16 +968,11 @@
                                             ;; Missing something
                                             (list
                                                (cond
-                                                 ((not weight) "Missing weight. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
-                                                 ((not z) "Weight for age score cannot be calculated without age. MUAC will be used instead. The in-hospital mortality risk will be less precise.")
-                                                 ((not muac) "Missing MUAC. Weight will be used instead. The post-discharge mortality risk will be less precise.")
-                                                 (else "Please enter the temperature."))
-                                               (list "Continue" (lambda ()
-                                                                  (uiset 'origgui lnhealth:gui)
-                                                                  (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                                  (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
-                                                                  'pulseox))
-                                               (list "Fix" (if (and weight (not z)) 'demog #f)))))))))
+                                                 ((not weight) "Missing weight.")
+                                                 ((not z) "Invalid weight for the given age, weight for age score cannot be calculated.")
+                                                 ((not muac) "Missing MUAC.")
+                                                 (else "Missing temperature."))
+                                               (list "OK" #f))))))))
                   ;; Check for out of range values
                   (if muac
                     (let ((muacn (string->number muac))
@@ -1015,14 +1039,7 @@
                   (if (> (string->number sp) 100)
                     (list (string-append "SpO2 is " sp ". SpO2 must be less than of equal to 100.") (list "OK" #f))
                     'clinical)
-                  (if muac
-                    (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
-                                                                                             (list "Fix" (lambda ()
-                                                                                                            (uiset 'origgui lnhealth:gui)
-                                                                                                            #f)))
-                    (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
-                                                                                                                                        (uiset 'origgui lnhealth:gui)
-                                                                                                                                        #f))))))))
+                  (list "Missing SpO2. Please measure it to proceed." (list "OK" #f))))))
    (spacer height 70)
    (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%" units "%")
    (spacer)
@@ -1093,16 +1110,9 @@
                                       'clinical)
                                     (begin
                                       (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                                      (if muac
-                                        (list "Missing SpO2. The post-discharge mortality will be less precise." (list "Continue" 'clinical)
-                                                                                                                 (list "Fix" (lambda ()
-                                                                                                                                (uiset 'origgui lnhealth:gui)
-                                                                                                                                (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                                                                                                #f)))
-                                        (list "Please collect SpO2 or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" (lambda ()
-                                                                                                                                                            (uiset 'origgui lnhealth:gui)
-                                                                                                                                                            (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                                                                                                                            #f))))))))))
+                                      (list "Missing SpO2. Please measure it to proceed." (list "OK" (lambda ()
+                                                                                                       (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
+                                                                                                       #f)))))))))
                 (if (stget "CaseID" #f)
                   ;; In the middle of a recording, ask them if they wish to stop it
                   (begin
@@ -1166,13 +1176,7 @@
                       (let ((dscore (lnhealth-sxrun 'calc-discharge-score)))
                         (dbset 'dischargescore dscore))
                       'risk)
-                    (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
-                           (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
-                           (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
-                      (cond
-                        ((not muac) (list "Please collect HIV Status or MUAC, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
-                        ((not sp) (list "Please collect HIV Status or SpO2, without these the post-discharge mortality cannot be calculated." (list "OK" #f)))
-                        (else (list "Missing HIV Status. Please enter both the maternal and child HIV status." (list "OK" #f))))))
+                    (list "Missing HIV Status. Please enter both the maternal and child HIV status." (list "OK" #f)))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
    (spacer height 30)
    (label size small text "Blantyre coma scale")
@@ -1217,7 +1221,7 @@
    (spacer height 10)
    (dropdown label "Maternal" id momhiv entries ("Positive" "Negative" "Unknown"))
    (spacer height 10)
-   (dropdown label "Child" id hiv entries ("Positive" "Negative" "Unknown"))
+   (dropdown label "Child" id hiv entries ("Positive" "Negative"))
    (spacer)
    (box right #t yofs 16 h ,(lambda () (+ 160
                                          (if (uiget "momhiv:expanded") 144 0)
@@ -1247,19 +1251,19 @@
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                        (if score
-                                         (if (<= score 3.5) "Low" "High")
+                                         (if (<= score 4.0) "Low" "High")
                                          "Not Calculated"))))
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                        (if score
-                                         (if (<= score 3.5) "< 1.5 %" "> 10 %")
+                                         (if (<= score 4.0) "< 1.5 %" "> 10 %")
                                          ""))))
    (spacer height 22)
    (help action help-post-discharge)
    (spacer height 80)
    (box yofs 65 h 244 border ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                            (if score
-                                             (if (<= score 3.5) Green Red)
+                                             (if (<= score 4.0) Green Red)
                                              #f))))
  )
   
@@ -1269,21 +1273,21 @@
    ("Back" risk)
    #f
    (spacer height 40)
-   (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 3.5%. "
+   (label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 4.0%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
                                           "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
-                                          "the risk cut-off (3.5%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
+                                          "the risk cut-off (4.0%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
    (spacer height 70)
    (label size small text "Post-Discharge Risk of Mortality")
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                        (if score
-                                         (if (<= score 3.5) "Low" "High")
+                                         (if (<= score 4.0) "Low" "High")
                                          "Not Calculated"))))
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f)))
                                        (if score
-                                         (if (<= score 3.5) "< 1.5 %" "> 10 %")
+                                         (if (<= score 4.0) "< 1.5 %" "> 10 %")
                                          ""))))
    (spacer)
    (scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
