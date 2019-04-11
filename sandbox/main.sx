@@ -316,18 +316,11 @@
           (glgui:draw-rounded-box bx by bw bh (uiget 'boxcolor))
           0))
       #f)
-               
+
     ;; Scale thresholds - values mapped to left end, first quarter, middle, third quarter, and right end
     ;; High risk is <= second number (left quarter)
     ;; Moderate risk is > second number and < fourth number (middle half)
     ;; Low risk is >= fourth number (right quarter)
-    (uiset 'hosp_thresholds (list 1 2 3 4 5))
-    (uiset 'muac_thresholds (list 115 120 125 135 145))
-    (uiset 'waz_thresholds (list -3 -2 -1 0 2))
-    (uiset 'spo2_thresholds (list 90 93 95 97 100))
-    (uiset 'bcs_thresholds (list 3 4 4 4 5))
-    (uiset 'hiv_thresholds (list 0 0 0 0 1))
-    (uiset 'inhospital_thresholds (list -35.0 -4.2 -3.0 -2.1 -0.7))
     (uiset 'post_thresholds (list -35.0 -5.7 -3.5 -1.8 -0.4))
 
     ;; Load scale image and scale marker image
@@ -1381,6 +1374,11 @@
   (label align left indent 0.05 text ,(lambda () (string-append "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")))))
   (spacer height 4)
   (label align left indent 0.05 text ,(lambda ()
+                                        (let* ((age (dbget 'age #f))
+                                               (formage (if age (lnhealth-sxrun 'format-age age) "")))
+                                          (string-append "Age: " formage))))
+  (spacer height 4)
+  (label align left indent 0.05 text ,(lambda ()
                             (let* ((date0 (dbget 'date ""))
                                    (date (if (fx> (string-length date0) 0) (seconds->string (string->seconds date0 "%Y-%m-%d") "%B %e, %Y") "")))
                               (string-append "Admission Date: " date))))
@@ -1392,6 +1390,13 @@
                                 (if (string-suffix? "Hospital" site) (substring site 0 (- (string-length site) 9)) site))))
   (spacer height 4)
   (label align left indent 0.05 text ,(lambda () (string-append "Discharge Date: " (seconds->string (current-time-seconds) "%B %e, %Y"))))
+  (spacer height 4)
+  (label align left indent 0.05 text ,(lambda ()
+                                        (let* ((today (current-time-seconds))
+                                               (admitdate0 (dbget 'date ""))
+                                               (admitdate (if (fx> (string-length admitdate0) 0) (string->seconds admitdate0 "%Y-%m-%d") #f))
+                                               (days (if admitdate (number->string (fix (/ (- today admitdate) 86400))) #f)))
+                                          (if days (string-append "Length of admission: " days " days") "Length of admission: "))))
   (spacer height 4)
   (label align left indent 0.05 text "Post-discharge Vulnerability: High")
   (spacer height 4)
@@ -1418,14 +1423,21 @@
   (button h 75 size header indent 0.05 rounded #t text "COPY INFO FOR PRINTING" action
     ,(lambda ()
        (let* ((adate0 (dbget 'date ""))
-              (adate (if (fx> (string-length adate0) 0) (seconds->string (string->seconds adate0 "%Y-%m-%d") "%B %e, %Y") ""))
+              (adatenum (if (fx> (string-length adate0) 0) (string->seconds adate0 "%Y-%m-%d") #f))
+              (adate (if adatenum (seconds->string adatenum "%B %e, %Y") ""))
+              (today (current-time-seconds))
+              (days (if adatenum (number->string (fix (/ (- today adatenum) 86400))) #f))
               (site0 (dbget 'site ""))
-              (site (if (string-suffix? "Hospital" site0) (substring site0 0 (- (string-length site0) 9)) site0)))
+              (site (if (string-suffix? "Hospital" site0) (substring site0 0 (- (string-length site0) 9)) site0))
+              (age (dbget 'age #f))
+              (formage (if age (lnhealth-sxrun 'format-age age) "")))
          (clipboard-copy (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last "") "\n"
                                         "DOB: " (dbget 'mob "    ") ", " (dbget 'yob "    ") "        Sex: " (if (string=? (dbget 'sex "") "1") "Male" (if (string=? (dbget 'sex "") "2") "Female" "")) "\n"
+                                        "Age: " formage "\n"
                                         "Admission Date: " adate "\n"
                                         "Discharging Hospital: " site "\n"
                                         "Discharge Date: " (seconds->string (current-time-seconds) "%B %e, %Y") "\n"
+                                        "Length of admission: " (if days (string-append days " days") "") "\n"
                                         "Post-discharge Vulnerability: High\n"
                                         "Referral Facility: " (let ((facility (lnhealth-sxrun 'getnotemptystring 'facility)))
                                                                         (if facility
