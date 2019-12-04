@@ -334,6 +334,7 @@
     (uiset 'sadimage (lnhealth-sxrun 'load-image "sad.png"))
     (uiset 'markimage (lnhealth-sxrun 'load-image "scalemark.png"))
     (uiset 'helpimage (lnhealth-sxrun 'load-image "help.png"))
+    (uiset 'editimage (lnhealth-sxrun 'load-image "editbutton.png"))
                
     ;; Register scale widget
     (uiform-register 'scale
@@ -395,6 +396,21 @@
            (glgui:draw-pixmap-right x (- y 10) (- (* w 0.95) 6) (cadr img) img White)
            0))
        #f)
+
+     ;; Register edit button widget showing current study ID
+     (uiform-register 'editidbutton
+       (lambda (x y w . args)
+         (let* ((label (glgui:uiform-arg args 'text ""))
+                (fnt (uiget 'smlfnt))
+                (h (glgui:fontheight fnt))
+                (labelw (glgui:stringwidth label fnt))
+                (img (uiget 'editimage))
+                (imgw (car img)))
+           (glgui:draw-text-center (+ x (/ (- w labelw) 2)) y labelw h label fnt White)
+           (glgui:draw-pixmap-left (+ x (/ (+ w labelw) 2)) y imgw (cadr img) img White)
+           h))
+       glgui:uiform-button-input)
+
                
      ;; Keypad after char callback procedure to not allow spaces
      (uiset 'nospacecb (lambda (floc fid str)
@@ -788,12 +804,15 @@
  (editchild
    "Edit Child"
    ("Back" ,(lambda ()
+              (uiset 'editingid #f)
               (if (uiget 'new #f)
                 (begin
                   (lnhealth-sxrun 'save-child)
                   (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
                   (dbclear 'childid)
                   (dbclear 'childid2)
+                  (dbclear 'childid3)
+                  (dbclear 'childid4)
                   (dbclear 'first)
                   (dbclear 'last)
                   (spo2spot-reset)
@@ -805,12 +824,65 @@
                   (lnhealth-sxrun 'save-child)
                   'childmenu))))
    ("Next" ,(lambda ()
-              (lnhealth-sxrun 'save-child)
-              'demog))
+              (if (uiget 'editingid)
+                (let ((origid (dbget 'childid))
+                      (id (lnhealth-sxrun 'getnotemptystring 'childid3))
+                      (id2 (lnhealth-sxrun 'getnotemptystring 'childid4)))
+                  (cond
+                    ((or (not id) (not id2)) (list "Enter the Study ID twice." (list "OK" #f)))
+                    ((not (string=? id id2)) (list "The two Study ID's do not match." (list "OK" #f)))
+                    ((not (lnhealth-sxrun 'valid-id id)) (list (string-append id " is not a valid ID.") (list "OK" #f)))
+                    (else
+                       (let* ((admindb (uiget 'admin-database))
+                              (register (table-ref admindb 'register '()))
+                              (sameid? (string=? id origid)))
+                         (if (and (not sameid?) (member id register))
+                           (list "ID already used. You cannot use an ID already in use." (list "OK" #f))
+                           ;; Everything is ok, use the new ID
+                           (begin
+                             (dbset 'childid id)
+                             (dbset 'childid2 id)
+                             (dbclear 'childid3)
+                             (dbclear 'childid4)
+                             (lnhealth-sxrun 'save-child)
+                             (uiset 'editingid #f)
+                             (if sameid?
+                               ;; If the ID hasn't been changed, let them know
+                               (begin
+                                 (uiset 'editingid #f)
+                                 (list "Warning: ID not changed." (list "OK" 'demog)))
+                               ;; If the ID has been changed, remove the old one from the registry
+                               (begin
+                                 (set! register (table-ref admindb 'register '()))
+                                 (table-set! admindb 'register (list-delete-item register origid))
+                                 (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
+                                 'demog))))))))
+                (begin
+                  (lnhealth-sxrun 'save-child)
+                  'demog))))
    (spacer height 53)
-   (label size small text ,(lambda () (string-append "Study ID: " (dbget 'childid ""))))
+   ,(lambda ()
+      (if (uiget 'editingid)
+       `(label size small text ,(lambda () (string-append "Old Study ID: " (dbget 'childid ""))))
+       `(editidbutton text ,(lambda () (string-append "Study ID: " (dbget 'childid ""))) action ,(lambda ()
+                                                                                                   (uiset 'editingid #t)
+                                                                                                   'editchild))))
+   (spacer height ,(lambda () (if (uiget 'editingid) 73 0)))
+   ,(lambda ()
+      (if (uiget 'editingid)
+        `(textentry id childid3 text "New Study ID:" indent 0.55 keycb ,(lambda () (uiget 'idcb)))
+        '(spacer height 0)))
+   (spacer height ,(lambda () (if (uiget 'editingid) 20 0)))
+   ,(lambda ()
+      (if (uiget 'editingid)
+        `(textentry id childid4 text "Confirm New Study ID:" indent 0.55 keycb ,(lambda () (uiget 'idcb)))
+        '(spacer height 0)))
+   (spacer height ,(lambda () (if (uiget 'editingid) 30 0)))
+   ,(lambda ()
+      (if (uiget 'editingid)
+        '(box yofs 10 h 157)
+        '(spacer height 0)))
    (spacer height 73)
-;;   (box left #t yofs 62 h 43)
    (textentry indent 0.32 id last name #t text "Surname:")
    (spacer height 20)
    (textentry indent 0.32 id first name #t text "First Name:")
