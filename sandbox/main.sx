@@ -644,9 +644,6 @@
    (spacer height 10)
    (button h 75 size header indent 0.05 rounded #t text "Load Child File" action ,(lambda () 'load))
    (spacer height 50)
-   (image file "upload.png")
-   (spacer height 10)
-   (button h 75 size header indent 0.05 rounded #t text "Upload" action send)
  )
 
  ;; New screen
@@ -1561,46 +1558,6 @@
                                           "")))
          (list "Referral info copied. Paste into the printer app." (list "OK" #f)))))
  )
-
- (send
-   "Upload"
-   ("Back" ,(lambda ()
-              (uiset 'uploading #f)
-              (uiset 'progress 0.)
-              'menu))
-   #f
-    (spacer height 100)
-    (button h 75 size header indent 0.05 rounded #t text "Upload" action
-      ,(lambda ()
-         (upload-all-data)
-         'send))
-    (spacer)
-    ,(lambda ()
-        (let ((up (uiget  'uploading #f)))
-          (cond
-             ((not up)
-               '(spacer height 0))
-             ((fx= up 1)
-               '(label text "Uploading..."))
-             ((fx= up 2)
-               '(label text "Upload Complete"))
-             ((fx= up 3)
-               '(label text "Upload Failed - Check Wi-Fi"))
-             ((fx= up 0)
-               '(label text "No Data Stored")))))
-    (spacer)
-    ,(lambda ()
-        (let ((up (uiget  'uploading #f)))
-          (if (and up (fx= up 1))
-            `(label text ,(lambda () (uiget 'pmessage)))
-            '(spacer height 0))))
-    (spacer height 10)
-    ,(lambda ()
-        (let ((up (uiget  'uploading #f)))
-          (if (and up (fx= up 1))
-            `(progress value ,(lambda () (uiget 'progress)))
-            '(spacer height 0))))
-  )
 
   (send-archive
     "Complete"
