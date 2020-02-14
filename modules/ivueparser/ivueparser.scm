@@ -90,8 +90,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   "sΔPEEP" "sAADel" "sTrgFl" "sTrgLv" "sEndFl" "sInsTi" "sSIMV" "sPSVbd" "sfgFl" "sAGT"))
 (define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "ISO" "SEV" "DES"))
 
-(define ivue:nirs '("rSO2-1" "rSO2-2" "rSO2-3" "rSO2-4"))
-(define ivue:tcco2 '("tcpCO2" "tcpO2" "SitTim" "SensrT" "HeatPw"))
+(define ivue:physdatavalues_nirs '("rSO2-1" "rSO2-2" "rSO2-3" "rSO2-4"))
+(define ivue:physdatavalues_tcco2 '("tcpCO2" "tcpO2" "SitTim" "SensrT" "HeatPw"))
 
 (define ivue:demographics '("location" "location_connect" "mac"
   "patient_given_name" "patient_middle_name" "patient_family_name" "patient_id" "patient_encounter_id"
@@ -102,6 +102,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (ivueparser store data)
   (set! ivueparser:store store)
   (store-setnew! store "ivue?" #t "ivue")
-  (ivueparser:parseSessionHeader data)
+  (with-exception-catcher (lambda (e)
+    (for-each display (list (exception->string e) "\n")) #f)
+      (lambda () (ivueparser:parseSessionHeader data)))
 )
 ;; eof
