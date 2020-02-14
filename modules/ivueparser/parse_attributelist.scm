@@ -310,7 +310,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (ivueparser:parseModeOp buf)
   (let ((mode_op (u8data-u16 (subu8data buf 0 2)))
-        (old_mode_op (store-ref ivueparser:store "operation_mode" #f)))
+        (old_mode_op (store-ref ivueparser:store "operation_mode" OPMODE_STANDBY)))
     (store-set! ivueparser:store "operation_mode" mode_op "ivue")
     ;; entering standby
     (if (and old_mode_op (fx= (bitwise-and old_mode_op OPMODE_STANDBY) 0)
@@ -329,6 +329,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       (begin
         (store-clear! ivueparser:store "CaseEndPending")
         (store-set! ivueparser:store "CaseStartPending" #t "ivue")
+        ;; Cleanup old demographics
+        (for-each (lambda (p) (store-clear! ivueparser:store p)) ivue:demographics)
       )
     )
   ))

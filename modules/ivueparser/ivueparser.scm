@@ -90,6 +90,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   "sΔPEEP" "sAADel" "sTrgFl" "sTrgLv" "sEndFl" "sInsTi" "sSIMV" "sPSVbd" "sfgFl" "sAGT"))
 (define ivue:waveforms_aisys '("AWP" "AWF" "AWV" "AGT" "ISO" "SEV" "DES"))
 
+(define ivue:nirs '("rSO2-1" "rSO2-2" "rSO2-3" "rSO2-4"))
+(define ivue:tcco2 '("tcpCO2" "tcpO2" "SitTim" "SensrT" "HeatPw"))
+
 (define ivue:demographics '("location" "location_connect" "mac"
   "patient_given_name" "patient_middle_name" "patient_family_name" "patient_id" "patient_encounter_id"
   "patient_dob" "patient_height" "patient_weight" "patient_age" "patient_bsa"
