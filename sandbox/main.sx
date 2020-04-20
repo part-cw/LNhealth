@@ -77,7 +77,7 @@
                                        ((string=? ageyears "1") "1 year")
                                        (else (string-append ageyears " years"))))
                         (agemonths
-                          (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+                          (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
                                 (dob-known (dbget 'dob-known "0")))
                              (cond
                                 ;; The birth date field on the Demographics Screen
@@ -85,7 +85,7 @@
                                 ;; and children 6 months old and up whose date of birth IS known
                                 ;; uses flooring, to one decimal place.
                                 ((or (string=? sixmonths-adm "1")
-                                     (and (string=? sixmonths-adm "2") (string=? dob-known "1")))
+                                     (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
 
                                   (let ((agemonthstemp (number->string (ffloor (* (max (- age agefl) 0.) 12) 0.1))))
                                     (cond
@@ -107,7 +107,7 @@
                                 ;; The year and month of birth tab on the Demographics Screen
                                 ;; for children 6 months old and up whose date of birth IS NOT known
                                 ;; uses rounding.
-                                ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+                                ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
                                   (number->string (fix (round (* (max (- age agefl) 0.) 12)))))
                                 ;; No else statement
                              )))
@@ -275,7 +275,7 @@
                           (d2 (+ (current-time-seconds) 604800))
                           (d3 (+ (current-time-seconds) 1209600))
                           (d4 (+ (current-time-seconds) 2419200))
-                          (sixmonths-adm (dbget 'sixmonths-adm "2"))
+                          (sixmonths-adm (dbget 'sixmonths-adm ""))
                           (score (dbget 'dischargescore #f))
                           )
                        (dbset 'disnurse (uiget 'login_uname ""))
@@ -773,13 +773,13 @@
                     (id2 (lnhealth-sxrun 'getnotemptystring 'childid2))
                     (first (dbget 'first))
                     (last (dbget 'last))
-                    (sixmonths-adm (dbget 'sixmonths-adm "0"))
+                    (sixmonths-adm (dbget 'sixmonths-adm #f))
                     )
                 (cond
                   ((or (not id) (not id2)) (list "Enter the Study ID twice." (list "OK" #f)))
                   ((not (string=? id id2)) (list "The two Study ID's do not match." (list "OK" #f)))
                   ((not (lnhealth-sxrun 'valid-id id)) (list (string-append id " is not a valid ID.") (list "OK" #f)))
-                  ((string=? sixmonths-adm "0") (list "Check whether the child is less than 6 months old or not." (list "OK" #f)))
+                  ((not sixmonths-adm) (list "Check whether the child is less than 6 months old or not." (list "OK" #f)))
                   (else
                     (let ((db (uiget  'database))
                           (register (dbget 'register '())))
@@ -822,7 +822,7 @@
    (spacer height 25)
    (label text "Is the child less than 6 months old?")
    (spacer height 5)
-   (radiobox id sixmonths-adm left ("Yes" "1" #f) right ("No" "2" #f))
+   (radiobox id sixmonths-adm left ("Yes" "1" #f) right ("No" "0" #f))
    (spacer height 70)
    (box yofs 60 h 95)
 
@@ -905,9 +905,9 @@
         '(label size small text "Assessment Incomplete")))
    (spacer height 5)
    (label size small text ,(lambda () (let ((score (dbget 'dischargescore #f))
-                                          (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                          (sixmonths-adm (dbget 'sixmonths-adm "")))
                                        (if score
-                                         (if(string=? sixmonths-adm "2")
+                                         (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
                                             (if (<= score 4.0) "Low" "High")
                                             ;; For children less than 6 months old
@@ -923,9 +923,9 @@
   ;; Referral section - only for children labelled "High" or "Very High"
   ,(lambda ()
       (let ((score (dbget 'dischargescore))
-            (sixmonths-adm (dbget 'sixmonths-adm "2")))
+            (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
-              (and score (string=? sixmonths-adm "2") (> score 4.0))
+              (and score (string=? sixmonths-adm "0") (> score 4.0))
               (and score (string=? sixmonths-adm "1") (> score 6.0))
             )
           '(image file "referral.png")
@@ -933,9 +933,9 @@
   (spacer height 20)
   ,(lambda ()
       (let ((score (dbget 'dischargescore))
-            (sixmonths-adm (dbget 'sixmonths-adm "2")))
+            (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
-              (and score (string=? sixmonths-adm "2") (> score 4.0))
+              (and score (string=? sixmonths-adm "0") (> score 4.0))
               (and score (string=? sixmonths-adm "1") (> score 6.0))
             )
           `(button h 75 size header indent 0.05 rounded #t text "Referral" action ,(lambda () 'referral))
@@ -976,7 +976,7 @@
                     ((or (not id) (not id2)) (list "Enter the Study ID twice." (list "OK" #f)))
                     ((not (string=? id id2)) (list "The two Study ID's do not match." (list "OK" #f)))
                     ((not (lnhealth-sxrun 'valid-id id)) (list (string-append id " is not a valid ID.") (list "OK" #f)))
-                    ((string=? sixmonths-adm "0") (list "Check whether the child is less than 6 months old or not." (list "OK" #f)))
+                    ((not sixmonths-adm) (list "Check whether the child is less than 6 months old or not." (list "OK" #f)))
                     (else
                        (let* ((admindb (uiget 'admin-database))
                               (register (table-ref admindb 'register '()))
@@ -1037,7 +1037,7 @@
    (spacer height 25)
    (label text "Is the child less than 6 months old?")
    (spacer height 5)
-   (radiobox id sixmonths-adm left ("Yes" "1" #f) right ("No" "2" #f))
+   (radiobox id sixmonths-adm left ("Yes" "1" #f) right ("No" "0" #f))
    (spacer height 70)
    (box yofs 60 h 95)
  )
@@ -1052,7 +1052,7 @@
 
               (lnhealth-sxrun 'save-child)
 
-              (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
+              (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
 
                 ;; 6 months and less OR greater than 6 months and last hospitalized field has been filled
                 (if (or (string=? sixmonths-adm "1")
@@ -1067,10 +1067,23 @@
                        ;; Invalid current date
                        (list "Invalid current date, enter as YYYY-MM-DD" (list "OK" #f))
                        (if (or
-                              (and (string=? sixmonths-adm "2") sex date age dob-known)
+                              (and (string=? sixmonths-adm "0") sex date age dob-known)
                               (and (string=? sixmonths-adm "1") sex date age))
-                         ;; Everything filled in, go to next page
-                         (if (string=? sixmonths-adm "1") 'social-6mo 'social)
+                         ;; Everything filled in, proceed
+                         (begin
+                          ;; Clearing database fields when switching between the date of birth field and the year and month dropdowns
+                          ;; - If the date of birth field is used, clear the year and month of birth parameters
+                          ;; - If the year and month dropdowns are used, clear the date of birth parameter
+                          (cond
+                              ((or (string=? sixmonths-adm "1")
+                                   (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
+                                (begin (dbclear 'yob) (dbclear 'mob)))
+                              ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
+                                (dbclear 'dob))
+                           )
+                          ;; Go to next page
+                          (if (string=? sixmonths-adm "1") 'social-6mo 'social)
+                         )
                          (let ((message (cond
                                            ((not sex)
                                               (string-append "Missing sex."))
@@ -1081,7 +1094,7 @@
                                            ((not age)
                                               (if (
                                                 or
-                                                  (and (string=? sixmonths-adm "2") (dbget 'mob #f) (dbget 'yob #f))
+                                                  (and (string=? sixmonths-adm "0") (dbget 'mob #f) (dbget 'yob #f))
                                                   (and (string=? sixmonths-adm "1") (dbget 'dob #f))
                                                 )
                                                 (string-append "Invalid child's birth date.")
@@ -1104,40 +1117,40 @@
 
    ;; The "Is the exact date of birth known?" tab is only for children 6 months old and up
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(label text "Is the exact date of birth known?")
        '(spacer height 0)
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        '(spacer height 5)
        '(spacer height 0)
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(radiobox id dob-known left ("Yes" "1" #f) right ("No" "2" #f))
        '(spacer height 0)
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        '(spacer height 70)
        '(spacer height 0)
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(box yofs 60 h 95)
        '(spacer height 0)
      )
@@ -1148,63 +1161,63 @@
    ;; - Children 6 months old and up whose date of birth IS known
    ;; The year and month of birth tab is only for children 6 months old and up whose date of birth IS NOT known
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
         ((or (string=? sixmonths-adm "1")
-             (and (string=? sixmonths-adm "2") (string=? dob-known "1")))
+             (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
           `(dateentry text "Birth Date:" id dob keypad numdash default "YYYY-MM-DD"))
-        ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+        ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
           `(label text "Birth Date"))
         (else '(spacer height 0))
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
-        ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+        ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
           '(spacer height 10))
         (else '(spacer height 0))
      )
    ))
 
   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
-        ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+        ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
           `(dropdown text "Year of Birth" id yob entries ,(lambda () (uiget 'recent_years))))
         (else '(spacer height 0))
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
-        ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+        ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
           '(spacer height 10))
         (else '(spacer height 0))
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
-        ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+        ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
           `(dropdown text "Month of Birth" id mob entries ,(lambda () (uiget 'months))))
         (else '(spacer height 0))
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
-        ((and (string=? sixmonths-adm "2")
+        ((and (string=? sixmonths-adm "0")
               (string=? dob-known "0"))
           '(spacer height 0))
         (else '(spacer height 10))
@@ -1212,11 +1225,11 @@
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
         ((or (string=? sixmonths-adm "1")
-             (and (string=? sixmonths-adm "2") (string=? dob-known "1")))
+             (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
 
         ;; Calculated age for children less than 6 months old and children 6 months old and up whose date of birth IS known
         `(label align center text ,(lambda ()
@@ -1248,7 +1261,7 @@
                                    (dbset 'age #f)
                                    "-")))))))
 
-        ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+        ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
 
           ;; Calculated age for children 6 months old and up whose date of birth IS NOT known
           `(label align center text ,(lambda ()
@@ -1285,10 +1298,10 @@
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
-        ((and (string=? sixmonths-adm "2")
+        ((and (string=? sixmonths-adm "0")
               (string=? dob-known "0"))
           '(spacer height 0))
         (else '(spacer height 75))
@@ -1296,15 +1309,15 @@
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (dob-known (dbget 'dob-known "0")))
      (cond
         ((or (string=? sixmonths-adm "1")
-             (and (string=? sixmonths-adm "2") (string=? dob-known "1")))
+             (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
           ;; The birth date field is only for children less than 6 months old
           ;; and children 6 months old and up whose date of birth IS known
           `(box left #t yofs 60 h 110))
-        ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
+        ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
           ;; The year and month of birth tab is only for children 6 months old and up whose date of birth IS NOT known
           `(box left #t yofs 60 h ,(lambda ()
                              (let ((dh1 (if (uiget "yob:expanded") 336 0))
@@ -1316,8 +1329,8 @@
 
   ;; The last hospitalized tab is only for children 6 months old and up
   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(label text "Last hospitalized...")
        '(spacer height 0)
      )
@@ -1326,8 +1339,8 @@
    (spacer height 10)
 
   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
        '(spacer height 0)
      )
@@ -1336,8 +1349,8 @@
    (spacer height 40)
 
   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(box right #t yofs 25 h ,(lambda () (if (uiget "lasthosp:expanded") 340 105)))
        '(spacer height 0)
      )
@@ -1415,7 +1428,7 @@
    "Anthropometric Data"
    ("Back" ,(lambda ()
               (lnhealth-sxrun 'save-child)
-              (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
+              (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
                 (if (string=? sixmonths-adm "1") 'social-6mo 'social)
               )
     ))
@@ -1428,7 +1441,7 @@
                      (height (lnhealth-sxrun 'getnotemptystring 'height))
                      (muac (lnhealth-sxrun 'getnotemptystring 'muac))
                      (temp (lnhealth-sxrun 'getnotemptystring 'temp))
-                     (sixmonths-adm (dbget 'sixmonths-adm "2"))
+                     (sixmonths-adm (dbget 'sixmonths-adm ""))
                      (returnvalue #f)
                      (completeproc (lambda ()
                                       (if (and weight (not (sanestring-weight-kg weight)))
@@ -1441,7 +1454,7 @@
                                           (if (and waz muac
                                             (or
                                               (and (string=? sixmonths-adm "1") height)
-                                              (and (string=? sixmonths-adm "2") temp)
+                                              (and (string=? sixmonths-adm "0") temp)
                                             )
                                           )
                                             ;; All complete
@@ -1462,7 +1475,7 @@
                                                (cond
                                                  ((and (string=? sixmonths-adm "1") (not height)) "Missing height.")
                                                  ((not weight) "Missing weight.")
-                                                 ((and (string=? sixmonths-adm "2") (not temp)) "Missing temperature")
+                                                 ((and (string=? sixmonths-adm "0") (not temp)) "Missing temperature")
                                                  ((not muac) "Missing MUAC.")
                                                  ((not waz) "Invalid weight for the given age, weight for age score cannot be calculated.")
                                                  ((not bmi) "Invalid BMI")
@@ -1495,14 +1508,14 @@
 
    ;; Height / Length, for children less than 6 months old
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
      (if (string=? sixmonths-adm "1")
        `(textentry indent 0.7 text "Length:" id height keypad numfloat default "cm" units "cm")
        '(spacer height 0)
      )
    ))
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
      (if (string=? sixmonths-adm "1")
        '(spacer height 31)
        '(spacer height 0)
@@ -1515,15 +1528,15 @@
 
    ;; Temperature, for children 6 months old and greater
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        '(spacer height 31)
        '(spacer height 0)
      )
    ))
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(textentry indent 0.7 text "Temperature:" id temp keypad numfloat default "C" units "C")
        '(spacer height 0)
      )
@@ -1546,7 +1559,7 @@
 
    ;; BMI, for children less than 6 months old
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
      (if (string=? sixmonths-adm "1")
        (let ((weight (dbget 'weight #f))
             (height (dbget 'height #f)))
@@ -1569,7 +1582,7 @@
 
    ;; BMI for age z-score (bmiazscore), for children less than 6 months old
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
      (if (string=? sixmonths-adm "1")
        (let ((bmi (dbget 'bmi #f))
             (age (dbget 'age #f))
@@ -1799,7 +1812,7 @@
    "Risk"
    ("Back" ,(lambda ()
               (lnhealth-sxrun 'save-child)
-              (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
+              (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
                 (if (string=? sixmonths-adm "1") 'anthro 'clinical)
               )))
    ("Restart" ,(lambda ()
@@ -1818,9 +1831,9 @@
    (label size small text "Post-Discharge Risk of Mortality")
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f))
-                                          (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                          (sixmonths-adm (dbget 'sixmonths-adm "")))
                                        (if score
-                                         (if(string=? sixmonths-adm "2")
+                                         (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
                                             (if (<= score 4.0) "Low" "High")
                                             ;; For children less than 6 months old
@@ -1833,9 +1846,9 @@
                                          "Not Calculated"))))
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f))
-                                          (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                          (sixmonths-adm (dbget 'sixmonths-adm "")))
                                        (if score
-                                         (if(string=? sixmonths-adm "2")
+                                         (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
                                             (if (<= score 4.0) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
@@ -1856,9 +1869,9 @@
    (help action help-post-discharge)
    (spacer height 80)
    (box yofs 65 h 244 border ,(lambda () (let ((score (dbget 'dischargescore #f))
-                                              (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                              (sixmonths-adm (dbget 'sixmonths-adm "")))
                                            (if score
-                                             (if(string=? sixmonths-adm "2")
+                                             (if(string=? sixmonths-adm "0")
                                                 ;; For children 6 months old and greater
                                                 (if (<= score 4.0) Green Red)
                                                 ;; For children less than 6 months old
@@ -1879,8 +1892,8 @@
    (spacer height 40)
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        ;; For children 6 months old and greater
        `(label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 4.0%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
@@ -1894,8 +1907,8 @@
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        ;; For children 6 months old and greater
        '(spacer height 70)
        ;; For children less than 6 months
@@ -1906,9 +1919,9 @@
    (label size small text "Post-Discharge Risk of Mortality")
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f))
-                                          (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                          (sixmonths-adm (dbget 'sixmonths-adm "")))
                                        (if score
-                                         (if(string=? sixmonths-adm "2")
+                                         (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
                                             (if (<= score 4.0) "Low" "High")
                                             ;; For children less than 6 months old
@@ -1921,9 +1934,9 @@
                                          "Not Calculated"))))
    (spacer)
    (label size big text ,(lambda () (let ((score (dbget 'dischargescore #f))
-                                          (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                          (sixmonths-adm (dbget 'sixmonths-adm "")))
                                        (if score
-                                         (if(string=? sixmonths-adm "2")
+                                         (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
                                             (if (<= score 4.0) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
@@ -1938,8 +1951,8 @@
 
    ;; The scale - only for children 6 months old and greater
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
         (if score (- score) #f))))
        '(spacer height 0)
@@ -1947,16 +1960,16 @@
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        '(spacer height 20)
        '(spacer height 0)
      )
    ))
 
    ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2")))
-     (if (string=? sixmonths-adm "2")
+   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+     (if (string=? sixmonths-adm "0")
        `(box h 625)
        `(box h 385)
      )
@@ -2083,19 +2096,19 @@
   (label align left indent 0.05 text ,(lambda () (string-append
 
     "DOB: "
-     (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+     (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
           (dob-known (dbget 'dob-known "0")))
        (cond
           ;; For children less than 6 months old and children 6 months old and up whose date of birth IS known
           ((or (string=? sixmonths-adm "1")
-               (and (string=? sixmonths-adm "2") (string=? dob-known "1")))
+               (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
             (let ((dobtemp (dbget 'dob "")))
               (if (fx> (string-length dobtemp) 0)
                 (seconds->string (string->seconds dobtemp "%Y-%m-%d") "%B %e, %Y")
                 "    ")))
           ;; For children 6 months old and up whose date of birth IS NOT known
-          ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
-            ((dbget 'mob "    ") ", " (dbget 'yob "    ")))
+          ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
+            (string-append (dbget 'mob "    ") ", " (dbget 'yob "    ")))
           (else "    ")
        ))
 
@@ -2135,9 +2148,9 @@
 
   (label align left indent 0.05 text ,(lambda () (string-append "Post-discharge Vulnerability: "
                                     (let ((score (dbget 'dischargescore #f))
-                                          (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                          (sixmonths-adm (dbget 'sixmonths-adm "")))
                                        (if score
-                                         (if(string=? sixmonths-adm "2")
+                                         (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
                                             "High"
                                             ;; For children less than 6 months old
@@ -2167,7 +2180,7 @@
   (label align left indent 0.05 text ,(lambda () (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y"))))
 
   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (score (dbget 'dischargescore #f)))
      (if (and (string=? sixmonths-adm "1") (> score 17.5))
        '(spacer height 4)
@@ -2177,7 +2190,7 @@
 
   ;; Another visit 28 days later for children less than 6 months old with a "Very High Risk" status
   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+   (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
          (score (dbget 'dischargescore #f)))
      (if (and (string=? sixmonths-adm "1") (> score 17.5))
        `(label align left indent 0.05 text ,(lambda () (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y"))))
@@ -2202,19 +2215,19 @@
          (clipboard-copy (string-append "Patient Name: " (dbget 'first "") " " (dbget 'last "") "\n"
 
                                         "DOB: "
-                                         (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+                                         (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
                                               (dob-known (dbget 'dob-known "0")))
                                            (cond
                                               ;; For children less than 6 months old and children 6 months old and up whose date of birth IS known
                                               ((or (string=? sixmonths-adm "1")
-                                                   (and (string=? sixmonths-adm "2") (string=? dob-known "1")))
+                                                   (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
                                                 (let ((dobtemp (dbget 'dob "")))
                                                   (if (fx> (string-length dobtemp) 0)
                                                     (seconds->string (string->seconds dobtemp "%Y-%m-%d") "%B %e, %Y")
                                                     "    ")))
                                               ;; For children 6 months old and up whose date of birth IS NOT known
-                                              ((and (string=? sixmonths-adm "2") (string=? dob-known "2"))
-                                                ((dbget 'mob "    ") ", " (dbget 'yob "    ")))
+                                              ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
+                                                (string-append (dbget 'mob "    ") ", " (dbget 'yob "    ")))
                                               (else "    ")
                                            ))
 
@@ -2227,9 +2240,9 @@
 
                                         "Post-discharge Vulnerability: "
                                         (let ((score (dbget 'dischargescore #f))
-                                          (sixmonths-adm (dbget 'sixmonths-adm "2")))
+                                          (sixmonths-adm (dbget 'sixmonths-adm "")))
                                         (if score
-                                         (if(string=? sixmonths-adm "2")
+                                         (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
                                             "High"
                                             ;; For children less than 6 months old
@@ -2252,7 +2265,7 @@
                                                          "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y") "\n")
                                           "")
                                         ;; Another visit 28 days later for children under 6 months old with a "Very High Risk" status
-                                         (let ((sixmonths-adm (dbget 'sixmonths-adm "2"))
+                                         (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
                                                (score (dbget 'dischargescore #f)))
                                            (if (and (string=? sixmonths-adm "1") (> score 17.5))
                                              (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y") "\n")
