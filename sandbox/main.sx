@@ -971,7 +971,8 @@
               (if (uiget 'editingid)
                 (let ((origid (dbget 'childid))
                       (id (lnhealth-sxrun 'getnotemptystring 'childid3))
-                      (id2 (lnhealth-sxrun 'getnotemptystring 'childid4)))
+                      (id2 (lnhealth-sxrun 'getnotemptystring 'childid4))
+                      (sixmonths-adm (dbget 'sixmonths-adm #f)))
                   (cond
                     ((or (not id) (not id2)) (list "Enter the Study ID twice." (list "OK" #f)))
                     ((not (string=? id id2)) (list "The two Study ID's do not match." (list "OK" #f)))
