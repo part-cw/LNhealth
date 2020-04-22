@@ -1003,9 +1003,11 @@
                                  (table-set! admindb 'register (list-delete-item register origid))
                                  (dbsave (uiget 'adminpath) (uiget 'cryptokey) admindb)
                                  'demog))))))))
-                (begin
-                  (lnhealth-sxrun 'save-child)
-                  'demog))))
+                (if (not (dbget 'sixmonths-adm #f))
+                  (list "Check whether the child is less than 6 months old or not." (list "OK" #f))
+                  (begin
+                    (lnhealth-sxrun 'save-child)
+                    'demog)))))
    (spacer height 53)
    ,(lambda ()
       (if (uiget 'editingid)
