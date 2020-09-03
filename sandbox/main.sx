@@ -561,6 +561,24 @@
                          ;; If no value, set to 0
                          (xxset floc fid "0"))))
 
+     ;; Keypad after char callback procedure for decimal fields, don't allow multiple decimals
+     (uiset 'singledecimalcb (lambda (floc fid str)
+                                 (if (string? str)
+                                   (let ((parts (string-split str #\.))
+                                         (update? #f))
+                                     (if (fx> (length parts) 1)
+                                       (begin
+                                         (set! update? #t)
+                                         (set! str (string-append (car parts) "." (cadr parts) (apply string-append (cddr parts))))))
+                                     (if (string-prefix? "." str)
+                                       (begin
+                                         (set! update? #t)
+                                         (set! str (string-append "0" str))))
+                                     (if update?
+                                       ;; If more than 2 parts than there were 2 or more decimals, combine
+                                       ;; back together with only one of the decimals
+                                       (xxset floc fid str))))))
+
      ;; Load field maps for upload
      (uiset 'assessmentfieldmap (lnhealth-sxrun 'load-fieldmap "assessmentfieldmap.csv"))
      (uiset 'identfieldmap (lnhealth-sxrun 'load-fieldmap "identfieldmap.csv"))
@@ -1525,7 +1543,7 @@
      )
    ))
 
-   (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg" units "kg")
+   (textentry indent 0.7 text "Weight:" id weight keypad numfloat default "kg" units "kg" keycb ,(lambda () (uiget 'singledecimalcb)))
    (spacer height 31)
    (textentry indent 0.7 text "Mid-upper arm circumference:" id muac keypad numint default "mm" units "mm")
 
@@ -1540,7 +1558,7 @@
    ,(lambda ()
    (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
      (if (string=? sixmonths-adm "0")
-       `(textentry indent 0.7 text "Temperature:" id temp keypad numfloat default "C" units "C")
+       `(textentry indent 0.7 text "Temperature:" id temp keypad numfloat default "C" units "C" keycb ,(lambda () (uiget 'singledecimalcb)))
        '(spacer height 0)
      )
    ))
