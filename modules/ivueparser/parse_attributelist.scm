@@ -161,6 +161,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (ivueparser:parse0a1d val))
       ((fx= attribute_id 62007)
         (ivueparser:log 3 "ivueparser: 62007: " (u8data-u32 (subu8data val 0 4))))
+      ((fx= attribute_id #xf383)
+        (ivueparser:parseAttributeList obj_handle val))
+      ((fx= attribute_id #xf385) ;; This is a string with messages shown on the screen
+        (ivueparser:parseAttrString "monitor_msg" val len))
       (else
         (ivueparser:log 1 "ivueparser: unknown attribute: " (number->string attribute_id 16) " [" len "]")
       )

@@ -71,13 +71,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (len (u8data-u16 (subu8data buf 2 4))))
     (cond
       ((fx= package_type 1)
-        (ivueparser:parseSingleContextPoll (u8data-skip buf 10)))
+        (ivueparser:parseparse0c11_01 (u8data-skip buf 4)))
       ((fx= package_type 2)
-        (ivueparser:parseSingleContextPoll (u8data-skip buf 8)))
+        (ivueparser:parseparse0c11_02 (u8data-skip buf 4)))
       (else
         (ivueparser:log 1 "ivueparser: unknown 0xc11 package_type: " package_type))
     )
   ))
+(define (ivueparser:parseparse0c11_01 buf)
+  (ivueparser:parseAttributeList 0 (u8data-skip buf 8))
+)
+(define (ivueparser:parseparse0c11_02 buf)
+  (ivueparser:parseAttributeList 0 (u8data-skip buf 6))
+)
 
 ;; PollMdibDataReq
 (define (ivueparser:parsePollMdibDataReq buf)

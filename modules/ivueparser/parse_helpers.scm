@@ -87,7 +87,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (let loop ((l (u8vector->list v)) (s '()))
     (if (fx= (length l) 0)
       (list->string (map integer->char s))
-      (loop (cddr l) (if (fx<= (cadr l) 32) s (append s (list (cadr l)))))
+      (loop (cddr l) (if (fx< (cadr l) 32) s (append s (list (cadr l)))))
     )
   ))
 
