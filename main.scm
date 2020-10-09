@@ -1018,8 +1018,8 @@ end-of-c-declare
      ;; quad capture
      ((eval 'pa-idev-set!) 2) ((eval 'pa-odev-set!) 2)
      ;; spdif i/o
-     ((eval 'pa-ochannel-set!) 2 3)
-     ((eval 'pa-ichannel-set!) 3 2)
+     ((eval 'rtaudio-pa-ochannel-set!) 2 3)
+     ((eval 'rtaudio-pa-ichannel-set!) 3 2)
    ))
    (rtaudio-start 8000 1.0)
  ;;  (uploader-init "ecem.ece.ubc.ca" "/cgi-bin/bellybreath.cgi" "bin" 100000)
