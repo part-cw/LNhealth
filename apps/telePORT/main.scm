@@ -414,7 +414,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Returns the number of pages from a given LOCATION (e.g. BED5)
 (define (page-number-get location)
   (let ((messages (store-ref "main" "AlertMessages")))
-    (if (list-notempty? messages)
+    (if (pair? messages)
       (let loop ((i 0) (result 0))
 	(if (= i (length messages)) result
 	  (loop (+ i 1)(if (string=? (list-ref (list-ref messages i) 1) location) (+ result 1) result))
@@ -463,7 +463,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Builds the list of message rows for the alert-list based on the "main" store's events list
 (define (build-alert-list)
   (let ((alerts (store-ref "main" "AlertMessages")))
-    (if (list-notempty? alerts)
+    (if (pair? alerts)
       (let loop ((i 0) (result (list)))
         (if (= i (length alerts))
           result
@@ -524,7 +524,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (set! selected-alert-number (fix (glgui-widget-get g wgt 'current)))
 
   (let ((alerts (store-ref "main" "AlertMessages")))
-    (if (list-notempty? alerts)
+    (if (pair? alerts)
       (let* ((alert (list-ref alerts selected-alert-number))
              (src (list-ref alert 1))
              (prio (list-ref alert 3)))
@@ -660,7 +660,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Returns the row number of the message with the highest priority
 (define (highest-priority-message-row-get location)
   (let ((messages (store-ref "main" "AlertMessages")))
-    (if (list-notempty? messages)
+    (if (pair? messages)
       (let loop ((i (- (length messages) 1)) (result (list -10 0)))
 	(if (< i 0) (list-ref result 1)
 	  (loop (- i 1)(let ((row (list-ref messages i)))
@@ -680,7 +680,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Returns the highest priority of all messages for a given LOCATION
 (define (highest-priority-value-of-pages-get location)
   (let ((messages (store-ref "main" "AlertMessages")))
-    (if (list-notempty? messages)
+    (if (pair? messages)
       (let loop ((i (- (length messages) 1)) (result -10))
 	(if (< i 0) result
 	  (loop (- i 1)(if (string=? (list-ref (list-ref messages i) 1) location)
@@ -702,7 +702,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (store-set! "main" "LastUpdateTime" (car data))
   (store-set! "main" "LastUpdateTimeLocal" ##now) ;; This is needed in case Apple thinks their time is not NTP time
   (glgui-widget-set! gui:menu clock 'label (seconds->string (car data) "%T"))
-  (if (list-notempty? (cdr data))
+  (if (pair? (cdr data))
     (begin
       (for-each parse-message (reverse (cdr data))) ;; Reverse is needed as we want older messages first
       (glgui-widget-set! gui:messaging alert-list 'list (build-alert-list))
@@ -927,7 +927,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Build the List of Users, with whom we have chatted before. It will only show the most current message for each user.
 (define (build-chat-user-list)
   (let ((chats (store-ref "main" "ChatMessages")))
-    (if (list-notempty? chats)
+    (if (pair? chats)
       (let loop ((i 0) (result (list)) (people (list)))
         (if (= i (length chats))
           (begin
@@ -997,7 +997,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (chat-user-select g w t x y)
   (let ((msgs (if (fx= mode MODE_USERS) (store-ref "main" "Users") (store-ref "main" "ChatUsers"))))
-    (if (list-notempty? msgs)
+    (if (pair? msgs)
       (let* ((user (list-ref msgs (fix (glgui-widget-get g w 'current))))
              (username (if (fx= mode MODE_USERS) (car user) user)) ;; The userlist also has a login status field
              (login (store-ref "main" "UserName"))
@@ -1027,7 +1027,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (build-chat-list user)
   (let ((chats (store-ref "main" "ChatMessages")))
-    (if (list-notempty? chats)
+    (if (pair? chats)
       (let loop ((i 0) (result (list)))
         (if (= i (length chats))
           result
@@ -1169,7 +1169,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (build-user-list)
   (let ((users (store-ref "main" "Users")))
-    (if (list-notempty? users)
+    (if (pair? users)
       (let loop ((i 0) (result (list)))
 	;;If we reached length, we return the result
 	(if (= i (length users)) result
@@ -1290,7 +1290,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (data (rupi-cmd rupi "GETTRENDS" pin or-name))
          (s5? (store-ref or-name "s5?"))
          (trend-source-names (if s5? trend-source-names-s5 trend-source-names-ivue)))
-    (if (list-notempty? data) (store-update-list or-name data))
+    (if (pair? data) (store-update-list or-name data))
     (for-each (lambda (l) (gltrace:clear l)) trend-traces)
     (let loop ((i 0))
       (if (fx= i (length trend-traces)) #t
@@ -1509,7 +1509,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ;; Request new data from network
       (let* ((rupi (store-ref "main" "RupiClient" #f))(pin (store-ref "main" "Key"))
 	      (data (rupi-cmd rupi "GETWAVES" pin or-name)))
-	(if (list-notempty? data) ;; Always a list
+	(if (pair? data) ;; Always a list
 	  (begin
 	    (waveform-add-rest or-name (if s5? hr-str-s5 hr-str-ivue) (if s5? ecg-trace-s5 ecg-trace-ivue))
 	    (waveform-add-rest or-name (if s5? spo2-str-s5 spo2-str-ivue) (if s5? pleth-trace-s5 pleth-trace-ivue))
@@ -1658,7 +1658,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; Add the remaining parts of the waveform
 (define (waveform-add-rest or-name wave-name trace)
   (let ((wave-val (store-ref or-name wave-name)))
-    (if (list-notempty? wave-val)
+    (if (pair? wave-val)
       (let ((num-samples (length wave-val)))
 	(let loop ((i 0))
 	  (if (< i num-samples)
@@ -1671,7 +1671,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; updates the trace by appending the obtained values
 (define (waveform-add or-name wave-name trace overall-time window-time)
   (let ((wave-val (store-ref or-name wave-name)) (wave-len (store-ref or-name (string-append wave-name "-len") 0)))
-    (if (list-notempty? wave-val)
+    (if (pair? wave-val)
       (let ((num-samples (inexact->exact (floor (* (/ wave-len overall-time) window-time)))))
 	(let loop ((i 0))
 	  (if (and (< i num-samples) (< i (length wave-val)))
@@ -1838,7 +1838,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (let* ((myrooms (store-ref "main" "myRooms"))
 	   (users (cadr room))
 	   (num-users (length users))
-	   (color (if (and myrooms (member (car room) myrooms)) White (if (list-notempty? users) LightSlateGray Black)))
+	   (color (if (and myrooms (member (car room) myrooms)) White (if (pair? users) LightSlateGray Black)))
 	   (user-name (store-ref "main" "UserName"))
 	   (rooms-send (store-ref "main" "RoomSendTime")))
       (glgui:draw-text-left (+ x 3) y_shift 82 24 (car room) ascii_24.fnt color)
@@ -1954,7 +1954,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       (set! gui:reminder-room-list-pos (find-list-pos room-names (car entry)))
       (set! gui:reminder-task-list-pos (find-list-pos task-names (cadr entry)))
-      (if (list-notempty? (caddr entry))
+      (if (pair? (caddr entry))
 	(begin
           (glgui-widget-set! gui:reminder-setup hour 'value (string->number (seconds->string (caaddr entry) "%H")))
 	  (glgui-widget-set! gui:reminder-setup minute 'value (fix (/ (string->number (seconds->string (caaddr entry) "%M")) 5)))
@@ -2021,7 +2021,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (time-change-button-callback gui:reminder-setup w t x y)
 
   ;; Don't show add reminder setup screen if we are not subscribed to at least one room
-  (if (list-notempty? (store-ref "main" "myRooms"))
+  (if (pair? (store-ref "main" "myRooms"))
     (begin
       (log-remote "Screen: ReminderSetup")
       (set! mode MODE_REMINDER_SETUP)
@@ -2045,7 +2045,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (reminder-list-element entry)
   (lambda (g wgt x y w h s)
     (glgui:draw-text-left (+ x 5) (+ y (/ (- h 24) 2)) 70 24 (car entry) ascii_24.fnt White)
-    (if (list-notempty? (caddr entry))
+    (if (pair? (caddr entry))
       (let ((then (caaddr entry)))
         (glgui:draw-text-left (+ x 85) (+ y 5) 140 16 (string-append (seconds->string then "%H:%M") " (in "
           (number->string (fix (/ (- then ##now) 60))) "min)") ascii_16.fnt White)
@@ -2367,7 +2367,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (phonebook-modify-button-callback g w t x y)
   ;; Make sure we have the latest version of the phonebook
   (let ((data (rupi-cmd (store-ref "main" "RupiClient" #f) "GETPHONEBOOK" (store-ref "main" "Key"))))
-    (if (list-notempty? data) (begin
+    (if (pair? data) (begin
       (store-set! "main" "Phonebook" data)
       (glgui-widget-set! g phonebook-list 'list (build-phonebook-list))
     ))
@@ -2392,7 +2392,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (append
     (let ((users (store-ref "main" "Users"))
           (thisuser (store-ref "main" "UserName" "")))
-      (if (list-notempty? users)
+      (if (pair? users)
         (let loop ((i 0) (result (list)))
           (if (= i (length users))
             result
@@ -2740,8 +2740,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (glgui-widget-set! gui:popup popup-timer 'hidden #f)
   (glgui-widget-set! gui:popup popup-timer 'w (glgui-widget-get gui:popup popup-text 'w))
   (let ((popup (store-ref "main" "popup-text" "")))
-    (glgui-widget-set! gui:popup popup-label 'label (if (list-notempty? popup) (car popup) ""))
-    (glgui-widget-set! gui:popup popup-text 'label (if (list-notempty? popup) (cadr popup) popup))
+    (glgui-widget-set! gui:popup popup-label 'label (if (pair? popup) (car popup) ""))
+    (glgui-widget-set! gui:popup popup-text 'label (if (pair? popup) (cadr popup) popup))
   )
 )
 
@@ -2794,7 +2794,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (define (unanswered-message-number-get)
 (+ ;; Add number of unanswered chat messages and pages
   (let ((chats (store-ref "main" "ChatMessages")))
-    (if (list-notempty? chats)
+    (if (pair? chats)
       (let loop ((i 0) (result 0) (people (list)))
         (if (fx= i (length chats)) result
           (let* ((msg (list-ref chats i))
@@ -2814,7 +2814,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   )
 
   (let ((messages (store-ref "main" "AlertMessages")))
-    (if (list-notempty? messages)
+    (if (pair? messages)
       (let loop ((i 0) (result 0))
 	(if (fx= i (length messages)) result
 	  (loop (fx+ i 1)(if (fx> (list-ref (list-ref messages i) 3) 0) (fx+ result 1) result))
@@ -2827,7 +2827,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define (unanswered-message-highest-priority-value-get)
   (let ((messages (store-ref "main" "AlertMessages")))
-    (if (list-notempty? messages)
+    (if (pair? messages)
       (let loop ((i 0) (result -1))
 	(if (fx= i (length messages)) (if (fx= result -1) 1 result)
 	  (loop (fx+ i 1)(let ((prio (list-ref (list-ref messages i) 3)))
@@ -2899,7 +2899,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (let loop ((i 0))
     (if (< i (length lst))
       (let ((row (list-ref lst i)))
-	(if (and (list? row) (fx> (length row) 1) (list-notempty? (cdr row))) (store-update-list (car row) (cdr row)))
+	(if (and (list? row) (fx> (length row) 1) (pair? (cdr row))) (store-update-list (car row) (cdr row)))
 	(loop (+ i 1))
       )
     )
@@ -2929,7 +2929,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (let ((data (rupi-cmd rc "GETMYROOMS" (store-ref store "Key"))))
        (store-set! store "myRooms" data)) ;; Load our subscribed rooms from the last logout
     (let ((data (rupi-cmd rc "GETROOMS" (store-ref store "Key"))))
-       (store-set! store "Rooms" (if (list-notempty? data) data '())))
+       (store-set! store "Rooms" (if (pair? data) data '())))
     (for-each (lambda (l) (make-store (car l))) (store-ref store "Rooms")) ;; For the list of rooms we got make stores
   )
 
@@ -2946,7 +2946,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             (key   (store-ref store "Key"))
             (timeout 2.))
         (let ((data (rupi-cmd rupi "GETMESSAGES" key lastupdatetime)))
-          (if (list-notempty? data) ;; Always a list
+          (if (pair? data) ;; Always a list
             (begin
               (store-update-messages data)
               (let ((data2 (rupi-cmd rupi "GETREMINDERS" key)))
@@ -2962,10 +2962,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         )
         (if (not app:suspended) (begin
           (let ((data (rupi-cmd rupi "GETOVERVIEW" key)))
-            (if (list-notempty? data) (store-update-data data)) ;; Always a list
+            (if (pair? data) (store-update-data data)) ;; Always a list
           )
           (let ((data (rupi-cmd rupi "GETUSERS" key)))
-            (if (list-notempty? data) ;; Always a list
+            (if (pair? data) ;; Always a list
               (begin
                 (store-set! store "Users" (append (map (lambda (l) (list l 1)) (car data))
                                                   (map (lambda (l) (list l 0)) (cadr data))))
@@ -2977,7 +2977,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             )
           )
           (let ((data (rupi-cmd rupi "GETROOMS" key)))
-            (if (list-notempty? data)
+            (if (pair? data)
               (begin
                 (store-set! store "Rooms" (sort-rooms data))
                 (glgui-widget-set! gui:rooms room-list 'list (build-room-list))
@@ -2986,7 +2986,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           )
         ))
         (let ((buf (store-ref store "LogBuffer")))
-          (if (list-notempty? buf)
+          (if (pair? buf)
             (let loop ((i 0))
               (if (fx= i (length buf)) (store-clear! store "LogBuffer")
                 (begin
@@ -3018,7 +3018,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 )
 
 ;; Check for empty lists - this one is better than using pair? for it!
-(define (list-notempty? lst)
+(define (pair? lst)
   (and (list? lst) (not (null? lst)))
 )
 
@@ -3042,7 +3042,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;; I need a function to find the position of a string in a list
 (define (find-list-pos lst str)
   (cond
-    ((not (list-notempty? lst)) #f)
+    ((not (pair? lst)) #f)
     ((string=? str (car lst)) 0)
     (else (+ 1 (find-list-pos (cdr lst) str)))
   )
@@ -3070,14 +3070,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       )
       (let loop ((i 0) (result (list)))
 	(if (= i (length rooms)) result
-	    (loop (+ i 1)(if (and (not (list-notempty? (cadr (list-ref rooms i))))
+	    (loop (+ i 1)(if (and (not (pair? (cadr (list-ref rooms i))))
 				  (if with-pacu #t (not (char=? (string-ref (car (list-ref rooms i)) 0) #\P)))
 			     ) (append result (list (list-ref rooms i))) result))
 	)
       )
       (let loop ((i 0) (result (list)))
 	(if (= i (length rooms)) result
-	    (loop (+ i 1)(if (and (list-notempty? (cadr (list-ref rooms i)))
+	    (loop (+ i 1)(if (and (pair? (cadr (list-ref rooms i)))
 				  (not (member user-name (cadr (list-ref rooms i))))
 				  (if with-pacu #t (not (char=? (string-ref (car (list-ref rooms i)) 0) #\P)))
 			     ) (append result (list (list-ref rooms i))) result))
