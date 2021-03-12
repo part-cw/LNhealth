@@ -222,11 +222,29 @@
                                  (temp2t (lnhealth-sxrun 'center-scale "temp2" temp2))
                                  (score -3.214063319))
 
+                            ; Optional logging for debugging variable values
+                            ;(log-system "\nbcst: " bcst "\nhivt: " hivt "\ntravelt: " travelt "\nmomhivt: " momhivt "\nwatert: " watert 
+                            ;                              "\nmuact: " muact "\nwazt: " wazt "\nspt: " spt "\nhospt: " hospt "\npuret: " puret 
+                            ;                              "\nnett: " nett "\nmomedut: " momedut "\ntemp2t: " temp2t "\n")
+
                             ;; Currently assume all variable are available
                             ;; Add positive coefficients, subtract negative ones
                             (set! score (+ score (* bcst 0.128376701) (* hivt 0.153679396) (* travelt 0.134578194) (* momhivt 0.041557107) (* watert 0.170080257)))
                             (set! score (- score (* muact 0.252396925) (* wazt 0.225603341) (* spt 0.211672495) (* hospt 0.116558307) (* puret 0.019881807)
                                              (* nett 0.014920737) (* momedut 0.032607766) (* temp2t 0.086806429)))
+
+                            ; Optional logging for analyzing score contributions (formatted to match REDCap Report "Discharge Score Testing")
+                             ;(log-system ","(ffloor (+ score 3.214063319) 0.01)",,,,"(ffloor (* -1 hospt 0.116558307) 0.01)","(ffloor (* watert 0.170080257) 0.01)","
+                             ;           (ffloor (* -1 puret 0.019881807) 0.01)","(ffloor (* -1 nett 0.014920737) 0.01)",,"(ffloor (* -1 momedut 0.032607766) 0.01)","
+                             ;           (ffloor (* travelt 0.134578194) 0.01)",,,,"(ffloor (* -1 muact 0.252396925) 0.01)","(ffloor (* -1 temp2t 0.086806429) 0.01)","
+                             ;           (ffloor (* -1 wazt 0.225603341) 0.01)",,,,"(ffloor (* -1 spt 0.211672495) 0.01)",,,,"(ffloor (* bcst 0.128376701) 0.01)",,"
+                             ;           (ffloor (* momhivt 0.041557107) 0.01)","(ffloor (* hivt 0.153679396) 0.01)",")
+                            
+                            ;(log-system ",,,"(ffloor (* -1 hospt 0.116558307) 0.01)","(ffloor (* watert 0.170080257) 0.01)","(ffloor (* -1 puret 0.019881807) 0.01)","
+                            ;  (ffloor (* -1 nett 0.014920737) 0.01)","(ffloor (* -1 momedut 0.032607766) 0.01)
+                            ;  ","(ffloor (* travelt 0.134578194) 0.01)",,"(ffloor (* -1 muact 0.252396925) 0.01)","(ffloor (* -1 temp2t 0.086806429) 0.01)","
+                            ;  (ffloor (* -1 wazt 0.225603341) 0.01)","(ffloor (* -1 spt 0.211672495) 0.01)",,"(ffloor (* bcst 0.128376701) 0.01)
+                            ;  ",,"(ffloor (* momhivt 0.041557107) 0.01)","(ffloor (* hivt 0.153679396) 0.01)",,,"(ffloor (+ score 3.214063319) 0.01))
 
                             ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
                             (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
