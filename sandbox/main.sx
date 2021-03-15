@@ -298,20 +298,24 @@
                           )
                        (dbset 'disnurse (uiget 'login_uname ""))
                        (dbset 'disdate (seconds->string ##now "%Y-%m-%d"))
-                       (dbset 'ref1date (seconds->string d1 "%Y-%m-%d"))
-                       (dbset 'ref1datef (seconds->string d1 "%A, %B %e, %Y"))
-                       (dbset 'ref2date (seconds->string d2 "%Y-%m-%d"))
-                       (dbset 'ref2datef (seconds->string d2 "%A, %B %e, %Y"))
-                       (dbset 'ref3date (seconds->string d3 "%Y-%m-%d"))
-                       (dbset 'ref3datef (seconds->string d3 "%A, %B %e, %Y"))
+                       ;; handle <6mo Moderate risk slightly differently
+                       (if (and (string=? sixmonths-adm "1") score (< score 6.0))
+                        (begin
+                          (dbset 'ref1date (seconds->string d2 "%Y-%m-%d"))
+                          (dbset 'ref1datef (seconds->string d2 "%A, %B %e, %Y")))
+                        (begin
+                          (dbset 'ref1date (seconds->string d1 "%Y-%m-%d"))
+                          (dbset 'ref1datef (seconds->string d1 "%A, %B %e, %Y"))
+                          (dbset 'ref2date (seconds->string d2 "%Y-%m-%d"))
+                          (dbset 'ref2datef (seconds->string d2 "%A, %B %e, %Y"))
+                          (dbset 'ref3date (seconds->string d3 "%Y-%m-%d"))
+                          (dbset 'ref3datef (seconds->string d3 "%A, %B %e, %Y"))))
 
                        ;; Set the 4th visit date for high-risk children under 6 months old
                        (if (and (string=? sixmonths-adm "1") (> score 17.5))
                           (begin
                             (dbset 'ref4date (seconds->string d4 "%Y-%m-%d"))
-                            (dbset 'ref4datef (seconds->string d4 "%A, %B %e, %Y"))
-                          )
-                        )
+                            (dbset 'ref4datef (seconds->string d4 "%A, %B %e, %Y"))))
                     )
 
                     (lnhealth-sxrun 'save-child)
@@ -709,6 +713,7 @@
   (spacer height 5)
   (label text "THE UNIVERSITY OF")
   (label text "BRITISH COLUMBIA")
+  (label text "Updated: March 15, 2021")
   (spacer)
 ;;  (box yofs 16 h 61)
  )
@@ -949,20 +954,20 @@
                                             ;; For children less than 6 months old
                                             (cond
                                               ((> score 17.5) "Very High")
-                                              ((<= score 6) "Low")
+                                              ((<= score 6) "Moderate")
                                               (else "High")
                                             )
                                           )
                                          "No score yet"))))
   (spacer height 20)
 
-  ;; Referral section - only for children labelled "High" or "Very High"
+  ;; Referral section
   ,(lambda ()
       (let ((score (dbget 'dischargescore))
             (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
               (and score (string=? sixmonths-adm "0") (> score 4.0))
-              (and score (string=? sixmonths-adm "1") (> score 6.0))
+              (and score (string=? sixmonths-adm "1"))
             )
           '(image file "referral.png")
           '(spacer height 0))))
@@ -972,7 +977,7 @@
             (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
               (and score (string=? sixmonths-adm "0") (> score 4.0))
-              (and score (string=? sixmonths-adm "1") (> score 6.0))
+              (and score (string=? sixmonths-adm "1"))
             )
           `(button h 75 size header indent 0.05 rounded #t text "Referral" action ,(lambda () 'referral))
           '(spacer height 0))))
@@ -1878,7 +1883,7 @@
                                             ;; For children less than 6 months old
                                             (cond
                                               ((> score 17.5) "Very High")
-                                              ((<= score 6) "Low")
+                                              ((<= score 6) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -1935,11 +1940,11 @@
      (if (string=? sixmonths-adm "0")
        ;; For children 6 months old and greater
        `(label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 4.0%. "
-                                          "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n\n"
-                                          "The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
-                                          "the risk cut-off (4.0%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
+                                          "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n")))
+                                          ;"The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
+                                          ;"the risk cut-off (4.0%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
        ;; For children less than 6 months old
-       `(label align left text ,(lambda () (string-append "Risk has been dichotomized into low, high, and very high based on risk cut-offs of approximately "
+       `(label align left text ,(lambda () (string-append "Risk has been categorized into moderate, high, and very high based on risk cut-offs of approximately "
                                           "6.0% and 17.5%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-offs.\n")))
      )
@@ -1966,7 +1971,7 @@
                                             ;; For children less than 6 months old
                                             (cond
                                               ((> score 17.5) "Very High")
-                                              ((<= score 6) "Low")
+                                              ((<= score 6) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -1989,30 +1994,31 @@
    (spacer)
 
    ;; The scale - only for children 6 months old and greater
-   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
-     (if (string=? sixmonths-adm "0")
-       `(scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
-        (if score (- score) #f))))
-       '(spacer height 0)
-     )
-   ))
+   ;,(lambda ()
+   ;(let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+   ;  (if (string=? sixmonths-adm "0")
+   ;    `(scale thresholds ,(lambda () (uiget 'post_thresholds)) value ,(lambda () (let ((score (dbget 'dischargescore #f)))
+   ;     (if score (- score) #f))))
+   ;    '(spacer height 0)
+   ;  )
+   ;))
 
-   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
-     (if (string=? sixmonths-adm "0")
-       '(spacer height 20)
-       '(spacer height 0)
-     )
-   ))
+   ;,(lambda ()
+   ;(let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+   ;  (if (string=? sixmonths-adm "0")
+   ;    '(spacer height 20)
+   ;    '(spacer height 0)
+   ;  )
+   ;))
 
-   ,(lambda ()
-   (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
-     (if (string=? sixmonths-adm "0")
-       `(box h 625)
-       `(box h 385)
-     )
-   ))
+   ;,(lambda ()
+   ;(let ((sixmonths-adm (dbget 'sixmonths-adm "")))
+   ;  (if (string=? sixmonths-adm "0")
+   ;    `(box h 625)
+   ;    `(box h 385)
+   ;  )
+   ;))
+   (box h 385)
 
  )
 
@@ -2212,11 +2218,18 @@
   (spacer height 4)
   (label align left indent 0.05 text "referral dates are:")
   (spacer height 10)
-  (label align left indent 0.05 text ,(lambda () (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y"))))
+  ;; First visit - in 2 days or 7 days if <6mo and score is less than 6.0
+  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1") (< (dbget 'dischargescore 7.0) 6.0))
+    (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y"))
+    (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y")))))
   (spacer height 4)
-  (label align left indent 0.05 text ,(lambda () (string-append "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y"))))
+  ;; Second visit - don't show if <6mo and score is less than 6.0
+  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1") (< (dbget 'dischargescore 7.0) 6.0)) "" 
+    (string-append "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y")))))
   (spacer height 4)
-  (label align left indent 0.05 text ,(lambda () (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y"))))
+  ;; Third visit - don't show if <6mo and score is less than 6.0
+  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1") (< (dbget 'dischargescore 7.0) 6.0)) ""
+    (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y")))))
 
   ,(lambda ()
    (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
@@ -2287,6 +2300,7 @@
                                             ;; For children less than 6 months old
                                             (cond
                                               ((> score 17.5) "Very High")
+                                              ((< score 6.0) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -2298,19 +2312,26 @@
                                                                    facility
                                                                    (dbget 'custom_facility "")))
                                         (if (dbget 'include_dates)
+                                          (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
+                                                (score (dbget 'dischargescore #f)))
                                           (string-append "\nDates for scheduled follow-up:\n"
-                                                         "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y") "\n"
-                                                         "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y") "\n"
-                                                         "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y") "\n")
+                                                         ;; Visit 1 in 2 days or 7 days if <6mo with Moderate risk
+                                                         (if (and (string=? sixmonths-adm "1") score (< score 6.0))
+                                                          (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y") "\n")
+                                                          (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y") "\n"))
+                                                         ;; Visits 2 and 3 for >6mo or <6mo with High or Very High risk
+                                                         (if (and (string=? sixmonths-adm "1") score (< score 6.0)) 
+                                                          ""
+                                                          (string-append "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y") "\n"))
+                                                         (if (and (string=? sixmonths-adm "1") score (< score 6.0)) 
+                                                          ""
+                                                          (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y") "\n"))
+                                                         ;; Visit 4 if <6mo with Very High risk
+                                                         (if (and (string=? sixmonths-adm "1") score (> score 17.5))
+                                                          (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y") "\n")
+                                                          "")
+                                                       ))
                                           "")
-                                        ;; Another visit 28 days later for children under 6 months old with a "Very High Risk" status
-                                         (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
-                                               (score (dbget 'dischargescore #f)))
-                                           (if (and (string=? sixmonths-adm "1") (> score 17.5))
-                                             (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y") "\n")
-                                             ""
-                                           )
-                                         )
                                         ))
          (list "Referral info copied. Paste into the printer app." (list "OK" #f)))))
  )
