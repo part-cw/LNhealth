@@ -67,60 +67,60 @@
                 (/ weight (square height-in-meters))
               )))
 
-  ;; Format the age to X year(s), Y month(s)
+  ;; Format the age, given in years to "X year(s), Y month(s)"" or "Z day(s)" (if under 1 month old)
   (format-age ,(lambda (age)
-                 (let* ((agefl0 (fix age))
-                        (agefl (if (> (- age agefl0) 0.958) (+ agefl0 1) agefl0))
-                        (ageyears (number->string agefl))
-                        (ageyearsstr (cond
-                                       ((string=? ageyears "0") "")
-                                       ((string=? ageyears "1") "1 year")
-                                       (else (string-append ageyears " years"))))
-                        (agemonths
-                          (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
-                                (dob-known (dbget 'dob-known "0")))
-                             (cond
-                                ;; The birth date field on the Demographics Screen
-                                ;; for children less than 6 months old
-                                ;; and children 6 months old and up whose date of birth IS known
-                                ;; uses flooring, to one decimal place.
-                                ((or (string=? sixmonths-adm "1")
-                                     (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
+    (if (< age (/ 1.0 12.0))
+      (string-append (number->string (fix (* age 365))) " days")
+      (let* ((agefl0 (fix age))
+            ;; the floor of the age
+             (agefl (if (> (- age agefl0) 0.958) (+ agefl0 1) agefl0))
+            ;; if the decimal part is greater than 0.958 (11 months 15 days), round up
+             (ageyears (number->string agefl))
+             (ageyearsstr (cond
+                            ((string=? ageyears "0") "")
+                            ((string=? ageyears "1") "1 year")
+                            (else (string-append ageyears " years"))))
+             (agemonths
+               (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
+                     (dob-known (dbget 'dob-known "0")))
+                  (cond
+                     ;; The birth date field on the Demographics Screen
+                     ;; for children less than 6 months old
+                     ;; and children 6 months old and up whose date of birth IS known
+                     ;; uses flooring, to one decimal place.
+                     ((or (string=? sixmonths-adm "1")
+                          (and (string=? sixmonths-adm "0") (string=? dob-known "1")))
+                        (let ((agemonthstemp (number->string (ffloor (* (max (- age agefl) 0.) 12) 0.1))))
+                          (cond
+                            ;; To improve: Solving this condition needs better logic.
+                            ((fx> (string-length agemonthstemp) 4) ;; For example: 10.2000003 or 1.2000003
+                              (let ((agemonthstempsub (substring agemonthstemp 0 4)))
+                                (cond
+                                  ((string-suffix? "0" agemonthstempsub) ;; For example: 1.20
+                                    (substring agemonthstempsub 0 3))
+                                  (else agemonthstempsub)
+                                )))
+                            ((string-suffix? "." agemonthstemp) ;; For example: 1.
+                              (substring agemonthstemp 0 (- (string-length agemonthstemp) 1)))
+                            (else agemonthstemp))))
 
-                                  (let ((agemonthstemp (number->string (ffloor (* (max (- age agefl) 0.) 12) 0.1))))
-                                    (cond
-                                      ;; To improve: Solving this condition needs better logic.
-                                      ((fx> (string-length agemonthstemp) 4) ;; For example: 10.2000003 or 1.2000003
-                                        (let ((agemonthstempsub (substring agemonthstemp 0 4)))
-                                          (cond
-                                            ((string-suffix? "0" agemonthstempsub) ;; For example: 1.20
-                                              (substring agemonthstempsub 0 3))
-                                            (else agemonthstempsub)
-                                          )))
-                                      ((string-suffix? "." agemonthstemp) ;; For example: 1.
-                                        (substring agemonthstemp 0 (- (string-length agemonthstemp) 1)))
-                                      (else agemonthstemp)
-                                    )
-                                  )
-                                )
-
-                                ;; The year and month of birth tab on the Demographics Screen
-                                ;; for children 6 months old and up whose date of birth IS NOT known
-                                ;; uses rounding.
-                                ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
-                                  (number->string (fix (round (* (max (- age agefl) 0.) 12)))))
-                                ;; No else statement
-                             )))
-                        (agemonthsstr (cond
-                                        ((string=? agemonths "0") "")
-                                        ((string=? agemonths "1") "1 month")
-                                        (else (string-append agemonths " months")))))
-                    (string-append ageyearsstr
-                                   (if (or (fx= (string-length agemonthsstr) 0)
-                                           (fx= (string-length ageyearsstr) 0))
-                                     ""
-                                     ", ")
-                                  agemonthsstr))))
+                      ;; The year and month of birth tab on the Demographics Screen
+                      ;; for children 6 months old and up whose date of birth IS NOT known
+                      ;; uses rounding.
+                      ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
+                        (number->string (fix (round (* (max (- age agefl) 0.) 12)))))
+                      ;; No else statement
+                      )))
+              (agemonthsstr (cond
+                              ((string=? agemonths "0") "")
+                              ((string=? agemonths "1") "1 month")
+                              (else (string-append agemonths " months")))))
+          (string-append ageyearsstr
+                         (if (or (fx= (string-length agemonthsstr) 0)
+                                 (fx= (string-length ageyearsstr) 0))
+                           ""
+                           ", ")
+                        agemonthsstr)))))
 
   ;; Save the child data
   (save-child ,(lambda ()
@@ -359,6 +359,9 @@
     ;; Background box color
     (uiset 'boxcolor (color-rgb 20 140 102))
 
+    ;; Modal box color
+    (uiset 'modal-boxcol (color-fade Black 0.7))
+
     ;; Header color
     (uiset 'color-header (color-rgb 20 140 102))
 
@@ -374,6 +377,9 @@
     (uiset 'bigfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 40))
     (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 30))
     (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 24))
+
+    ;; Path to tutorial video
+    (uiset 'tutorialpath (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "tutorial.mp4"))
 
     ;; Load the localization csv table to translate between languages, used by spo2spotcheck
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
@@ -645,6 +651,10 @@
   (label text "For children up to 5 years old")
   (label text "admitted with a proven or suspected")
   (label text "infectious illness")
+  ;(help action ,(lambda () 
+  ;  (if (or (string=? (system-platform) "ios") (string=? (system-platform) "android"))
+  ;      (videoplayer (uiget 'tutorialpath ""))
+  ;      (list "No tutorial available" (list "OK" #f)))))
   (spacer height 45)
 ;;  (box yofs 36 h 172)
   (textentry indent 0.32 text "Username:" id login_uname keycb ,(lambda () (uiget 'nospacecb)))
@@ -1285,22 +1295,16 @@
                                         (current (with-exception-catcher (lambda (e) #f) (lambda () (string->seconds (dbget 'date) "%Y-%m-%d")))))
                                    (if current
                                      (let ((age (/ (- current dob-final) 31557600)))
-                                        (cond
-                                          ((< age 0)
+                                        (if (< age 0)
                                             (begin
                                               (dbset 'age #f)
-                                              "Invalid"))
-                                          ((< age 0.08) ;; If age is less than 1 month
+                                              "Invalid")
                                             (begin
                                               (dbset 'age age)
-                                              "Less than 1 month"))
-                                          (else
-                                            (begin
-                                              (dbset 'age age)
-                                              (lnhealth-sxrun 'format-age age)))))
+                                              (lnhealth-sxrun 'format-age age))))
                                      (begin
                                        (dbset 'age #f)
-                                       "Invalid - Fix Current Date")))
+                                       "Invalid - Fix Dates")))
                                  (begin
                                    (dbset 'age #f)
                                    "-")))))))
@@ -2165,10 +2169,11 @@
       "Female" "")))))
 
   (spacer height 4)
+
   (label align left indent 0.05 text ,(lambda ()
-                                        (let* ((age (dbget 'age #f))
-                                               (formage (if age (lnhealth-sxrun 'format-age age) "")))
-                                          (string-append "Age: " formage))))
+    (let ((age (dbget 'age #f)))
+      (string-append "Age: " (if (not age) "" (lnhealth-sxrun 'format-age age))))))
+
   (spacer height 4)
   (label align left indent 0.05 text ,(lambda ()
                             (let* ((date0 (dbget 'date ""))
