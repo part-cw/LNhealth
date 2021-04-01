@@ -59,7 +59,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (svs-pass-vitalsign (round rrate:rate) 100 VITALSIGN_RR))
     (if hasrrtaps
         (svs-pass-vitalsign-string (taptimes->string rrate:times) 100 VITALSIGN_RRTAPS))
-    (if (or hasrr hasrrtaps) (svs-finish)))
+    (if (or hasrr hasrrtaps) (svs-finish))
+    (terminate))
 )
 
 (define (rrate-terminate)
