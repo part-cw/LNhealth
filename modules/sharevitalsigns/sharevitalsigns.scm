@@ -275,8 +275,9 @@ end-of-c-declare
 ;; Send an intent to request a given vitalsign
 ;; xargs contain extras to be sent in the form (list 'key1 val1 ...)
 ;; SVS_STATE: VITALSIGN_STATE_NEW (reset provider to initial state) | VITALSIGN_STATE_RESUME (resume provider app without erasing data)
+;;    Default is 1, VITALSIGN_STATE_NEW
 (define (svs-request-vitalsign sign . xargs)
-  (let ((state (svs:get-xarg 'state xargs 0)))
+  (let ((state (svs:get-xarg 'state xargs 1)))
       ((c-lambda (SVS_STATE) void "svs_add_extras") state))
   ((c-lambda (SVS_SIGN) void "svs_request_vitalsign") sign))
 
