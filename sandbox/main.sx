@@ -723,7 +723,7 @@
   (spacer height 5)
   (label text "THE UNIVERSITY OF")
   (label text "BRITISH COLUMBIA")
-  (label text "Updated: March 15, 2021")
+  (label text "Updated: March 31, 2021")
   (spacer)
 ;;  (box yofs 16 h 61)
  )
