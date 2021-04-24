@@ -2,4 +2,9 @@
 <resources>
     <!-- 0x0d8c: C-MEDIA ELECTRONICS INC. -->
     <usb-device vendor-id="3468" />
+    <!-- Masimo Pulse Oximeters (copied from SD4Mom -->
+    <usb-device vendor-id="10502" product-id="4096" />
+    <usb-device vendor-id="10502" product-id="4352" />
+    <usb-device vendor-id="10502" product-id="4609" />
+    <usb-device vendor-id="10502" product-id="4112" />
 </resources>

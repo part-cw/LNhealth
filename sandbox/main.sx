@@ -154,11 +154,15 @@
                            (table-set! tb "temp2" (cons 1447.743492 98.20992618))
 
                            ;; Entries for children less than 6 months old
-                           (table-set! tb "muac-6mo" (cons 112.2301639 17.73607569))
-                           (table-set! tb "waz-6mo" (cons -0.557527596 1.978392733))
-                           (table-set! tb "bmiaz-6mo" (cons -0.822230671 2.245222007))
-                           (table-set! tb "traveldist-6mo" (cons 2.127868852 0.809258099))
-                           (table-set! tb "dpi-6mo" (cons 1.798032787 0.664922636))
+                           (table-set! tb "muac-6mo" (cons 113.5153846 17.41973336))
+                           (table-set! tb "waz-6mo" (cons -0.538225118 1.947384345))
+                           (table-set! tb "bmiaz-6mo" (cons -0.790696733 2.233224101))
+                           (table-set! tb "dpi-6mo" (cons 1.838461538 0.659708367))
+                           (table-set! tb "tone-6mo" (cons 0.906477733 0.291221889))
+                           (table-set! tb "spo2-6mo" (cons 93.65303644 6.972829646))
+                           (table-set! tb "lasthosp-6mo" (cons 4.590688259 1.051756199))
+                           (table-set! tb "sucking-6mo" (cons 0.597165992 0.490567224))
+                           (table-set! tb "urine-6mo" (cons 0.805263158 0.396078171))
 
                            (uiset 'scaling tb))))
 
@@ -252,40 +256,115 @@
                             ;; Floor to two decimal places
                             (ffloor score 0.01))))
 
-  ;; Calculate risk scores - for children less than 6 months old
-  (calc-discharge-score-6mo ,(lambda ()
+  ;; Calculate risk scores - for children less than 6 months old, Model 1
+  (calc-discharge-score-6mo1 ,(lambda ()
                           (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
-                                 (muacnum (if muac (string->number muac) 0))
-                                 (muact (lnhealth-sxrun 'center-scale "muac-6mo" muacnum))
+                                 (muacnum (if muac (string->number muac) #f))
+                                 (muact (if muacnum (lnhealth-sxrun 'center-scale "muac-6mo" muacnum) #f))
+                                 (sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
+                                 (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
+                                 (spnum (if sp (string->number sp) #f))
+                                 (spt (if spnum (lnhealth-sxrun 'center-scale "spo2" spnum) #f))
                                  (waz (dbget 'wazscore #f))
-                                 (wazt (lnhealth-sxrun 'center-scale "waz-6mo" waz))
+                                 (wazt (if waz (lnhealth-sxrun 'center-scale "waz-6mo" waz) #f))
                                  (bmiaz (dbget 'bmiazscore #f))
-                                 (bmiazt (lnhealth-sxrun 'center-scale "bmiaz-6mo" bmiaz))
-                                 (travelopts (uiget 'travel_options '()))
-                                 (traveldist (dbget 'traveldist #f))
-                                 (travelind (+ (list-pos travelopts traveldist) 1))
-                                 ;; Group travel time responses
-                                 (travelnum (if (fx> travelind 2)
-                                              (if (fx> travelind 5) 4 3)
-                                              travelind))
-                                 (travelt (lnhealth-sxrun 'center-scale "traveldist-6mo" travelnum))
+                                 (bmiazt (if bmiaz (lnhealth-sxrun 'center-scale "bmiaz-6mo" bmiaz) #f))
+                                 (toneopts (uiget 'tone_options_6mo '()))
+                                 (tone (dbget 'muscletone #f))
+                                 (toneind (if tone (+ (list-pos toneopts tone) 1) #f))
+                                 (tonenorm (if toneind (if (fx= toneind 2) 1 0) #f))
+                                 (tonet (if tonenorm (lnhealth-sxrun 'center-scale "tone-6mo" tonenorm) #f))
                                  (dpiopts (uiget 'dpi_options_6mo '()))
                                  (dpi (dbget 'dpi #f))
-                                 (dpiind (+ (list-pos dpiopts dpi) 1))
-                                 (dpit (lnhealth-sxrun 'center-scale "dpi-6mo" dpiind))
-                                 (score -2.35379639297706)
+                                 (dpiind (if dpi (+ (list-pos dpiopts dpi) 1) #f))
+                                 (dpit (if dpiind (lnhealth-sxrun 'center-scale "dpi-6mo" dpiind) #f))
+                                 (score -2.396048137)
                                 )
 
-                            ;; Currently assume all variable are available
-                            ;; Add positive coefficients, subtract negative ones
-                            (set! score (+ score (* travelt 0.0198178659605768) (* dpit 0.0174416249636834)))
-                            (set! score (- score (* muact 0.0246133503538607) (* wazt 0.15975781485164) (* bmiazt 0.00123621673616438)))
+                            ;; Return #f if any data missing
+                            (if (not (and muact spt wazt bmiazt tonet dpit)) #f
+                                (begin
 
-                            ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
-                            (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
+                                  ;; Multiply by coefficients and add
+                                  (set! score (+ score 
+                                    (* muact -0.029173978)
+                                    (* spt -0.001351501)
+                                    (* wazt -0.094875023)
+                                    (* bmiazt -0.032172921)
+                                    (* tonet -0.028046544)
+                                    (* dpit 0.003379865)))
 
-                            ;; Floor to two decimal places
-                            (ffloor score 0.01))))
+                                  ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
+                                  (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
+
+                                  ;; Floor to two decimal places
+                                  (ffloor score 0.01))))))
+
+  ;; Calculate risk scores - for children less than 6 months old, Model 2
+  (calc-discharge-score-6mo2 ,(lambda ()
+                          (let* ((hospopts (uiget 'hosp_options '()))
+                                 (hosp (dbget 'lasthosp #f))
+                                 (hospind (if hosp (+ (list-pos hospopts hosp) 1) #f))
+                                 (hospt (if hospind (lnhealth-sxrun 'center-scale "lasthosp-6mo" hospind) #f))
+                                 (muac (lnhealth-sxrun 'getnotemptystring 'muac))
+                                 (muacnum (if muac (string->number muac) #f))
+                                 (muact (if muacnum (lnhealth-sxrun 'center-scale "muac-6mo" muacnum) #f))
+                                 (suckingopts (uiget 'sucking_options_6mo '()))
+                                 (sucking (dbget 'sucking #f))
+                                 (suckingind (if sucking (+ (list-pos suckingopts sucking) 1) #f))
+                                 (suckingnorm (if suckingind (if (fx= suckingind 1) 1 0) #f))
+                                 (suckingt (if suckingnorm (lnhealth-sxrun 'center-scale "sucking-6mo" suckingnorm) #f))
+                                 (toneopts (uiget 'tone_options_6mo '()))
+                                 (tone (dbget 'muscletone #f))
+                                 (toneind (if tone (+ (list-pos toneopts tone) 1) #f))
+                                 (tonenorm (if toneind (if (fx= toneind 2) 1 0) #f))
+                                 (tonet (if tonenorm (lnhealth-sxrun 'center-scale "tone-6mo" tonenorm) #f))
+                                 (dpiopts (uiget 'dpi_options_6mo '()))
+                                 (dpi (dbget 'dpi #f))
+                                 (dpiind (if dpi (+ (list-pos dpiopts dpi) 1) #f))
+                                 (dpit (if dpiind (lnhealth-sxrun 'center-scale "dpi-6mo" dpiind) #f))
+                                 (urineopts (uiget 'urine_options_6mo '()))
+                                 (urine (dbget 'urine #f))
+                                 (urineind (if urine (+ (list-pos urineopts urine) 1) #f))
+                                 (urinenorm (if urineind (if (fx= urineind 1) 1 0) #f))
+                                 (urinet (if urinenorm (lnhealth-sxrun 'center-scale "urine-6mo" urinenorm) #f))                                 
+                                 (score -2.389900581)
+                                )
+
+                            ;; Return #f if any data missing
+                            (if (not (and hospt muact suckingt tonet dpit urinet)) #f
+                                (begin
+
+                                  ;; Multiply by coefficients and add
+                                  (set! score (+ score 
+                                    (* hospt (+ -0.001240084 -0.001242614))
+                                    (* muact -0.063423092)
+                                    (* suckingt -0.000469225)
+                                    (* tonet -0.048607819)
+                                    (* dpit 0.020615257)
+                                    (* urinet -0.000741308)))
+
+                                  ;; Now compute logit(p) = score (s) for p, by the formula: p = 1/(1 + e^-s) and then make into a percentage
+                                  (set! score (* (/ 1 (+ 1 (exp (- score)))) 100))
+
+                                  ;; Floor to two decimal places
+                                  (ffloor score 0.01))))))
+
+
+  ;; This function tells you what data is missing for the model you want to run
+  (missing-for-model ,(lambda (model)
+    (let ((modelvars (cond 
+        ((equal? model '6mo1) (list 'muac 'muscletone 'dpi 'spo2med 'spo2manual 'wazscore 'bmiazscore))
+        (else '()))))
+      (lnhealth-sxrun 'mfm-helper modelvars))))
+
+  (mfm-helper ,(lambda (lst)
+    (if (null? lst) 
+        lst
+        (let ((result (dbget (car lst) #f)))
+          (if (and result (or (not (string? result)) (not (string=? result ""))))
+              (lnhealth-sxrun 'mfm-helper (cdr lst))
+              (cons (car lst) (lnhealth-sxrun 'mfm-helper (cdr lst))))))))
 
   ;; Go to the printing page if everything is filled in
   (goto-printing ,(lambda ()
@@ -299,7 +378,7 @@
                        (dbset 'disnurse (uiget 'login_uname ""))
                        (dbset 'disdate (seconds->string ##now "%Y-%m-%d"))
                        ;; handle <6mo Moderate risk slightly differently
-                       (if (and (string=? sixmonths-adm "1") score (< score 6.0))
+                       (if (and (string=? sixmonths-adm "1") score (< score (uiget 'high_thresh_6mo)))
                         (begin
                           (dbset 'ref1date (seconds->string d2 "%Y-%m-%d"))
                           (dbset 'ref1datef (seconds->string d2 "%A, %B %e, %Y")))
@@ -312,7 +391,7 @@
                           (dbset 'ref3datef (seconds->string d3 "%A, %B %e, %Y"))))
 
                        ;; Set the 4th visit date for high-risk children under 6 months old
-                       (if (and (string=? sixmonths-adm "1") (> score 17.5))
+                       (if (and (string=? sixmonths-adm "1") (> score (uiget 'very_high_thresh_6mo)))
                           (begin
                             (dbset 'ref4date (seconds->string d4 "%Y-%m-%d"))
                             (dbset 'ref4datef (seconds->string d4 "%A, %B %e, %Y"))))
@@ -341,6 +420,22 @@
                           (lnhealth-sxrun 'save-child)
                           'printing)))))
 
+  ;; Calculate the risk score and go to the risk page
+  (goto-risk ,(lambda ()
+    (let* ((under6mo (string=? (dbget 'sixmonths-adm "0") "1"))
+           (dscore (if under6mo 
+              (let ((missing (lnhealth-sxrun 'missing-for-model '6mo1)))
+                (if (or (null? missing)
+                        (equal? missing '(spo2med))
+                        (equal? missing '(spo2manual)))
+                    (lnhealth-sxrun 'calc-discharge-score-6mo1)
+                    (lnhealth-sxrun 'calc-discharge-score-6mo2)))
+              (lnhealth-sxrun 'calc-discharge-score))))
+      (begin
+        (dbset 'dischargescore dscore)
+        (lnhealth-sxrun 'save-child)
+        (if dscore 'risk (list "Problem calculating risk score. Please check the information entered" (list "OK" #f)))))))
+
   ;; Load an image file to use within a custom widget
   (load-image ,(lambda (file)
                  (let* ((sandbox (uiget 'sandbox #f))
@@ -355,6 +450,9 @@
 
   ;; initialization
   (oncreate ,(lambda ()
+
+    ;; Set version information
+    (uiset 'para-version "2.7")
 
     ;; Background box color
     (uiset 'boxcolor (color-rgb 20 140 102))
@@ -385,6 +483,7 @@
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
 
     ;; Setup pulse oximetry and setup SpO2 page
+    (spo2spot-vsdsp-disable!)
     (spo2spot-init 0 80 (glgui-width-get) (- (glgui-height-get) 80) lnhealth:store)
     (spo2-set-length 30)
     (spo2-set-quality-length 15)
@@ -427,11 +526,18 @@
     (uiset 'travel_options (list "< 30 minutes" "30 minutes - 1 hour" "1 - 2 hours" "2 - 3 hours" "3 - 4 hours" "4 - 8 hours" "> 8 hours"))
     ;; Social questions for children less than 6 months old
     (uiset 'dpi_options_6mo (list "< 48 hours" "48 hours - 7 days" "> 7 days - 1 month" "> 1 month"))
+    (uiset 'tone_options_6mo (list "Increased (stiff)" "Normal" "Decreased (floppy)" "Don't know"))
+    (uiset 'sucking_options_6mo (list "Yes" "No" "Don't know" "Not Applicable"))
+    (uiset 'urine_options_6mo (list "Normal" "Decreased" "Don't know"))
 
     ;; Lists of options for Blantyre coma scale
     (uiset 'eye_options (list "Watches or follows" "Fails to watch or follow"))
     (uiset 'motor_options (list "Localizes painful stimulus" "Withdraws limb from\npainful stimulus" "No response or\ninappropriate response"))
     (uiset 'verbal_options (list "Cries appropriately with pain\n(or speaks if verbal)" "Moan or abnormal cry with pain" "No vocal response to pain"))
+
+    (uiset 'high_thresh 4.0)
+    (uiset 'high_thresh_6mo 8.25)
+    (uiset 'very_high_thresh_6mo 15)
 
     ;; Load the z-score data - both for weight for age and BMI for age
 
@@ -723,7 +829,7 @@
   (spacer height 5)
   (label text "THE UNIVERSITY OF")
   (label text "BRITISH COLUMBIA")
-  (label text "Updated: March 31, 2021")
+  (label text ,(lambda () (string-append "Version " (uiget 'para-version "Unknown"))))
   (spacer)
 ;;  (box yofs 16 h 61)
  )
@@ -960,11 +1066,11 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score 4.0) "Low" "High")
+                                            (if (<= score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score 17.5) "Very High")
-                                              ((<= score 6) "Moderate")
+                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((<= score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -976,7 +1082,7 @@
       (let ((score (dbget 'dischargescore))
             (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
-              (and score (string=? sixmonths-adm "0") (> score 4.0))
+              (and score (string=? sixmonths-adm "0") (> score (uiget 'high_thresh)))
               (and score (string=? sixmonths-adm "1"))
             )
           '(image file "referral.png")
@@ -986,7 +1092,7 @@
       (let ((score (dbget 'dischargescore))
             (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
-              (and score (string=? sixmonths-adm "0") (> score 4.0))
+              (and score (string=? sixmonths-adm "0") (> score (uiget 'high_thresh)))
               (and score (string=? sixmonths-adm "1"))
             )
           `(button h 75 size header indent 0.05 rounded #t text "Referral" action ,(lambda () 'referral))
@@ -1122,8 +1228,12 @@
                        (list "Invalid current date, enter as YYYY-MM-DD" (list "OK" #f))
                        (if (or
                               (and (string=? sixmonths-adm "0") sex date age dob-known)
-                              (and (string=? sixmonths-adm "1") sex date age))
+                              ;; Not requiring sex or age for under 6 months
+                              (string=? sixmonths-adm "1"))
                          ;; Everything filled in, proceed
+                        ;; If they've entered some birthdate, but it's invalid, reject it
+                         (if (and (string=? sixmonths-adm "1") (not (string=? (dbget 'dob "") "")) (not age))
+                           (list "The Date of Birth entered is invalid" (list "OK" #f))
                          (begin
                           ;; Clearing database fields when switching between the date of birth field and the year and month dropdowns
                           ;; - If the date of birth field is used, clear the year and month of birth parameters
@@ -1135,9 +1245,17 @@
                               ((and (string=? sixmonths-adm "0") (string=? dob-known "2"))
                                 (dbclear 'dob))
                            )
+                          ;; If there's an age, make sure age matches sixmonths-adm
+                          ;; Add three days of wiggle room so to account for months with different numbers of days
+                          (if (and age (or (and (string=? sixmonths-adm "1") (>= age 0.51))
+                                           (and (string=? sixmonths-adm "0") (< age 0.49))))
+                            (list "Age does not match answer to whether child is younger than 6 months old" (list "OK" #f))
+                          ;; Check that age > 0
+                          (if (and age (< age 0))
+                            (list "Age must be greater than 0" (list "OK" #f))
                           ;; Go to next page
-                          (if (string=? sixmonths-adm "1") 'social-6mo 'social)
-                         )
+                          (if (string=? sixmonths-adm "1") 'social-6mo 'social)))))
+                         ;; Something Missing
                          (let ((message (cond
                                            ((not sex)
                                               (string-append "Missing sex."))
@@ -1451,18 +1569,25 @@
               (lnhealth-sxrun 'save-child)
               'demog))
    ("Next" ,(lambda ()
-              (if (and (sane 'traveldist (lambda (str) #t) "Enter the travel time" "")
+              (if (and (sane 'muscletone (lambda (str) #t) "Enter the muscle tone" "")
+                       ;(sane 'traveldist (lambda (str) #t) "Enter the travel time" "")
                        (sane 'dpi (lambda (str) #t) "Enter the duration of present illness" ""))
                 (begin
                   (lnhealth-sxrun 'save-child)
                   'anthro)
                 (list (uiget  'errmsg) (list "OK" #f)))))
    (spacer height 60)
-   (label text "How long did it take you to\ntravel to the hospital?")
+   ;(label text "How long did it take you to\ntravel to the hospital?")
+   ;(spacer height 20)
+   ;(dropdown "Choose One" id traveldist entries ,(lambda () (uiget 'travel_options)))
+   ;(spacer height 40)
+   ;(box left #t yofs 25 h ,(lambda () (if (uiget "traveldist:expanded") 470 135)))
+   ;(spacer height 40)
+   (label text "What is the child's muscle tone?")
    (spacer height 20)
-   (dropdown "Choose One" id traveldist entries ,(lambda () (uiget 'travel_options)))
+   (dropdown "Choose One" id muscletone entries ,(lambda () (uiget 'tone_options_6mo)))
    (spacer height 40)
-   (box left #t yofs 25 h ,(lambda () (if (uiget "traveldist:expanded") 470 135)))
+   (box left #t yofs 25 h ,(lambda () (if (uiget "muscletone:expanded") 330 135)))
    (spacer height 40)
    (label text "What is the duration of the present illness at the time of admission?")
    (spacer height 20)
@@ -1495,41 +1620,43 @@
                                       (if (and weight (not (sanestring-weight-kg weight)))
                                         ;; Invalid weight
                                         (list "Invalid weight. Please correct it" (list "OK" #f))
-                                        (if (and (not waz) (not muac))
-                                          ;; No MUAC or WAZ, cannot continue
-                                          (list "Please enter all variables. Without these the risk scores cannot be calculated."
-                                                (list "OK" #f))
-                                          (if (and waz muac
-                                            (or
-                                              (and (string=? sixmonths-adm "1") height)
-                                              (and (string=? sixmonths-adm "0") temp)
-                                            )
-                                          )
+
+                                        ;; Required fields for the two categories
+                                        (if (or (and (string=? sixmonths-adm "1") muac)
+                                                (and (string=? sixmonths-adm "0") waz muac temp))
                                             ;; All complete
-                                            (if (string=? sixmonths-adm "1")
-                                              (begin
-                                                (lnhealth-sxrun 'save-child)
-                                                (let ((dscore (lnhealth-sxrun 'calc-discharge-score-6mo)))
-                                                (dbset 'dischargescore dscore))
-                                                'risk) ;; For children less than 6 months
-                                              (begin
-                                                (uiset 'origgui lnhealth:gui)
-                                                (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
-                                                'pulseox) ;; For children 6 months or greater
-                                            )
+                                            (begin 
+                                              (lnhealth-sxrun 'save-child)
+                                              (if (string=? sixmonths-adm "1")
+                                                ;; See if we are on track to complete full model
+                                                (let ((missing (lnhealth-sxrun 'missing-for-model '6mo1)))
+                                                  (if (or (equal? missing '())
+                                                          (equal? missing '(spo2med))
+                                                          (equal? missing '(spo2manual))
+                                                          (equal? missing '(spo2med spo2manual)))
+                                                    (begin
+                                                      (uiset 'origgui lnhealth:gui)
+                                                      (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
+                                                      (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                                                      'pulseox)
+                                                    ;; Otherwise go to the additional questions
+                                                    'clinical-6mo))
+                                                (begin
+                                                  (uiset 'origgui lnhealth:gui)
+                                                  (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
+                                                  (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                                                  'pulseox))) ;; For children 6 months or greater
                                             ;; Missing something
                                             (list
                                                (cond
-                                                 ((and (string=? sixmonths-adm "1") (not height)) "Missing height.")
-                                                 ((not weight) "Missing weight.")
-                                                 ((and (string=? sixmonths-adm "0") (not temp)) "Missing temperature")
                                                  ((not muac) "Missing MUAC.")
-                                                 ((not waz) "Invalid weight for the given age, weight for age score cannot be calculated.")
-                                                 ((not bmi) "Invalid BMI")
-                                                 ((not bmiaz) "Invalid BMI for the given age, BMI for age score cannot be calculated.")
-                                                 (else "Another value is missing."))
-                                               (list "OK" #f))))))))
+                                                 ((and (string=? sixmonths-adm "0") (not weight)) "Missing weight.")
+                                                 ((and (string=? sixmonths-adm "0") (not temp)) "Missing temperature")
+                                                 ((and (string=? sixmonths-adm "0") (not waz)) "Invalid weight for the given age, weight for age score cannot be calculated.")
+                                                 ;((not bmi) "Invalid BMI")
+                                                 ;((not bmiaz) "Invalid BMI for the given age, BMI for age score cannot be calculated.")
+                                                 (else "A required value is missing."))
+                                               (list "OK" #f)))))))
                   ;; Check for out of range values
                   (if muac
                     (let ((muacn (string->number muac))
@@ -1648,6 +1775,57 @@
    ))
  )
 
+ ;; Clinical questions for 6mo reduced model
+ (clinical-6mo
+   "Additional Questions"
+   ("Back" ,(lambda ()
+              (if (uiget 'invalidspo2)
+                (begin
+                  (stclear "SP_Median")
+                  (uiset 'invalidspo2 #f)))
+              (lnhealth-sxrun 'save-child)
+              (let ((missing (lnhealth-sxrun 'missing-for-model '6mo1)))
+                (if (or (equal? missing '())
+                        (equal? missing '(spo2med))
+                        (equal? missing '(spo2manual))
+                        (equal? missing '(spo2med spo2manual)))
+                  (begin
+                    (uiset 'origgui lnhealth:gui)
+                    (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
+                    (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
+                    'pulseox)
+                  'anthro))))
+   ("Next" ,(lambda ()
+              (if (uiget 'invalidspo2)
+                (begin
+                  (stclear "SP_Median")
+                  (uiset 'invalidspo2 #f)))
+              (lnhealth-sxrun 'save-child)
+              (if (and (sane 'lasthosp (lambda (str) #t) "Enter time since last hospitalization" "")
+                       (sane 'sucking (lambda (str) #t) "Enter if child is sucking well" "")
+                       (sane 'urine (lambda (str) #t) "Enter the urine production" ""))
+                (lnhealth-sxrun 'goto-risk)
+                (list (uiget  'errmsg) (list "OK" #f)))))
+   (spacer height 60)
+   (label text "How long has it been since\nyour child's last hospitalization?")
+   (spacer height 20)
+   (dropdown "Choose One" id lasthosp entries ,(lambda () (uiget 'hosp_options)))
+   (spacer height 40)
+   (box left #t yofs 25 h ,(lambda () (if (uiget "lasthosp:expanded") 380 135)))
+   (spacer height 40)
+   (label text "Is child sucking well when breastfeeding?")
+   (spacer height 20)
+   (dropdown "Choose One" id sucking entries ,(lambda () (uiget 'sucking_options_6mo)))
+   (spacer height 40)
+   (box left #t yofs 25 h ,(lambda () (if (uiget "sucking:expanded") 330 135)))
+   (spacer height 40)
+   (label text "Urine production in last 24h")
+   (spacer height 20)
+   (dropdown "Choose One" id urine entries ,(lambda () (uiget 'urine_options_6mo)))
+   (spacer height 40)
+   (box right #t yofs 25 h ,(lambda () (if (uiget "urine:expanded") 280 135)))
+ )
+
   ;; Oxygen saturation from another device
   (spo2
    " Oxygen Saturation"
@@ -1662,11 +1840,16 @@
               (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
                      (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
                      (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
-                (if sp
-                  (if (> (string->number sp) 100)
-                    (list (string-append "SpO2 is " sp ". SpO2 must be less than of equal to 100.") (list "OK" #f))
-                    'clinical)
-                  (list "Missing SpO2. Please measure it to proceed." (list "OK" #f))))))
+                ;; spo2 optional for under six months - if not present, send to additional questions
+                (if (and (string=? (dbget 'sixmonths-adm "") "1") (not sp))
+                  'clinical-6mo
+                  (if sp
+                    (if (> (string->number sp) 100)
+                      (list (string-append "SpO2 is " sp ". SpO2 must be less than of equal to 100.") (list "OK" #f))
+                      (if (string=? (dbget 'sixmonths-adm "") "1")
+                        (lnhealth-sxrun 'goto-risk)
+                        'clinical))
+                    (list "Missing SpO2. Please measure it to proceed." (list "OK" #f)))))))
    (spacer height 70)
    (textentry indent 0.7 text "SpO2 from another device:" id spo2manual keypad numint default "%" units "%")
    (spacer)
@@ -1718,28 +1901,34 @@
                                        ;; SpO2 possibly previous recorded
                                        (sp1 (if (string? sp0) sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med)))
                                        ;; SpO2 possibly from a manual entry
-                                       (sp (if (string? sp1) sp1 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
-                                       (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
-                                  (if sp
-                                    (begin
-                                      (if (and sp0 (fx> (string-length sp0) 0))
-                                        ;; Just recorded SpO2
-                                        (let ((hr (stget "HR_Median" ""))
-                                              (sptime (stget "SP_Timestamp" #f))
-                                              (sqi (stget "SP_SQI" ""))
-                                              (filepath (stget "SP_Data" #f)))
-                                          (dbset 'spo2med sp0)
-                                          (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
-                                          (if sptime (dbset 'sptime sptime))
-                                          (if (fx> (string-length sqi) 0) (dbset 'sqi sqi))
-                                          (if filepath (dbset 'spo2files filepath))))
+                                       (sp (if (string? sp1) sp1 (lnhealth-sxrun 'getnotemptystring 'spo2manual))))
+                                  ;; spo2 optional for under six months - if not present, send to additional questions
+                                  (if (and (string=? (dbget 'sixmonths-adm "") "1") (not sp))
+                                    (begin 
                                       (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                                      'clinical)
-                                    (begin
-                                      (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                                      (list "Missing SpO2. Please measure it to proceed." (list "OK" (lambda ()
-                                                                                                       (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                                                                       #f)))))))))
+                                      'clinical-6mo)
+                                    (if sp
+                                      (begin
+                                        (if (and sp0 (fx> (string-length sp0) 0))
+                                          ;; Just recorded SpO2
+                                          (let ((hr (stget "HR_Median" ""))
+                                                (sptime (stget "SP_Timestamp" #f))
+                                                (sqi (stget "SP_SQI" ""))
+                                                (filepath (stget "SP_Data" #f)))
+                                            (dbset 'spo2med sp0)
+                                            (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
+                                            (if sptime (dbset 'sptime sptime))
+                                            (if (fx> (string-length sqi) 0) (dbset 'sqi sqi))
+                                            (if filepath (dbset 'spo2files filepath))))
+                                        (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
+                                        (if (string=? (dbget 'sixmonths-adm "") "1")
+                                          (lnhealth-sxrun 'goto-risk)
+                                          'clinical))
+                                      (begin
+                                        (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
+                                        (list "Missing SpO2. Please measure it to proceed." (list "OK" (lambda ()
+                                                                                                         (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
+                                                                                                         #f))))))))))
                 (if (stget "CaseID" #f)
                   ;; In the middle of a recording, ask them if they wish to stop it
                   (begin
@@ -1800,9 +1989,7 @@
                   (if (and hiv momhiv)
                     (begin
                       (lnhealth-sxrun 'save-child)
-                      (let ((dscore (lnhealth-sxrun 'calc-discharge-score)))
-                        (dbset 'dischargescore dscore))
-                      'risk)
+                      (lnhealth-sxrun 'goto-risk))
                     (list "Missing HIV Status. Please enter both the maternal and child HIV status." (list "OK" #f)))
                   (list "Missing BCS. Without this score the risk scores cannot be calculated." (list "OK" #f))))))
    (spacer height 30)
@@ -1883,11 +2070,11 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score 4.0) "Low" "High")
+                                            (if (<= score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score 17.5) "Very High")
-                                              ((<= score 6) "Moderate")
+                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((<= score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -1898,21 +2085,23 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score 4.0) "< 1.5 %" "> 10 %")
+                                            (if (<= score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score 17.5) "Approx. 25%")
-                                              ((<= score 6) "Approx. 2%")
+                                              ((> score (uiget 'very_high_thresh_6mo)) "Approx. 25%")
+                                              ((<= score (uiget 'high_thresh_6mo)) "Approx. 2%")
                                               (else "Approx. 10%")
                                             )
                                           )
                                          ""))))
-   #| ;; Actual percentage: in case of need
-   (spacer)
-   (label size small text ,(lambda () (let ((score (dbget 'dischargescore "0")))
-                                       (if score
-                                         (string-append "Actual percentage: " (number->string score) "%")
-                                         "")))) |#
+
+   ;; Show the actual percentage (testing)
+   ;(spacer)
+   ;(label size small text ,(lambda () (let ((score (dbget 'dischargescore #f)))
+   ;                                    (if score
+   ;                                      (string-append "Actual percentage: " (number->string score) "%")
+   ;                                      ""))))
+   
    (spacer height 22)
    (help action help-post-discharge)
    (spacer height 80)
@@ -1921,11 +2110,11 @@
                                            (if score
                                              (if(string=? sixmonths-adm "0")
                                                 ;; For children 6 months old and greater
-                                                (if (<= score 4.0) Green Red)
+                                                (if (<= score (uiget 'high_thresh)) Green Red)
                                                 ;; For children less than 6 months old
                                                 (cond
-                                                  ((> score 17.5) Maroon)
-                                                  ((<= score 6) Green)
+                                                  ((> score (uiget 'very_high_thresh_6mo)) Maroon)
+                                                  ((<= score (uiget 'high_thresh_6mo)) Green)
                                                   (else Red)
                                                 )
                                               )
@@ -1943,13 +2132,12 @@
    (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
      (if (string=? sixmonths-adm "0")
        ;; For children 6 months old and greater
-       `(label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately 4.0%. "
+       `(label align left text ,(lambda () (string-append "Risk has been dichotomized into low and high based on a risk cut-off of approximately" 
+                                            (number->string (uiget 'high_thresh)) "%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-off.\n")))
-                                          ;"The risk bar represents the actual calculated risk, scaled to represent the 1st and 99th percentile of risk on the extreme sides, "
-                                          ;"the risk cut-off (4.0%) at the middle, and the median population risk in the orange-yellow zone to the right of the middle.")))
        ;; For children less than 6 months old
        `(label align left text ,(lambda () (string-append "Risk has been categorized into moderate, high, and very high based on risk cut-offs of approximately "
-                                          "6.0% and 17.5%. "
+                                              (number->string (uiget 'very_high_thresh_6mo)) "% and " (number->string (uiget 'high_thresh_6mo)) "%. "
                                           "The percent shown represents the average risk of mortality in the population in which the model was derived, based on the cut-offs.\n")))
      )
    ))
@@ -1971,11 +2159,11 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score 4.0) "Low" "High")
+                                            (if (<= score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score 17.5) "Very High")
-                                              ((<= score 6) "Moderate")
+                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((<= score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -1986,11 +2174,11 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score 4.0) "< 1.5 %" "> 10 %")
+                                            (if (<= score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score 17.5) "Approx. 25%")
-                                              ((<= score 6) "Approx. 2%")
+                                              ((> score (uiget 'very_high_thresh_6mo)) "Approx. 25%")
+                                              ((<= score (uiget 'high_thresh_6mo)) "Approx. 2%")
                                               (else "Approx. 10%")
                                             )
                                           )
@@ -2205,7 +2393,7 @@
                                             "High"
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score 17.5) "Very High")
+                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
                                               (else "High")
                                             )
                                           )
@@ -2223,23 +2411,29 @@
   (spacer height 4)
   (label align left indent 0.05 text "referral dates are:")
   (spacer height 10)
-  ;; First visit - in 2 days or 7 days if <6mo and score is less than 6.0
-  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1") (< (dbget 'dischargescore 7.0) 6.0))
+  ;; First visit - in 2 days or 7 days if <6mo and score is less than high_thresh_6mo
+  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1")
+                                                          (dbget 'dischargescore #f) 
+                                                          (< (dbget 'dischargescore 99) (uiget 'high_thresh_6mo)))
     (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y"))
     (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y")))))
   (spacer height 4)
-  ;; Second visit - don't show if <6mo and score is less than 6.0
-  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1") (< (dbget 'dischargescore 7.0) 6.0)) "" 
+  ;; Second visit - don't show if <6mo and score is less than high_thresh_6mo
+  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1")
+                                                     (dbget 'dischargescore #f)
+                                                     (< (dbget 'dischargescore 99) (uiget 'high_thresh_6mo))) "" 
     (string-append "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y")))))
   (spacer height 4)
-  ;; Third visit - don't show if <6mo and score is less than 6.0
-  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1") (< (dbget 'dischargescore 7.0) 6.0)) ""
+  ;; Third visit - don't show if <6mo and score is less than high_thresh_6mo
+  (label align left indent 0.05 text ,(lambda () (if (and (string=? (dbget 'sixmonths-adm "") "1")
+                                                     (dbget 'dischargescore #f) 
+                                                     (< (dbget 'dischargescore 99) (uiget 'high_thresh_6mo))) ""
     (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y")))))
 
   ,(lambda ()
    (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (score (dbget 'dischargescore #f)))
-     (if (and (string=? sixmonths-adm "1") (> score 17.5))
+     (if (and (string=? sixmonths-adm "1") (> score (uiget 'very_high_thresh_6mo)))
        '(spacer height 4)
        '(spacer height 0)
      )
@@ -2249,7 +2443,7 @@
   ,(lambda ()
    (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
          (score (dbget 'dischargescore #f)))
-     (if (and (string=? sixmonths-adm "1") (> score 17.5))
+     (if (and (string=? sixmonths-adm "1") (> score (uiget 'very_high_thresh_6mo)))
        `(label align left indent 0.05 text ,(lambda () (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y"))))
        '(spacer height 0)
      )
@@ -2304,8 +2498,8 @@
                                             "High"
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score 17.5) "Very High")
-                                              ((< score 6.0) "Moderate")
+                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((< score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -2321,18 +2515,18 @@
                                                 (score (dbget 'dischargescore #f)))
                                           (string-append "\nDates for scheduled follow-up:\n"
                                                          ;; Visit 1 in 2 days or 7 days if <6mo with Moderate risk
-                                                         (if (and (string=? sixmonths-adm "1") score (< score 6.0))
+                                                         (if (and (string=? sixmonths-adm "1") score (< score (uiget 'high_thresh_6mo)))
                                                           (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y") "\n")
                                                           (string-append "Visit #1: " (seconds->string (+ (current-time-seconds) 172800) "%A, %B %e, %Y") "\n"))
                                                          ;; Visits 2 and 3 for >6mo or <6mo with High or Very High risk
-                                                         (if (and (string=? sixmonths-adm "1") score (< score 6.0)) 
+                                                         (if (and (string=? sixmonths-adm "1") score (< score (uiget 'high_thresh_6mo))) 
                                                           ""
                                                           (string-append "Visit #2: " (seconds->string (+ (current-time-seconds) 604800) "%A, %B %e, %Y") "\n"))
-                                                         (if (and (string=? sixmonths-adm "1") score (< score 6.0)) 
+                                                         (if (and (string=? sixmonths-adm "1") score (< score (uiget 'high_thresh_6mo))) 
                                                           ""
                                                           (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y") "\n"))
                                                          ;; Visit 4 if <6mo with Very High risk
-                                                         (if (and (string=? sixmonths-adm "1") score (> score 17.5))
+                                                         (if (and (string=? sixmonths-adm "1") score (> score (uiget 'very_high_thresh_6mo)))
                                                           (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y") "\n")
                                                           "")
                                                        ))
@@ -2355,6 +2549,8 @@
            '(spacer height 75)
            `(button h 75 size header indent 0.05 rounded #t text " Final Upload" action
              ,(lambda ()
+               (dbset 'para-version (uiget 'para-version "Unknown"))
+               (lnhealth-sxrun 'save-child)
                (upload-data (list (dbget 'childid)) #t)
                'send-archive)))))
     (spacer)
