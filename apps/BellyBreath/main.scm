@@ -1,5 +1,43 @@
+#|
+lnHealth - Health related apps for the LambdaNative framework
+Copyright (c) 2009-2021, University of British Columbia
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the
+following conditions are met:
+
+* Redistributions of source code must retain the above
+copyright notice, this list of conditions and the following
+disclaimer.
+
+* Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials
+provided with the distribution.
+
+* Neither the name of the University of British Columbia nor
+the names of its contributors may be used to endorse or
+promote products derived from this software without specific
+prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+|#
+
 ;; belly breath johnny in the hot air!
-;; Christian Leth Petersen 2012, 2014, 2015, 2016
+;; Christian Leth Petersen 2012-2016
 
 ;; phase 2 changes
 ;; * height on demo screen
@@ -32,7 +70,7 @@ double orate=800.;
 // -----------------------
 // breath cycle
 
-#define BREATH_IN	0 
+#define BREATH_IN	0
 #define BREATH_HOLD	1
 #define BREATH_OUT	2
 
@@ -50,7 +88,7 @@ static void update_breath(double t)
      breath_state++;
      if (breath_state==3) { breath_cycle_t=t; breath_state=0; }
   }
-} 
+}
 
 // -----------------------
 // recording
@@ -75,7 +113,7 @@ static void start_recording(char *filename)
   fd=fopen(filename,"wb");
   if (fd) fprintf(fd,"%s %s\n(RAW INPUT:FLOAT,BREATH STATE:FLOAT)\nSRATE=%06i\nORATE=%06i\n",
         SYS_APPNAME, SYS_APPVERSION, (int)srate,(int)orate);
-  t_input = t_output = 0; 
+  t_input = t_output = 0;
   breath_t = breath_cycle_t=0; breath_state=0;
 }
 
@@ -91,17 +129,17 @@ static void dispatch_recording()
 
 static void stop_recording()
 {
-  if (fd) { 
+  if (fd) {
     dispatch_recording();
-    fclose(fd); fd=0; 
+    fclose(fd); fd=0;
   }
 }
 
 // -----------------------
 // real time audio
 
-void my_realtime_init(int samplerate) { 
-  srate=(double)samplerate; 
+void my_realtime_init(int samplerate) {
+  srate=(double)samplerate;
 }
 
 int mute=0;
@@ -159,7 +197,7 @@ end-of-c-declare
 
 (define GOING_UP 0)
 (define GOING_NOWHERE 1)
-(define GOING_DOWN 2) 
+(define GOING_DOWN 2)
 
 (define SPEED_UP 0.5)
 (define SPEED_DOWN -0.5)
@@ -192,7 +230,7 @@ end-of-c-declare
      (glgui-box world 0 (* 1 dh) w dh (list LightGoldenrod LightGoldenrod LightCyan LightCyan))
      (glgui-box world 0 (* 2 dh) w dh (list RoyalBlue RoyalBlue LightGoldenrod LightGoldenrod))
      (glgui-box world 0 (* 3 dh) w dh (list Black Black RoyalBlue RoyalBlue))
-     
+
      (glgui-pixmap world (- 10) 0 field.img (+ w 10) (/ h 5.))
 
      (glgui-pixmap world 0 (* 0.8 h) rainbow.img w (/ h 2.))
@@ -212,12 +250,12 @@ end-of-c-declare
 (define (update-world now state)
   (let* ((oldo (glgui-get world 'yofs))
          (speed_alpha (/ 2. (+ 30. 1.)))
-         (newspeed (+ (* speed_alpha (cond  
+         (newspeed (+ (* speed_alpha (cond
            ((= state GOING_UP) SPEED_UP)
            ((= state GOING_NOWHERE) SPEED_NOWHERE)
            ((= state GOING_DOWN) SPEED_DOWN))) (* (- 1. speed_alpha) speed)))
          (newo (+ oldo (- newspeed)))
-         (clipo (if (<= newo (- world-ofs-max)) (- world-ofs-max) 
+         (clipo (if (<= newo (- world-ofs-max)) (- world-ofs-max)
            (if (> newo 0) 0 newo))))
     (if (not (= oldo clipo)) (glgui-set! world 'yofs clipo))
     (set! speed newspeed)
@@ -266,7 +304,7 @@ end-of-c-declare
 (define AMPL_NOWHERE 0.)
 (define AMPL_DOWN 0.)
 
-(define balloons (list 
+(define balloons (list
   balloon_bear.img
   balloon_frog.img
   balloon_dino.img
@@ -277,11 +315,11 @@ end-of-c-declare
 ))
 
 (define (select-balloon idx)
-    (let* ((w (glgui-width-get)) 
+    (let* ((w (glgui-width-get))
            (h (glgui-height-get))
            (img (list-ref balloons idx))
            (gw (car img))
-           (gh (cadr img)) 
+           (gh (cadr img))
            (x (/ (- w gw) 2.))
            (y (/ (- h gh) 2.)))
       (if balloon  (begin
@@ -293,11 +331,11 @@ end-of-c-declare
 
 (define (make-balloon w h)
   (select-balloon 3)
- ) 
+ )
 
 (define (update-balloon now state)
   (let* ((ampl_alpha (/ 2. (+ 30. 1.)))
-        (newampl (+ (* ampl_alpha (cond 
+        (newampl (+ (* ampl_alpha (cond
           ((= state GOING_UP) AMPL_UP)
           ((= state GOING_NOWHERE) AMPL_NOWHERE)
           ((= state GOING_DOWN) AMPL_DOWN)))
@@ -323,7 +361,7 @@ end-of-c-declare
   ;; going up
   (list johnny-happy.img johnny-smile.img)
   ;; going nowhere
-  (list johnny-happy.img) 
+  (list johnny-happy.img)
   ;; going down
   (list johnny-worry.img johnny-sad.img)
   ;; breathe in
@@ -333,7 +371,7 @@ end-of-c-declare
 ))
 
 (define (make-johnny w h)
-  (let* ((jw (car johnny-happy.img)) 
+  (let* ((jw (car johnny-happy.img))
          (jh (cadr johnny-happy.img))
          (x (+ (/ (- w jw) 2.0) 0))
          (y (- (/ (- h jh) 2.) 100))
@@ -344,7 +382,7 @@ end-of-c-declare
 ))
 
 (define (update-johnny now state)
-  (if (> (- now johnny:last) 1.) 
+  (if (> (- now johnny:last) 1.)
     (let* ((idx (cond
              ((eq? breath-state 'IN) 3)
              ((eq? breath-state 'OUT) 4)
@@ -371,13 +409,13 @@ end-of-c-declare
 
 (define (update-blink now)
   (let ((blinking? (glgui-widget-get gui johnny-eyes 'hidden)))
-    (cond ((and (not blinking?) (> (- now blink:last) 3.0)) 
-        (glgui-widget-set! gui johnny-eyes 'hidden #t) 
-        (glgui-widget-set! gui splash-johnny-eyes 'hidden #t) 
+    (cond ((and (not blinking?) (> (- now blink:last) 3.0))
+        (glgui-widget-set! gui johnny-eyes 'hidden #t)
+        (glgui-widget-set! gui splash-johnny-eyes 'hidden #t)
         (set! blink:last now))
       ((and blinking? (> (- now blink:last) 0.1))
-        (glgui-widget-set! gui johnny-eyes 'hidden #f) 
-        (glgui-widget-set! gui splash-johnny-eyes 'hidden #f) 
+        (glgui-widget-set! gui johnny-eyes 'hidden #f)
+        (glgui-widget-set! gui splash-johnny-eyes 'hidden #f)
         (set! blink:last now)))))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -481,30 +519,30 @@ end-of-c-declare
                 (reset-time)
                 (start-recording))
              ((and (< rx 0.3) (< ry 0.5)) ;; blank
-              (set! menu-mode 'MEASURE) 
+              (set! menu-mode 'MEASURE)
               (reset-time)
               (start-recording))
              ((and (> rx 0.7) (< ry 0.5)) ;; demo
-                (glgui-set! world 'yofs 0) 
+                (glgui-set! world 'yofs 0)
                 (set! menu-mode 'DEMO)
                 (reset-time)
                 (start-recording))
            )
      )))))
 
-    (let* ((jw (car johnny-happy.img)) 
+    (let* ((jw (car johnny-happy.img))
            (jh (cadr johnny-happy.img))
            (x (+ (/ (- w jw) 2.0) 0))
            (y (- (/ (- h jh) 2.) 200 -16)))
-        
+
       (set! splash-balloon (glgui-sprite splash 'x 0 'y 75 'image (car balloons) 'color (color-fade White 0.75)))
       (glgui-widget-set! splash splash-balloon 'hidden #t)
       (glgui-widget-set! splash splash-balloon 'input-handle #f)
       (set! splash-johnny  (glgui-sprite splash 'x x 'y y 'y0 y 'image johnny-happy.img 'color White))
       (set! splash-johnny-eyes  (glgui-sprite splash 'x x 'y y 'y0 y 'image eyes-straight.img 'color White))
       (set! splash-johnny-avatar  (glgui-sprite splash 'x x 'y y 'y0 y 'image (car (car avatars)) 'color White))
-      (glgui-widget-set! splash splash-johnny-avatar 
-         'presscallback (lambda (x . y) 
+      (glgui-widget-set! splash splash-johnny-avatar
+         'presscallback (lambda (x . y)
              (avatar-rotate)
              (glgui-widget-set! splash splash-balloon 'image (glgui-widget-get gui balloon 'image))
              (glgui-widget-set! splash splash-balloon 'x (glgui-widget-get gui balloon 'x))
@@ -516,14 +554,14 @@ end-of-c-declare
                (glgui-widget-set! gui johnny 'color skin-tone)
                (set! skin-idx (modulo (+ skin-idx 1) (length skin-tones)))
              )))
-      (glgui-widget-set! splash splash-johnny-avatar 
-         'releasecallback (lambda (x . y) 
+      (glgui-widget-set! splash splash-johnny-avatar
+         'releasecallback (lambda (x . y)
             (set! splash-touchtime (time->seconds (current-time)))
             (set! splash-timeout 2.)))
     )))
 
 (define (update-splash)
-  (if (eq? menu-mode 'MENU) 
+  (if (eq? menu-mode 'MENU)
     (let ((hidescore (not lastscore))
           (hideall splash-touchtime)
           (drop-balloon (and splash-touchtime (> (- (time->seconds (current-time)) splash-touchtime) splash-timeout))))
@@ -580,9 +618,9 @@ end-of-c-declare
 )
 
 (define (update-gameover n)
-  (if (and (eq? menu-mode 'GAMEOVER) (= score bonusscore)) 
+  (if (and (eq? menu-mode 'GAMEOVER) (= score bonusscore))
     (glgui-widget-set! gameover gameover-scorelabel 'color (colorflutter scoreflutter)))
-  (if (and (eq? menu-mode 'GAMEOVER) (>= (fl- n gameover-lastupdate) .1)) (begin 
+  (if (and (eq? menu-mode 'GAMEOVER) (>= (fl- n gameover-lastupdate) .1)) (begin
     (set! gameover-stage (+ gameover-stage 1))
     (if (and gameover-NOT (> gameover-stage 100)) (begin
       (belly-reinit)
@@ -617,7 +655,7 @@ end-of-c-declare
     (set! bonus bn)
     (set! basescore score)
     (set! bonusscore (* score (+ 1 bonus)))
-    (set! lastscore bonusscore) 
+    (set! lastscore bonusscore)
     (set! stagescore (if gameover-NOT lastscore 0))
     (if (and (not gameover-NOT) (or (not hiscore) (> lastscore hiscore))) (begin
       (set! hiscore lastscore)
@@ -651,7 +689,7 @@ end-of-c-declare
        (set! score hf2)
        (if (= idx 1.) (begin (set! stagescore score) (prep-gameover 'notreally)))
     ))
-    (glgui-widget-set! height height-label 'label fnlstr))) 
+    (glgui-widget-set! height height-label 'label fnlstr)))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;; measure
@@ -673,7 +711,7 @@ end-of-c-declare
          (mhrvstr (number->string (/ (fix (* 10. mhrv)) 10.))))
     (glgui-widget-set! measure measure-label 'label (string-append mhrstr " " mhrvstr))
   )
-|# 
+|#
   #t)
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -781,9 +819,9 @@ end-of-c-declare
                (vx (cpVect.x vel))
                (vy (cpVect.y vel))
                (curd (glgui-widget-get gui wgt 'w))
-               (d (flmax 1. (flmin 100. (flsqrt (fl+ 
+               (d (flmax 1. (flmin 100. (flsqrt (fl+
                     (flexpt (fl- x bubble-outx) 2.) (flexpt (fl- y bubble-outy) 2.)))))))
-          (if (eq? breath-state 'OUT) 
+          (if (eq? breath-state 'OUT)
             (cpBodySetVel b (cpv (fl+ vx (fl* 50. (fl- (random-real) 0.5))) (fl+ vy (fl* 50. (fl- (random-real) 0.5))))))
           (glgui-widget-set! gui wgt 'x x)
           (glgui-widget-set! gui wgt 'y y)
@@ -860,7 +898,7 @@ end-of-c-declare
     (glgui-widget-set! touch-gui wgt 'callback (lambda (g wgt confirm)
       (let* ((needs-confirm (or (eq? menu-mode 'FEEDBACK) (eq? menu-mode 'MEASURE)))
              (delay-exit (and needs-confirm (not (glgui-widget-get touch-gui wgt 'draw-handle)))))
-        (if delay-exit (glgui-widget-set! touch-gui wgt 'draw-handle glgui:image-draw) 
+        (if delay-exit (glgui-widget-set! touch-gui wgt 'draw-handle glgui:image-draw)
            (begin
              (glgui-widget-set! touch-gui wgt 'draw-handle #f)
              (if (or confirm (not needs-confirm)) (begin
@@ -892,7 +930,7 @@ end-of-c-declare
   (set! time-h 32.)
   (set! time-w (- w 10. 10.))
   (glgui-box time-gui time-x time-y time-w time-h (color-fade White 0.25))
-  (set! time-bar (glgui-box time-gui 
+  (set! time-bar (glgui-box time-gui
     (+ time-x 2.) (+ time-y 2.) (- time-w 4.) (- time-h 4.) (color-fade Green 0.5)))
   )
 
@@ -924,7 +962,7 @@ end-of-c-declare
   (let* ((bw 300) (bh 50)
          (bx (/ (- w bw) 2.)))
   (set! clock-gui (make-glgui))
-  (set! clock-label 
+  (set! clock-label
      (glgui-label clock-gui bx 24 bw bh "" measure_24.fnt Black))
   (glgui-widget-set! clock-gui clock-label 'align GUI_ALIGNCENTER)
   (glgui-widget-set! clock-gui clock-label 'bgcolor (color-fade White 0.5))
@@ -967,7 +1005,7 @@ end-of-c-declare
              (else #f))))
       (if (string? str) (begin
         (glgui-widget-set! status-gui status-label 'label str)
-        (glgui-widget-set! status-gui status-label 'bgcolor (color-fade 
+        (glgui-widget-set! status-gui status-label 'bgcolor (color-fade
           (if (string=? str "SENSOR ERROR") Red (if (string=? str "NO SENSOR") White Yellow)) 0.5))))
       (glgui-widget-set! status-gui status-label 'hidden (not (string? str)))
       (set! status-lastupdate n)
@@ -1058,18 +1096,18 @@ end-of-c-declare
        (let ((yofs (glgui-get world 'yofs)))
          (if (= yofs 0) (set! state GOING_UP))
          (if (= yofs (- world-ofs-max)) (set! state GOING_DOWN))))
-     (glgui-event 
+     (glgui-event
         (case menu-mode
           ((MENU)  (list world clock-gui status-gui splash))
-          ((TEACH) (list world gui instructions 
+          ((TEACH) (list world gui instructions
                      ;;  time-gui  ;; disable for phase 2
                          status-gui touch-gui))
           ((DEMO) (list world gui clouds height touch-gui))
-          ((FEEDBACK) (list world gui clouds height measure 
+          ((FEEDBACK) (list world gui clouds height measure
                ;; time-gui  ;; disable for phase 2
                status-gui touch-gui))
-          ((MEASURE) (list 
-               ;; time-gui ;; disable for phase 2 
+          ((MEASURE) (list
+               ;; time-gui ;; disable for phase 2
                 status-gui touch-gui))
           ((GAMEOVER) (list world gameover touch-gui))
         ) t x y)
