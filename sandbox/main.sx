@@ -391,7 +391,9 @@
                           (dbset 'ref3datef (seconds->string d3 "%A, %B %e, %Y"))))
 
                        ;; Set the 4th visit date for high-risk children under 6 months old
-                       (if (and (string=? sixmonths-adm "1") (> score (uiget 'very_high_thresh_6mo)))
+                       (if (and (string=? sixmonths-adm "1") 
+                                (> score (uiget 'very_high_thresh_6mo))
+                                (string=? (dbget 'scorevar "") "6mo1"))
                           (begin
                             (dbset 'ref4date (seconds->string d4 "%Y-%m-%d"))
                             (dbset 'ref4datef (seconds->string d4 "%A, %B %e, %Y"))))
@@ -428,11 +430,12 @@
                 (if (or (null? missing)
                         (equal? missing '(spo2med))
                         (equal? missing '(spo2manual)))
-                    (lnhealth-sxrun 'calc-discharge-score-6mo1)
-                    (lnhealth-sxrun 'calc-discharge-score-6mo2)))
-              (lnhealth-sxrun 'calc-discharge-score))))
+                    (cons (lnhealth-sxrun 'calc-discharge-score-6mo1) "6mo1")
+                    (cons (lnhealth-sxrun 'calc-discharge-score-6mo2) "6mo2")))
+              (cons (lnhealth-sxrun 'calc-discharge-score) "1"))))
       (begin
-        (dbset 'dischargescore dscore)
+        (dbset 'dischargescore (car dscore))
+        (dbset 'scorevar (cdr dscore))
         (lnhealth-sxrun 'save-child)
         (if dscore 'risk (list "Problem calculating risk score. Please check the information entered" (list "OK" #f)))))))
 
@@ -537,7 +540,7 @@
 
     (uiset 'high_thresh 4.0)
     (uiset 'high_thresh_6mo 8.25)
-    (uiset 'very_high_thresh_6mo 15)
+    (uiset 'very_high_thresh_6mo 10)
 
     ;; Load the z-score data - both for weight for age and BMI for age
 
@@ -2073,7 +2076,8 @@
                                             (if (<= score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((and (> score (uiget 'very_high_thresh_6mo)) 
+                                                    (string=? (dbget 'scorevar "") "6mo1")) "Very High")
                                               ((<= score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
@@ -2088,7 +2092,8 @@
                                             (if (<= score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score (uiget 'very_high_thresh_6mo)) "Approx. 25%")
+                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                                    (string=? (dbget 'scorevar "") "6mo1")) "Approx. 25%")
                                               ((<= score (uiget 'high_thresh_6mo)) "Approx. 2%")
                                               (else "Approx. 10%")
                                             )
@@ -2113,7 +2118,8 @@
                                                 (if (<= score (uiget 'high_thresh)) Green Red)
                                                 ;; For children less than 6 months old
                                                 (cond
-                                                  ((> score (uiget 'very_high_thresh_6mo)) Maroon)
+                                                  ((and (> score (uiget 'very_high_thresh_6mo))
+                                                        (string=? (dbget 'scorevar "") "6mo1")) Maroon)
                                                   ((<= score (uiget 'high_thresh_6mo)) Green)
                                                   (else Red)
                                                 )
@@ -2162,7 +2168,8 @@
                                             (if (<= score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                                    (string=? (dbget 'scorevar "") "6mo1")) "Very High")
                                               ((<= score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
@@ -2177,7 +2184,8 @@
                                             (if (<= score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score (uiget 'very_high_thresh_6mo)) "Approx. 25%")
+                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                                    (string=? (dbget 'scorevar "") "6mo1")) "Approx. 25%")
                                               ((<= score (uiget 'high_thresh_6mo)) "Approx. 2%")
                                               (else "Approx. 10%")
                                             )
@@ -2393,7 +2401,8 @@
                                             "High"
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                                    (string=? (dbget 'scorevar "") "6mo1")) "Very High")
                                               (else "High")
                                             )
                                           )
@@ -2433,7 +2442,9 @@
   ,(lambda ()
    (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (score (dbget 'dischargescore #f)))
-     (if (and (string=? sixmonths-adm "1") (> score (uiget 'very_high_thresh_6mo)))
+     (if (and (string=? sixmonths-adm "1") 
+              (> score (uiget 'very_high_thresh_6mo)) 
+              (string=? (dbget 'scorevar "") "6mo1"))
        '(spacer height 4)
        '(spacer height 0)
      )
@@ -2443,7 +2454,9 @@
   ,(lambda ()
    (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
          (score (dbget 'dischargescore #f)))
-     (if (and (string=? sixmonths-adm "1") (> score (uiget 'very_high_thresh_6mo)))
+     (if (and (string=? sixmonths-adm "1") 
+         (> score (uiget 'very_high_thresh_6mo))
+         (string=? (dbget 'scorevar "") "6mo1"))
        `(label align left indent 0.05 text ,(lambda () (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y"))))
        '(spacer height 0)
      )
@@ -2498,7 +2511,7 @@
                                             "High"
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
+                                              ((and (> score (uiget 'very_high_thresh_6mo)) (string=? (dbget 'scorevar "") "6mo1")) "Very High")
                                               ((< score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
@@ -2526,7 +2539,9 @@
                                                           ""
                                                           (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y") "\n"))
                                                          ;; Visit 4 if <6mo with Very High risk
-                                                         (if (and (string=? sixmonths-adm "1") score (> score (uiget 'very_high_thresh_6mo)))
+                                                         (if (and (string=? sixmonths-adm "1") 
+                                                                  score (> score (uiget 'very_high_thresh_6mo))
+                                                                  (string=? (dbget 'scorevar "") "6mo1"))
                                                           (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y") "\n")
                                                           "")
                                                        ))
