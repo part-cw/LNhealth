@@ -52,7 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ((fx= type RF_SPDU_SI) ;; Session Refuse
         (ivueparser:log 2 "ivueparser: refuse from monitor") #f)
       ((fx= type FN_SPDU_SI) ;; Session Finish
-        (ivueparser:log 2 "ivueparser: fisish from monitor") #f)
+        (ivueparser:log 2 "ivueparser: finish from monitor") #f)
       ((fx= type DN_SPDU_SI) ;; Session Disconnect
         (ivueparser:log 2 "ivueparser: disconnect from monitor") #f)
       ((fx= type AB_SPDU_SI) ;; Session Abort

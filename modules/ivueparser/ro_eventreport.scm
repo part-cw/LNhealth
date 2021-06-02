@@ -88,6 +88,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (ivueparser:parseMdsCreateInfo (u8data-skip buf 14)))
       ((fx= event_type #x0d05) ;; ModeOp, MDSStatus, MdsGenSystemInfo
         (ivueparser:parseAttributeList (cadr managed_object) (u8data-skip buf 14)))
+      ((fx= event_type #x0d08) ;; Composit Single Bed MDS information - this is incomplete!!!
+        (ivueparser:parseAttributeList (cadr managed_object) (u8data-skip buf (+ 14 22))))
       ((fx= event_type #x0d19)
         ;; Structure-wise this works, but the second element is a list of three numbered elements?
         ;; (ivueparser:parseObservationPoll (u8data-skip buf 14))

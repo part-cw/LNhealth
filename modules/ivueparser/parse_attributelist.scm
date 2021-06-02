@@ -273,6 +273,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (model_number (u8vector->string (u8data->u8vector (subu8data buf (+ 4 len) (+ 4 len len2))))))
     (store-set! ivueparser:store "manufacturer" manufacturer "ivue")
     (store-set! ivueparser:store "model_number" model_number "ivue")
+    ;; This information is shared when the MMS comes back?
+    (store-clear! ivueparser:store "CaseEndPending")
+    (store-set! ivueparser:store "CaseStartPending" #t "ivue")
+    (for-each (lambda (p) (store-clear! ivueparser:store p)) ivue:demographics)
   ))
 
 (define (ivueparser:parseAttrIdLabel obj_handle buf)
@@ -409,7 +413,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   (let ((count (u8data-u16 (subu8data buf 0 2)))
         (len (u8data-u16 (subu8data buf 2 4))))
     (let loop ((n 0)(mos '())(p (u8data-skip buf 4)))
-      (if (or (fx= n count) (fx= (u8data-length p) 0))
+      (if (or (fx= n count) (fx= len 0) (fx= (u8data-length p) 0))
         (begin
           (store-set! ivueparser:store "MdibObjectSupport" mos "ivue")
           p

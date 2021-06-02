@@ -76,12 +76,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ;; MMS Disconnection
       (if (and (fx= al_state 8) (fx= al_source NOM_OBJ_MMS) (fx= al_code 6257)) ;;NOM_EVT_STAT_DISCONN+1
         (begin
-          (store-event-add ivueparser:store 0 (store-ref ivueparser:store "location" ivueparser:store) "MMS Removed")
-;;          (store-set! ivueparser:store "CaseEndPending" #t "ivue")
-;;          (store-clear! ivueparser:store "CaseStartPending")
+         (store-set! ivueparser:store "CaseEndPending" #t "ivue")
+         (store-clear! ivueparser:store "CaseStartPending")
         )
       )
-
       ;; Parse alarm internals
       (cond
         ((fx= alert_info_id STR_ALMON_INFO)
