@@ -276,7 +276,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     ;; This information is shared when the MMS comes back?
     (store-clear! ivueparser:store "CaseEndPending")
     (store-set! ivueparser:store "CaseStartPending" #t "ivue")
-    (for-each (lambda (p) (store-clear! ivueparser:store p)) ivue:demographics)
   ))
 
 (define (ivueparser:parseAttrIdLabel obj_handle buf)
