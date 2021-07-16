@@ -455,7 +455,7 @@
   (oncreate ,(lambda ()
 
     ;; Set version information
-    (uiset 'para-version "2.7")
+    (uiset 'para-version "2.8")
 
     ;; Background box color
     (uiset 'boxcolor (color-rgb 20 140 102))
@@ -479,8 +479,14 @@
     (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 30))
     (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 24))
 
-    ;; Path to tutorial video
-    (uiset 'tutorialpath (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "tutorial.mp4"))
+    ;; Path to tutorial videos
+    (uiset 'tutorialpath (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "tutorial"))
+    (uiset 'videopath1 (string-append (uiget 'tutorialpath) "1.mp4"))
+    (uiset 'videopath2 (string-append (uiget 'tutorialpath) "2.mp4"))
+    (uiset 'videopath3 (string-append (uiget 'tutorialpath) "3.mp4"))
+    (uiset 'videopath4 (string-append (uiget 'tutorialpath) "4.mp4"))
+    (uiset 'videopath5 (string-append (uiget 'tutorialpath) "5.mp4"))
+    (uiset 'videopath6 (string-append (uiget 'tutorialpath) "6.mp4"))
 
     ;; Load the localization csv table to translate between languages, used by spo2spotcheck
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
@@ -638,6 +644,25 @@
            30))
        glgui:uiform-button-input)
 
+     ;; Register video button widget
+     (uiform-register 'videobutton
+      (lambda (x y w . args)
+        (let ((newargs (append (list x y w) args
+          (if (not (member 'h args)) (list 'h 75) '())
+          (if (not (member 'size args)) (list 'size 'header) '())
+          (if (not (member 'indent args)) (list 'indent 0.05) '())
+          (if (not (member 'rounded args)) (list 'rounded #t) '())
+          (if (not (member 'text args)) (list 'text "Video") '()))))
+        (apply glgui:uiform-button-draw newargs)))
+      (lambda (type x y . args)
+        (let* ((path (glgui:uiform-arg args 'path #f)))
+        (glgui:uiform-button-input type x y 'action (lambda ()
+          (if (not path)
+            (list "No path to video file provided" (list "OK" #f))
+            (if (or (string=? (system-platform) "ios") (string=? (system-platform) "android"))
+                (begin (videoplayer path) #f)
+                (list "Videos only available on mobile app" (list "OK" #f)))))))))
+
      ;; Register face icon widget
      (uiform-register 'face
        (lambda (x y w . args)
@@ -760,10 +785,6 @@
   (label text "For children up to 5 years old")
   (label text "admitted with a proven or suspected")
   (label text "infectious illness")
-  ;(help action ,(lambda () 
-  ;  (if (or (string=? (system-platform) "ios") (string=? (system-platform) "android"))
-  ;      (videoplayer (uiget 'tutorialpath ""))
-  ;      (list "No tutorial available" (list "OK" #f)))))
   (spacer height 45)
 ;;  (box yofs 36 h 172)
   (textentry indent 0.32 text "Username:" id login_uname keycb ,(lambda () (uiget 'nospacecb)))
@@ -826,7 +847,9 @@
         (uiset  'new #t)
         (uiset  'spo2_manual #f)
         result)))
-  (spacer height 140)
+  (spacer height 25)
+  (button h 75 size header indent 0.05 rounded #t text "VIDEOS" action ,(lambda () 'videos))
+  (spacer height 40)
 ;;  (box yofs 195 h 79)
   (label text "Digital Health Innovation Lab")
   (spacer height 5)
@@ -836,6 +859,25 @@
   (spacer)
 ;;  (box yofs 16 h 61)
  )
+
+(videos
+  "Videos"
+  ("Login" ,(lambda () 'main))
+  #f
+  (spacer)
+  (videobutton text "Video #1" path ,(lambda () (uiget 'videopath1 #f)))
+  (spacer)
+  (videobutton text "Video #2" path ,(lambda () (uiget 'videopath2 #f)))
+  (spacer)
+  (videobutton text "Video #3" path ,(lambda () (uiget 'videopath3 #f)))
+  (spacer)
+  (videobutton text "Video #4" path ,(lambda () (uiget 'videopath4 #f)))
+  (spacer)
+  (videobutton text "Video #5" path ,(lambda () (uiget 'videopath5 #f)))
+  (spacer)
+  (videobutton text "Video #6" path ,(lambda () (uiget 'videopath6 #f)))
+  (spacer)
+)
 
  ;; Menu for deleting all data
  (adminmenu
@@ -921,6 +963,8 @@
    (image file "load.png")
    (spacer height 10)
    (button h 75 size header indent 0.05 rounded #t text "Load Child File" action ,(lambda () 'load))
+   (spacer height 50)
+   (button h 75 size header indent 0.05 rounded #t text "Videos" action ,(lambda () 'videos))
    (spacer height 50)
  )
 
