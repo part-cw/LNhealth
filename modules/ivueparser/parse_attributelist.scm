@@ -93,6 +93,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (ivueparser:parsePacedMode val))
       ((fx= attribute_id NOM_ATTR_PT_ID_INT)
         (ivueparser:parsePatIdInt val len))
+      ((fx= attribute_id NOM_ATTR_PT_DEMOG_ST)
+        (ivueparser:parsePatDemoState val))
       ;; System Attibutes
       ((fx= attribute_id 61749) ;; BedLabel - connect Indicator
         (ivueparser:parseAttrString "location_connect" val len))
@@ -249,6 +251,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (store-set! ivueparser:store "patient_type" typestr "ivue")
   ))
 
+(define (ivueparser:parsePatDemoState buf)
+  (let ((dmgstate (u8data-u16 (subu8data buf 0 2))))
+    (store-set! ivueparser:store "patient_demo_state" dmgstate)
+  ))
+
 (define (ivueparser:parsePacedMode buf)
   (let ((mode (u8data-u16 (subu8data buf 0 2))))
     (store-set! ivueparser:store "patient_paced_mode" mode "ivue")
@@ -273,9 +280,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
          (model_number (u8vector->string (u8data->u8vector (subu8data buf (+ 4 len) (+ 4 len len2))))))
     (store-set! ivueparser:store "manufacturer" manufacturer "ivue")
     (store-set! ivueparser:store "model_number" model_number "ivue")
-    ;; This information is shared when the MMS comes back?
-    (store-clear! ivueparser:store "CaseEndPending")
-    (store-set! ivueparser:store "CaseStartPending" #t "ivue")
+    ;; This information is shared when the MMS comes back? [likely not the case, disabled 2022-2-4]
+    ;; (store-clear! ivueparser:store "CaseEndPending")
+    ;; (store-set! ivueparser:store "CaseStartPending" #t "ivue")
   ))
 
 (define (ivueparser:parseAttrIdLabel obj_handle buf)
@@ -384,9 +391,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ))
 
 (define (ivueparser:parseSystemPulseInfo buf)
-  (let ((system_pulse (ivueparser:parseManagedObjectId buf))
-        (alarm_source (ivueparser:parseManagedObjectId (u8data-skip buf 6))))
+  (let* ((system_pulse (ivueparser:parseManagedObjectId buf))
+         (alarm_source (ivueparser:parseManagedObjectId (u8data-skip buf 6)))
+         (system_pulse_handle (caddr system_pulse))
+         (old_system_pulse_handle (store-ref ivueparser:store "SystemPulseHandle" 65535)))
     (ivueparser:log 3 "ivueparser: SystemPulseInfo: " system_pulse " " alarm_source)
+    (store-set! ivueparser:store "SystemPulseHandle" system_pulse_handle "ivue")
+
+    ;; This information is shared when the MMS comes back?
+    (if (and (fx= old_system_pulse_handle 65535) (not (fx= system_pulse_handle 65535)))
+      (begin
+        (store-clear! ivueparser:store "CaseEndPending")
+        (store-set! ivueparser:store "CaseStartPending" #t "ivue")
+      )
+    )
     (u8data-skip buf 12)
   ))
 

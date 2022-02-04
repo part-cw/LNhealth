@@ -73,13 +73,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ;; New alarms
       (if (and (fx= al_state 8) (fx> (string-length msg) 0))
         (store-event-add ivueparser:store 0 (store-ref ivueparser:store "location" ivueparser:store) msg))
-      ;; MMS Re-connection
+      ;; MMS Re-connection [likely not the right event - disabled 2022-2-4]
+      #|
       (if (and (fx= al_state 8) (fx= al_source NOM_DEV_ECG_RESP_VMD) (fx= al_code 61799))
         (begin
           (store-clear! ivueparser:store "CaseEndPending")
           (store-set! ivueparser:store "CaseStartPending" #t "ivue")
         )
       )
+      |#
       ;; MMS Disconnection
       (if (and (fx= al_state 8) (fx= al_source NOM_OBJ_MMS) (fx= al_code 6257)) ;;NOM_EVT_STAT_DISCONN+1
         (begin
