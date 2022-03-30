@@ -392,7 +392,7 @@
 
                        ;; Set the 4th visit date for high-risk children under 6 months old
                        (if (and (string=? sixmonths-adm "1") 
-                                (> score (uiget 'very_high_thresh_6mo))
+                                (>= score (uiget 'very_high_thresh_6mo))
                                 (string=? (dbget 'scorevar "") "6mo1"))
                           (begin
                             (dbset 'ref4date (seconds->string d4 "%Y-%m-%d"))
@@ -480,13 +480,13 @@
     (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 24))
 
     ;; Path to tutorial videos
-    (uiset 'tutorialpath (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "tutorial"))
-    (uiset 'videopath1 (string-append (uiget 'tutorialpath) "1.mp4"))
-    (uiset 'videopath2 (string-append (uiget 'tutorialpath) "2.mp4"))
-    (uiset 'videopath3 (string-append (uiget 'tutorialpath) "3.mp4"))
-    (uiset 'videopath4 (string-append (uiget 'tutorialpath) "4.mp4"))
-    (uiset 'videopath5 (string-append (uiget 'tutorialpath) "5.mp4"))
-    (uiset 'videopath6 (string-append (uiget 'tutorialpath) "6.mp4"))
+    ; (uiset 'tutorialpath (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "tutorial"))
+    ; (uiset 'videopath1 (string-append (uiget 'tutorialpath) "1.mp4"))
+    ; (uiset 'videopath2 (string-append (uiget 'tutorialpath) "2.mp4"))
+    ; (uiset 'videopath3 (string-append (uiget 'tutorialpath) "3.mp4"))
+    ; (uiset 'videopath4 (string-append (uiget 'tutorialpath) "4.mp4"))
+    ; (uiset 'videopath5 (string-append (uiget 'tutorialpath) "5.mp4"))
+    ; (uiset 'videopath6 (string-append (uiget 'tutorialpath) "6.mp4"))
 
     ;; Load the localization csv table to translate between languages, used by spo2spotcheck
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
@@ -645,23 +645,23 @@
        glgui:uiform-button-input)
 
      ;; Register video button widget
-     (uiform-register 'videobutton
-      (lambda (x y w . args)
-        (let ((newargs (append (list x y w) args
-          (if (not (member 'h args)) (list 'h 75) '())
-          (if (not (member 'size args)) (list 'size 'header) '())
-          (if (not (member 'indent args)) (list 'indent 0.05) '())
-          (if (not (member 'rounded args)) (list 'rounded #t) '())
-          (if (not (member 'text args)) (list 'text "Video") '()))))
-        (apply glgui:uiform-button-draw newargs)))
-      (lambda (type x y . args)
-        (let* ((path (glgui:uiform-arg args 'path #f)))
-        (glgui:uiform-button-input type x y 'action (lambda ()
-          (if (not path)
-            (list "No path to video file provided" (list "OK" #f))
-            (if (or (string=? (system-platform) "ios") (string=? (system-platform) "android"))
-                (begin (videoplayer path) #f)
-                (list "Videos only available on mobile app" (list "OK" #f)))))))))
+     ; (uiform-register 'videobutton
+     ;  (lambda (x y w . args)
+     ;    (let ((newargs (append (list x y w) args
+     ;      (if (not (member 'h args)) (list 'h 75) '())
+     ;      (if (not (member 'size args)) (list 'size 'header) '())
+     ;      (if (not (member 'indent args)) (list 'indent 0.05) '())
+     ;      (if (not (member 'rounded args)) (list 'rounded #t) '())
+     ;      (if (not (member 'text args)) (list 'text "Video") '()))))
+     ;    (apply glgui:uiform-button-draw newargs)))
+     ;  (lambda (type x y . args)
+     ;    (let* ((path (glgui:uiform-arg args 'path #f)))
+     ;    (glgui:uiform-button-input type x y 'action (lambda ()
+     ;      (if (not path)
+     ;        (list "No path to video file provided" (list "OK" #f)) 
+     ;        (if (or (string=? (system-platform) "ios") (string=? (system-platform) "android"))
+     ;            (begin (videoplayer path) #f)
+     ;            (list "Videos only available on mobile app" (list "OK" #f)))))))))
 
      ;; Register face icon widget
      (uiform-register 'face
@@ -848,7 +848,8 @@
         (uiset  'spo2_manual #f)
         result)))
   (spacer height 25)
-  (button h 75 size header indent 0.05 rounded #t text "VIDEOS" action ,(lambda () 'videos))
+  ;; UNCOMMENT FOR VIDEOS
+  ;(button h 75 size header indent 0.05 rounded #t text "VIDEOS" action ,(lambda () 'videos))
   (spacer height 40)
 ;;  (box yofs 195 h 79)
   (label text "Digital Health Innovation Lab")
@@ -860,24 +861,24 @@
 ;;  (box yofs 16 h 61)
  )
 
-(videos
-  "Videos"
-  ("Login" ,(lambda () 'main))
-  #f
-  (spacer)
-  (videobutton text "Video #1" path ,(lambda () (uiget 'videopath1 #f)))
-  (spacer)
-  (videobutton text "Video #2" path ,(lambda () (uiget 'videopath2 #f)))
-  (spacer)
-  (videobutton text "Video #3" path ,(lambda () (uiget 'videopath3 #f)))
-  (spacer)
-  (videobutton text "Video #4" path ,(lambda () (uiget 'videopath4 #f)))
-  (spacer)
-  (videobutton text "Video #5" path ,(lambda () (uiget 'videopath5 #f)))
-  (spacer)
-  (videobutton text "Video #6" path ,(lambda () (uiget 'videopath6 #f)))
-  (spacer)
-)
+; (videos 
+;   "Videos"
+;   ("Login" ,(lambda () 'main))
+;   #f
+;   (spacer)
+;   (videobutton text "Video #1" path ,(lambda () (uiget 'videopath1 #f)))
+;   (spacer)
+;   (videobutton text "Video #2" path ,(lambda () (uiget 'videopath2 #f)))
+;   (spacer)
+;   (videobutton text "Video #3" path ,(lambda () (uiget 'videopath3 #f)))
+;   (spacer)
+;   (videobutton text "Video #4" path ,(lambda () (uiget 'videopath4 #f)))
+;   (spacer)
+;   (videobutton text "Video #5" path ,(lambda () (uiget 'videopath5 #f)))
+;   (spacer)
+;   (videobutton text "Video #6" path ,(lambda () (uiget 'videopath6 #f)))
+;   (spacer)
+; )
 
  ;; Menu for deleting all data
  (adminmenu
@@ -964,8 +965,9 @@
    (spacer height 10)
    (button h 75 size header indent 0.05 rounded #t text "Load Child File" action ,(lambda () 'load))
    (spacer height 50)
-   (button h 75 size header indent 0.05 rounded #t text "Videos" action ,(lambda () 'videos))
-   (spacer height 50)
+   ;; UNCOMMENT FOR VIDEOS
+   ;(button h 75 size header indent 0.05 rounded #t text "Videos" action ,(lambda () 'videos))
+   ;(spacer height 50)
  )
 
  ;; New screen
@@ -1113,11 +1115,12 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score (uiget 'high_thresh)) "Low" "High")
+                                            (if (< score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((> score (uiget 'very_high_thresh_6mo)) "Very High")
-                                              ((<= score (uiget 'high_thresh_6mo)) "Moderate")
+                                              ((and (>= score (uiget 'very_high_thresh_6mo)) 
+                                                    (string=? (dbget 'scorevar "") "6mo1")) "Very High")
+                                              ((< score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -1129,7 +1132,7 @@
       (let ((score (dbget 'dischargescore))
             (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
-              (and score (string=? sixmonths-adm "0") (> score (uiget 'high_thresh)))
+              (and score (string=? sixmonths-adm "0") (>= score (uiget 'high_thresh)))
               (and score (string=? sixmonths-adm "1"))
             )
           '(image file "referral.png")
@@ -1139,7 +1142,7 @@
       (let ((score (dbget 'dischargescore))
             (sixmonths-adm (dbget 'sixmonths-adm "")))
         (if (or
-              (and score (string=? sixmonths-adm "0") (> score (uiget 'high_thresh)))
+              (and score (string=? sixmonths-adm "0") (>= score (uiget 'high_thresh)))
               (and score (string=? sixmonths-adm "1"))
             )
           `(button h 75 size header indent 0.05 rounded #t text "Referral" action ,(lambda () 'referral))
@@ -2117,12 +2120,12 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score (uiget 'high_thresh)) "Low" "High")
+                                            (if (< score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((and (> score (uiget 'very_high_thresh_6mo)) 
+                                              ((and (>= score (uiget 'very_high_thresh_6mo)) 
                                                     (string=? (dbget 'scorevar "") "6mo1")) "Very High")
-                                              ((<= score (uiget 'high_thresh_6mo)) "Moderate")
+                                              ((< score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -2133,12 +2136,12 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
+                                            (if (< score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                              ((and (>= score (uiget 'very_high_thresh_6mo))
                                                     (string=? (dbget 'scorevar "") "6mo1")) "Approx. 25%")
-                                              ((<= score (uiget 'high_thresh_6mo)) "Approx. 2%")
+                                              ((< score (uiget 'high_thresh_6mo)) "Approx. 2%")
                                               (else "Approx. 10%")
                                             )
                                           )
@@ -2159,12 +2162,12 @@
                                            (if score
                                              (if(string=? sixmonths-adm "0")
                                                 ;; For children 6 months old and greater
-                                                (if (<= score (uiget 'high_thresh)) Green Red)
+                                                (if (< score (uiget 'high_thresh)) Green Red)
                                                 ;; For children less than 6 months old
                                                 (cond
-                                                  ((and (> score (uiget 'very_high_thresh_6mo))
+                                                  ((and (>= score (uiget 'very_high_thresh_6mo))
                                                         (string=? (dbget 'scorevar "") "6mo1")) Maroon)
-                                                  ((<= score (uiget 'high_thresh_6mo)) Green)
+                                                  ((< score (uiget 'high_thresh_6mo)) Green)
                                                   (else Red)
                                                 )
                                               )
@@ -2209,12 +2212,12 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score (uiget 'high_thresh)) "Low" "High")
+                                            (if (< score (uiget 'high_thresh)) "Low" "High")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                              ((and (>= score (uiget 'very_high_thresh_6mo))
                                                     (string=? (dbget 'scorevar "") "6mo1")) "Very High")
-                                              ((<= score (uiget 'high_thresh_6mo)) "Moderate")
+                                              ((< score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
                                           )
@@ -2225,12 +2228,12 @@
                                        (if score
                                          (if(string=? sixmonths-adm "0")
                                             ;; For children 6 months old and greater
-                                            (if (<= score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
+                                            (if (< score (uiget 'high_thresh)) "< 1.5 %" "> 10 %")
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                              ((and (>= score (uiget 'very_high_thresh_6mo))
                                                     (string=? (dbget 'scorevar "") "6mo1")) "Approx. 25%")
-                                              ((<= score (uiget 'high_thresh_6mo)) "Approx. 2%")
+                                              ((< score (uiget 'high_thresh_6mo)) "Approx. 2%")
                                               (else "Approx. 10%")
                                             )
                                           )
@@ -2445,7 +2448,7 @@
                                             "High"
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((and (> score (uiget 'very_high_thresh_6mo))
+                                              ((and (>= score (uiget 'very_high_thresh_6mo))
                                                     (string=? (dbget 'scorevar "") "6mo1")) "Very High")
                                               (else "High")
                                             )
@@ -2487,7 +2490,7 @@
    (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
         (score (dbget 'dischargescore #f)))
      (if (and (string=? sixmonths-adm "1") 
-              (> score (uiget 'very_high_thresh_6mo)) 
+              (>= score (uiget 'very_high_thresh_6mo)) 
               (string=? (dbget 'scorevar "") "6mo1"))
        '(spacer height 4)
        '(spacer height 0)
@@ -2499,7 +2502,7 @@
    (let ((sixmonths-adm (dbget 'sixmonths-adm ""))
          (score (dbget 'dischargescore #f)))
      (if (and (string=? sixmonths-adm "1") 
-         (> score (uiget 'very_high_thresh_6mo))
+         (>= score (uiget 'very_high_thresh_6mo))
          (string=? (dbget 'scorevar "") "6mo1"))
        `(label align left indent 0.05 text ,(lambda () (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y"))))
        '(spacer height 0)
@@ -2555,7 +2558,7 @@
                                             "High"
                                             ;; For children less than 6 months old
                                             (cond
-                                              ((and (> score (uiget 'very_high_thresh_6mo)) (string=? (dbget 'scorevar "") "6mo1")) "Very High")
+                                              ((and (>= score (uiget 'very_high_thresh_6mo)) (string=? (dbget 'scorevar "") "6mo1")) "Very High")
                                               ((< score (uiget 'high_thresh_6mo)) "Moderate")
                                               (else "High")
                                             )
@@ -2584,7 +2587,7 @@
                                                           (string-append "Visit #3: " (seconds->string (+ (current-time-seconds) 1209600) "%A, %B %e, %Y") "\n"))
                                                          ;; Visit 4 if <6mo with Very High risk
                                                          (if (and (string=? sixmonths-adm "1") 
-                                                                  score (> score (uiget 'very_high_thresh_6mo))
+                                                                  score (>= score (uiget 'very_high_thresh_6mo))
                                                                   (string=? (dbget 'scorevar "") "6mo1"))
                                                           (string-append "Visit #4: " (seconds->string (+ (current-time-seconds) 2419200) "%A, %B %e, %Y") "\n")
                                                           "")
