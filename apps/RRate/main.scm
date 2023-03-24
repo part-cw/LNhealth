@@ -60,12 +60,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     (if hasrrtaps
         (svs-pass-vitalsign-string (taptimes->string rrate:times) 100 VITALSIGN_RRTAPS))
     (if (or hasrr hasrrtaps) (svs-finish))
-    (terminate))
+    (terminate #t))
 )
 
 (define (rrate-terminate)
   (if (or rrate:svsmode:rr rrate:svsmode:rrtaps) (svs-cancel))
-  (terminate))
+  (terminate #t))
 
 ;; main loop
 (main
@@ -80,12 +80,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      ;; Setup the menubar
      (glgui-menubar gui 0 (- h 44) w 44)
      (glgui-pixmap gui 8 (- h 32) RRATE.img)
-     (glgui-widget-set! gui (glgui-label-wrapped gui 120 (- h 44) 200 39 
+     (glgui-widget-set! gui (glgui-label-wrapped gui 120 (- h 44) 200 39
        (string-append "RRate " (system-appversion) "\nCopyright \302\251 2019\nUniversity of British Columbia") sans_10.fnt White)
        'align GUI_ALIGNRIGHT)
 
      ;; Use the rrate module with no store (no saving data),
-     ;; terminate if cancelled or exited and do nothing extra if RRate confirmed 
+     ;; terminate if cancelled or exited and do nothing extra if RRate confirmed
      (rrate-setup)
      (let ((l (settings-ref "Language" #f)))
        (if l
