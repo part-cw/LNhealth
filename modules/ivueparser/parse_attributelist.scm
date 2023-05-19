@@ -340,11 +340,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     ;; leaving standby
     (if (and old_mode_op (fx= (bitwise-and old_mode_op OPMODE_STANDBY) OPMODE_STANDBY)
              (fx= (bitwise-and mode_op OPMODE_STANDBY) 0))
-      (begin
+      (let ((demos ivue:demographics)
+            (keep '("location" "location_connect" "mac")))
         (store-clear! ivueparser:store "CaseEndPending")
         (store-set! ivueparser:store "CaseStartPending" #t "ivue")
         ;; Cleanup old demographics
-        (for-each (lambda (p) (store-clear! ivueparser:store p)) ivue:demographics)
+        (for-each (lambda (p) (if (not (member p keep)) (store-clear! ivueparser:store p))) demos)
       )
     )
   ))
