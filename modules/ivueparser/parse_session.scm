@@ -59,6 +59,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (ivueparser:log 2 "ivueparser: abort from monitor") #f)
       ((fx= type #xE1) ;; Data Export Protocol
         (ivueparser:parsedata buf))
+      ((fx= type #xF7) ;; New Waveform Export (empirical)
+        (ivueparser:parsedata buf))
       (else (ivueparser:log 2 "ivueparser: parsing error") #f)
     )
   ))

@@ -1,6 +1,6 @@
 #|
 lnHealth - Health related apps for the LambdaNative framework
-Copyright (c) 2009-2018, University of British Columbia
+Copyright (c) 2009-2024, University of British Columbia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -38,6 +38,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;; telePORT [formerly known as iFishAA]
 (define voip:enabled #f) ;; Disable until stable
+
+;; Make sure our renderer runs at sensible times
+(if (function-exists? "glgui-timings-at-10msec!")
+  (eval '(glgui-timings-at-10msec!)))
 
 ;; -----------------------------------------------------------------------------
 ;;  LOADING OF TEXTURES AND FONTS and definition of texture lists
