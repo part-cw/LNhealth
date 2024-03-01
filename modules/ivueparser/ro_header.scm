@@ -89,7 +89,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           (let loop ((n 0)(p (u8data-skip buf 16)))
             (if (or (fx= n count) (fx= (u8data-length p) 0))
               p
-              (loop (fx+ n 1) (ivueparser:parseSaObsValueCmp handle_id p))
+              (loop (fx+ n 1) (ivueparser:parseSaObsValue handle_id (u8data-skip p 4)))
             )
           )
         )
