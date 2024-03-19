@@ -495,15 +495,6 @@
     (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 30))
     (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 24))
 
-    ;; Path to tutorial videos
-    ; (uiset 'tutorialpath (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "tutorial"))
-    ; (uiset 'videopath1 (string-append (uiget 'tutorialpath) "1.mp4"))
-    ; (uiset 'videopath2 (string-append (uiget 'tutorialpath) "2.mp4"))
-    ; (uiset 'videopath3 (string-append (uiget 'tutorialpath) "3.mp4"))
-    ; (uiset 'videopath4 (string-append (uiget 'tutorialpath) "4.mp4"))
-    ; (uiset 'videopath5 (string-append (uiget 'tutorialpath) "5.mp4"))
-    ; (uiset 'videopath6 (string-append (uiget 'tutorialpath) "6.mp4"))
-
     ;; Load the localization csv table to translate between languages, used by spo2spotcheck
     (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
 
@@ -524,7 +515,7 @@
     (uiset 'origgui lnhealth:gui)
 
     (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
-    (uiset 'cryptokey parasync-key)
+    (uiset 'cryptokey para-key)
     (uiset  'database (dbload (uiget 'adminpath) (uiget 'cryptokey)))
 
     ;; Load scaling table
@@ -659,25 +650,6 @@
            (glgui:draw-pixmap-right (+ x (* w 0.075)) y (* w 0.85) (cadr img) img White)
            30))
        glgui:uiform-button-input)
-
-     ;; Register video button widget
-     ; (uiform-register 'videobutton
-     ;  (lambda (x y w . args)
-     ;    (let ((newargs (append (list x y w) args
-     ;      (if (not (member 'h args)) (list 'h 75) '())
-     ;      (if (not (member 'size args)) (list 'size 'header) '())
-     ;      (if (not (member 'indent args)) (list 'indent 0.05) '())
-     ;      (if (not (member 'rounded args)) (list 'rounded #t) '())
-     ;      (if (not (member 'text args)) (list 'text "Video") '()))))
-     ;    (apply glgui:uiform-button-draw newargs)))
-     ;  (lambda (type x y . args)
-     ;    (let* ((path (glgui:uiform-arg args 'path #f)))
-     ;    (glgui:uiform-button-input type x y 'action (lambda ()
-     ;      (if (not path)
-     ;        (list "No path to video file provided" (list "OK" #f)) 
-     ;        (if (or (string=? (system-platform) "ios") (string=? (system-platform) "android"))
-     ;            (begin (videoplayer path) #f)
-     ;            (list "Videos only available on mobile app" (list "OK" #f)))))))))
 
      ;; Register face icon widget
      (uiform-register 'face
@@ -864,37 +836,14 @@
         (uiset  'spo2_manual #f)
         result)))
   (spacer height 25)
-  ;; UNCOMMENT FOR VIDEOS
-  ;(button h 75 size header indent 0.05 rounded #t text "VIDEOS" action ,(lambda () 'videos))
   (spacer height 40)
-;;  (box yofs 195 h 79)
   (label text "Digital Health Innovation Lab")
   (spacer height 5)
   (label text "THE UNIVERSITY OF")
   (label text "BRITISH COLUMBIA")
   (label text ,(lambda () (string-append "Version " (uiget 'para-version "Unknown"))))
   (spacer)
-;;  (box yofs 16 h 61)
  )
-
-; (videos 
-;   "Videos"
-;   ("Login" ,(lambda () 'main))
-;   #f
-;   (spacer)
-;   (videobutton text "Video #1" path ,(lambda () (uiget 'videopath1 #f)))
-;   (spacer)
-;   (videobutton text "Video #2" path ,(lambda () (uiget 'videopath2 #f)))
-;   (spacer)
-;   (videobutton text "Video #3" path ,(lambda () (uiget 'videopath3 #f)))
-;   (spacer)
-;   (videobutton text "Video #4" path ,(lambda () (uiget 'videopath4 #f)))
-;   (spacer)
-;   (videobutton text "Video #5" path ,(lambda () (uiget 'videopath5 #f)))
-;   (spacer)
-;   (videobutton text "Video #6" path ,(lambda () (uiget 'videopath6 #f)))
-;   (spacer)
-; )
 
  ;; Menu for deleting all data
  (adminmenu
@@ -981,9 +930,6 @@
    (spacer height 10)
    (button h 75 size header indent 0.05 rounded #t text "Load Child File" action ,(lambda () 'load))
    (spacer height 50)
-   ;; UNCOMMENT FOR VIDEOS
-   ;(button h 75 size header indent 0.05 rounded #t text "Videos" action ,(lambda () 'videos))
-   ;(spacer height 50)
  )
 
  ;; New screen
@@ -1107,10 +1053,7 @@
               (stclear "HR_Median")
               (stclear "SP_Timestamp")
               'menu))
-   ("Complete" ,(lambda ()
-                  (lnhealth-sxrun 'save-child)
-                  (uiset 'completed #f)
-                  'send-archive))
+   #f
    (spacer height 10)
    (label text ,(lambda ()
                   (let ((first (dbget 'first))
@@ -2618,57 +2561,6 @@
          (list "Referral info copied. Paste into the printer app." (list "OK" #f)))))
  )
 
-  (send-archive
-    "Complete"
-    ("Cancel" ,(lambda ()
-                (uiset 'uploading #f)
-                (uiset 'progress 0.)
-                'childmenu))
-    #f
-    (spacer height 100)
-    ,(lambda ()
-       (let ((up (uiget  'uploading 0)))
-         (if (and (uiget 'completed) (fx= up 2))
-           '(spacer height 75)
-           `(button h 75 size header indent 0.05 rounded #t text " Final Upload" action
-             ,(lambda ()
-               (dbset 'para-version (uiget 'para-version "Unknown"))
-               (lnhealth-sxrun 'save-child)
-               (upload-data (list (dbget 'childid)) #t)
-               'send-archive)))))
-    (spacer)
-    ,(lambda ()
-        (let ((up (uiget  'uploading #f)))
-          (cond
-             ((not up)
-               '(spacer height 0))
-             ((fx= up 1)
-               '(label text "Uploading..."))
-             ((fx= up 2)
-               '(label text "Upload Complete"))
-             ((fx= up 3)
-               '(label text "Upload Failed - Check Wi-Fi"))
-             ((fx= up 0)
-               '(label text "No Data Stored")))))
-    (spacer)
-    ,(lambda ()
-        (let ((up (uiget  'uploading #f)))
-          (if (and up (fx= up 1))
-            `(label text ,(lambda () (uiget 'pmessage)))
-            '(spacer height 0))))
-    (spacer height 10)
-    ,(lambda ()
-        (let ((up (uiget  'uploading #f)))
-          (if (and up (fx= up 1))
-            `(progress value ,(lambda () (uiget 'progress)))
-            '(spacer height 0))))
-    ,(lambda ()
-        (let ((up (uiget  'uploading 0)))
-          (if (and (uiget 'completed) (fx= up 2))
-           `(button h 75 size header indent 0.05 rounded #t text "Archive" action
-             ,(lambda () (lnhealth-sxrun 'archive-child)))
-           '(spacer height 0))))
-  )
 )
 
 ;; eof

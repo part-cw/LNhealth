@@ -1,3 +1,5 @@
+(define para-key '#u8(134 102 233 27 13 87 122 120 92 13 83 192 70 93 200 53 121 102 33 85 28 157 73 219))
+
 (main
 ;; initialization
   (lambda (w h) (lnhealth-init 480 800 (lambda ()
