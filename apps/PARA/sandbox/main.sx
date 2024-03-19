@@ -1,3 +1,40 @@
+#|
+LambdaNative - a cross-platform Scheme framework
+Copyright (c) 2009-2024, University of British Columbia
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the
+following conditions are met:
+
+* Redistributions of source code must retain the above
+copyright notice, this list of conditions and the following
+disclaimer.
+
+* Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials
+provided with the distribution.
+
+* Neither the name of the University of British Columbia nor
+the names of its contributors may be used to endorse or
+promote products derived from this software without specific
+prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+|#
 
 `(
 
@@ -22,24 +59,6 @@
                          ((char=? f #\-) (string-replace-substring str "-." "-0."))
                          ((or (char=? f #\+) (string=? str "0")) str)
                          (else (string-append "+" str))))))
-
-  ;; Check that a study ID is valid
-  (valid-id ,(lambda (id)
-    (let ((len (string-length id)))
-      (let loop ((i 0) (letter? #t))
-        (if (fx< i len)
-          (let ((c (string-ref id i)))
-            (cond
-              ;; Valid ID letters
-              ((and (fx< i 4) (char-alphabetic? c))
-                (loop (+ i 1) #t))
-              ;; Valid digit
-              ((and (fx> i 2) (char-numeric? c))
-                 (loop (+ i 1) #f))
-              ;; Character invalid
-              (else #f)))
-          ;; All characters valid, make sure it ended in a digit
-          (not letter?))))))
 
   ;; Calculate a weight-for-age z-score
   (wa-z-score ,(lambda (age weight boy?)
@@ -657,18 +676,6 @@
                           (if (and (string? str) (fx> (string-length str) 0) (char=? (string-ref str (fx- (string-length str) 1)) #\space))
                             (xxset floc fid (substring str 0 (fx- (string-length str) 1))))))
 
-     ;; Keypad after char callback procedure for the study ID
-     (uiset 'idcb (lambda (floc fid str)
-                    (let ((len (string-length str)))
-                      (let loop ((i 0) (newstr ""))
-                        (if (fx< i len)
-                          (let ((c (string-ref str i)))
-                            (if (or (char-alphabetic? c)
-                                    (char-numeric? c))
-                              (loop (+ i 1) (string-append newstr (string c)))
-                              (loop (+ i 1) newstr)))
-                          (xxset floc fid (string-upcase newstr)))))))
-
      ;; Keypad after char callback procedure for the phone numbers, always have format 0XXXXXXXXX
      (uiset 'phonecb (lambda (floc fid str)
                        (if (string? str)
@@ -900,7 +907,6 @@
                 (cond
                   ((or (not id) (not id2)) (list "Enter the Study ID twice." (list "OK" #f)))
                   ((not (string=? id id2)) (list "The two Study ID's do not match." (list "OK" #f)))
-                  ((not (lnhealth-sxrun 'valid-id id)) (list (string-append id " is not a valid ID.") (list "OK" #f)))
                   ((not sixmonths-adm) (list "Check whether the child is less than 6 months old or not." (list "OK" #f)))
                   (else
                     (let ((db (uiget  'database))
@@ -928,9 +934,9 @@
                           (lnhealth-sxrun 'save-child)
                           'demog))))))))
    (spacer height 34)
-   (textentry id childid text "Study ID:" indent 0.45 keycb ,(lambda () (uiget 'idcb)))
+   (textentry id childid text "Study ID:" indent 0.45 keypad numint)
    (spacer height 20)
-   (textentry id childid2 text "Confirm Study ID:" indent 0.45 keycb ,(lambda () (uiget 'idcb)))
+   (textentry id childid2 text "Confirm Study ID:" indent 0.45 keypad numint)
    (spacer)
    (box yofs 10 h 157)
    (spacer height 25)
@@ -1086,7 +1092,6 @@
                   (cond
                     ((or (not id) (not id2)) (list "Enter the Study ID twice." (list "OK" #f)))
                     ((not (string=? id id2)) (list "The two Study ID's do not match." (list "OK" #f)))
-                    ((not (lnhealth-sxrun 'valid-id id)) (list (string-append id " is not a valid ID.") (list "OK" #f)))
                     ((not sixmonths-adm) (list "Check whether the child is less than 6 months old or not." (list "OK" #f)))
                     (else
                        (let* ((admindb (uiget 'admin-database))
@@ -1128,12 +1133,12 @@
    (spacer height ,(lambda () (if (uiget 'editingid) 73 0)))
    ,(lambda ()
       (if (uiget 'editingid)
-        `(textentry id childid3 text "New Study ID:" indent 0.55 keycb ,(lambda () (uiget 'idcb)))
+        `(textentry id childid3 text "New Study ID:" indent 0.55 keypad numint)
         '(spacer height 0)))
    (spacer height ,(lambda () (if (uiget 'editingid) 20 0)))
    ,(lambda ()
       (if (uiget 'editingid)
-        `(textentry id childid4 text "Confirm New Study ID:" indent 0.55 keycb ,(lambda () (uiget 'idcb)))
+        `(textentry id childid4 text "Confirm New Study ID:" indent 0.55 keypad numint)
         '(spacer height 0)))
    (spacer height ,(lambda () (if (uiget 'editingid) 30 0)))
    ,(lambda ()
