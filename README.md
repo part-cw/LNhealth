@@ -9,3 +9,4 @@ This project houses open-source (BSD licensed) health-related applications, crea
   - A compiled version is available on [Google Play](https://play.google.com/store/apps/details?id=org.ecemgroup.teleport) and [Apple's App Store](https://itunes.apple.com/ca/app/part-teleport/id600593433) .
 * [S5DataLogger](apps/S5DataLogger): A generic waveform and numerics data logger for GE/Datex S/5 patient monitors
 * [IvueDataLogger](apps/IvueDataLogger): A generic waveform and numerics data logger for Philips Intellvue patient monitors
+* [PARA](apps/PARA): The Smart Discharges assessment app for calculating the risk of post-discharge mortality for children under 5 years old
