@@ -471,7 +471,7 @@
   (oncreate ,(lambda ()
 
     ;; Set version information
-    (uiset 'para-version "2.8.1")
+    (uiset 'para-version "2.8.2")
 
     ;; Background box color
     (uiset 'boxcolor (color-rgb 20 140 102))
