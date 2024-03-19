@@ -145,10 +145,6 @@
       (dbclear 'first)
       (dbclear 'last)
       (dbsave (uiget 'adminpath) (uiget 'cryptokey) (uiget 'database))
-      (spo2spot-reset)
-      (stclear "SP_Median")
-      (stclear "HR_Median")
-      (stclear "SP_Timestamp")
       'menu)))
 
   ;; Mean and standard deviations to use to centre and scale variables
@@ -199,8 +195,7 @@
                                  (muact (lnhealth-sxrun 'center-scale "muac" muacnum))
                                  (waz (dbget 'wazscore #f))
                                  (wazt (lnhealth-sxrun 'center-scale "waz" waz))
-                                 (sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
-                                 (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
+                                 (sp (lnhealth-sxrun 'getnotemptystring 'spo2manual))
                                  (spnum (if sp (string->number sp) 0))
                                  (spt (lnhealth-sxrun 'center-scale "spo2" spnum))
                                  (hospopts (uiget 'hosp_options '()))
@@ -277,8 +272,7 @@
                           (let* ((muac (lnhealth-sxrun 'getnotemptystring 'muac))
                                  (muacnum (if muac (string->number muac) #f))
                                  (muact (if muacnum (lnhealth-sxrun 'center-scale "muac-6mo" muacnum) #f))
-                                 (sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
-                                 (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
+                                 (sp (lnhealth-sxrun 'getnotemptystring 'spo2manual))
                                  (spnum (if sp (string->number sp) #f))
                                  (spt (if spnum (lnhealth-sxrun 'center-scale "spo2" spnum) #f))
                                  (waz (dbget 'wazscore #f))
@@ -370,7 +364,7 @@
   ;; This function tells you what data is missing for the model you want to run
   (missing-for-model ,(lambda (model)
     (let ((modelvars (cond 
-        ((equal? model '6mo1) (list 'muac 'muscletone 'dpi 'spo2med 'spo2manual 'wazscore 'bmiazscore))
+        ((equal? model '6mo1) (list 'muac 'muscletone 'dpi 'spo2manual 'wazscore 'bmiazscore))
         (else '()))))
       (lnhealth-sxrun 'mfm-helper modelvars))))
 
@@ -444,7 +438,6 @@
            (dscore (if under6mo 
               (let ((missing (lnhealth-sxrun 'missing-for-model '6mo1)))
                 (if (or (null? missing)
-                        (equal? missing '(spo2med))
                         (equal? missing '(spo2manual)))
                     (cons (lnhealth-sxrun 'calc-discharge-score-6mo1) "6mo1")
                     (cons (lnhealth-sxrun 'calc-discharge-score-6mo2) "6mo2")))
@@ -471,7 +464,7 @@
   (oncreate ,(lambda ()
 
     ;; Set version information
-    (uiset 'para-version "2.8.2")
+    (uiset 'para-version "2.9.0")
 
     ;; Background box color
     (uiset 'boxcolor (color-rgb 20 140 102))
@@ -494,25 +487,6 @@
     (uiset 'bigfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 40))
     (uiset 'hdfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansRegular.ttf") 30))
     (uiset 'btfnt (ttf->fnt (string-append (system-directory) (system-pathseparator) "sandbox" (system-pathseparator) "BalsamiqSansBold.ttf") 24))
-
-    ;; Load the localization csv table to translate between languages, used by spo2spotcheck
-    (local-load (string-append "sandbox" (system-pathseparator) "localization.csv"))
-
-    ;; Setup pulse oximetry and setup SpO2 page
-    (spo2spot-vsdsp-disable!)
-    (spo2spot-init 0 80 (glgui-width-get) (- (glgui-height-get) 80) lnhealth:store)
-    (spo2-set-length 30)
-    (spo2-set-quality-length 15)
-
-    (if (string=? (system-platform) "android")
-       (make-instance lnhealth:store "Oximeter" "oximeter" '("Port" "/dev/ttyUSB0")))
-    (if (string=? (system-platform) "ios")
-       (make-instance lnhealth:store "Oximeter" "oximeter" '("Port" "/dev/tty.iap")))
-   (make-instance lnhealth:store "OximeterSQI" "oximetersqi"
-     '("Waveform" "PLETHUNSCALED") '("Trends" ("HR" "SP"))
-     '("MaxHRVar" 10.) '("MaxSpO2Var" 10.) '("TimeRange" 30.))
-
-    (uiset 'origgui lnhealth:gui)
 
     (uiset 'adminpath (string-append "sandbox" (system-pathseparator) "admin.db"))
     (uiset 'cryptokey para-key)
@@ -734,28 +708,8 @@
      (uiset 'identfieldmap (lnhealth-sxrun 'load-fieldmap "identfieldmap.csv"))
   ))
 
-  (onevent ,(lambda (t x y) (spo2spot-event)))
-
-  (onscheduler ,(lambda ()
-    (let* ((hr (stget  "HR" #f))
-           (sp (stget  "SP" #f))
-           (sqi (stget  "SQI" #f))
-           (curpleth (stget  "PLETH" '()))
-           (oldpleth (uiget  'pleth '()))
-           (totallen (fx+ (length curpleth) (length oldpleth)))
-           (newpleth (if (fx< totallen 300) (append oldpleth curpleth)
-           (sublist (append oldpleth curpleth) (- totallen 300) totallen))))
-       (uiset  'hr (if (number? hr) (fix hr) 0))
-       (uiset  'sp (if (number? sp) (fix sp) 0))
-       (uiset  'sqi (if (number? sqi) (fix sqi) 0))
-       (uiset  'pleth newpleth)
-       (if (and (stget "CaseID" #f) (uiget 'invalidspo2))
-         (begin
-           (uiset 'invalidspo2 #f)
-           (stclear "SP_Median")))
-      (spo2spot-scheduled)
-    )))
-
+  (onevent ,(lambda (t x y) #t))
+  (onscheduler ,(lambda () #t))
   (onsuspend ,(lambda () #t))
   (onresume ,(lambda () #t))
   (ondestroy ,(lambda () #t))
@@ -963,7 +917,6 @@
                           (uiset  'database (make-table))
                           (dbset  'childid id)
                           (dbset  'childid2 id2)
-                          (spo2spot-folder-set! id)
                           (if first (dbset  'first first))
                           (if last (dbset  'last last))
                           (if sixmonths-adm (dbset  'sixmonths-adm sixmonths-adm))
@@ -1011,13 +964,7 @@
                         (uiset 'new #f)
                         (uiset  'admin-database db)
                         (uiset  'database (dbload filename (uiget 'cryptokey)))
-                        (spo2spot-folder-set! sel)
                         ;; Populate SpO2 page with saved values
-                        (let ((sp (lnhealth-sxrun 'getnotemptystring 'spo2med))
-                              (hr (lnhealth-sxrun 'getnotemptystring 'hrmed))
-                              (sptime (dbget 'sptime)))
-                          (if (and sp hr)
-                            (spo2spot-load hr sp sptime)))
                         'childmenu)
                       (list (string-append "File " filename " missing.") (list "OK" #f))))
                   (list "Select a child by ID" (list "OK" #f))))))
@@ -1048,10 +995,6 @@
               (dbclear 'childid2)
               (dbclear 'first)
               (dbclear 'last)
-              (spo2spot-reset)
-              (stclear "SP_Median")
-              (stclear "HR_Median")
-              (stclear "SP_Timestamp")
               'menu))
    #f
    (spacer height 10)
@@ -1130,10 +1073,6 @@
                   (dbclear 'first)
                   (dbclear 'last)
                   (dbclear 'sixmonths-adm)
-                  (spo2spot-reset)
-                  (stclear "SP_Median")
-                  (stclear "HR_Median")
-                  (stclear "SP_Timestamp")
                   'menu)
                 (begin
                   (lnhealth-sxrun 'save-child)
@@ -1645,21 +1584,12 @@
                                                 ;; See if we are on track to complete full model
                                                 (let ((missing (lnhealth-sxrun 'missing-for-model '6mo1)))
                                                   (if (or (equal? missing '())
-                                                          (equal? missing '(spo2med))
-                                                          (equal? missing '(spo2manual))
-                                                          (equal? missing '(spo2med spo2manual)))
-                                                    (begin
-                                                      (uiset 'origgui lnhealth:gui)
-                                                      (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                      (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
-                                                      'pulseox)
+                                                          (equal? missing '(spo2manual)))
+                                                    'spo2
                                                     ;; Otherwise go to the additional questions
                                                     'clinical-6mo))
                                                 (begin
-                                                  (uiset 'origgui lnhealth:gui)
-                                                  (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                  (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
-                                                  'pulseox))) ;; For children 6 months or greater
+                                                  'spo2))) ;; For children 6 months or greater
                                             ;; Missing something
                                             (list
                                                (cond
@@ -1793,27 +1723,13 @@
  (clinical-6mo
    "Additional Questions"
    ("Back" ,(lambda ()
-              (if (uiget 'invalidspo2)
-                (begin
-                  (stclear "SP_Median")
-                  (uiset 'invalidspo2 #f)))
               (lnhealth-sxrun 'save-child)
               (let ((missing (lnhealth-sxrun 'missing-for-model '6mo1)))
                 (if (or (equal? missing '())
-                        (equal? missing '(spo2med))
-                        (equal? missing '(spo2manual))
-                        (equal? missing '(spo2med spo2manual)))
-                  (begin
-                    (uiset 'origgui lnhealth:gui)
-                    (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                    (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
-                    'pulseox)
+                        (equal? missing '(spo2manual)))
+                  'spo2
                   'anthro))))
    ("Next" ,(lambda ()
-              (if (uiget 'invalidspo2)
-                (begin
-                  (stclear "SP_Median")
-                  (uiset 'invalidspo2 #f)))
               (lnhealth-sxrun 'save-child)
               (if (and (sane 'lasthosp (lambda (str) #t) "Enter time since last hospitalization" "")
                        (sane 'sucking (lambda (str) #t) "Enter if child is sucking well" "")
@@ -1844,16 +1760,12 @@
   (spo2
    " Oxygen Saturation"
    ("Back" ,(lambda ()
-              (uiset 'origgui lnhealth:gui)
-              (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-              (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
-              'pulseox))
+              (lnhealth-sxrun 'save-child)
+              'anthro))
    ("Next" ,(lambda ()
               (lnhealth-sxrun 'save-child)
-              (uiset 'frompulseox #f)
-              (let* ((sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med))
-                     (sp (if sp0 sp0 (lnhealth-sxrun 'getnotemptystring 'spo2manual)))
-                     (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
+              (let ((sp (lnhealth-sxrun 'getnotemptystring 'spo2manual))
+                    (muac (lnhealth-sxrun 'getnotemptystring 'muac)))
                 ;; spo2 optional for under six months - if not present, send to additional questions
                 (if (and (string=? (dbget 'sixmonths-adm "") "1") (not sp))
                   'clinical-6mo
@@ -1869,132 +1781,13 @@
    (spacer)
  )
 
-
-  ;; Pulse oximeter spot check page
-  (pulseox
-   " Oxygen Saturation"
-   ("Back" ,(lambda ()
-              (if (uiget 'invalidspo2)
-                (begin
-                  (stclear "SP_Median")
-                  (uiset 'invalidspo2 #f)))
-              (if (stget "CaseID" #f)
-                (begin
-                  (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                  (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
-                                                                     (spo2spot-stop-recording)
-                                                                     (uiset 'invalidspo2 #t)
-                                                                     (lnhealth-sxrun 'save-child)
-                                                                     'anthro))
-                                                       (list "No" (lambda ()
-                                                                    (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                                    #f))))
-                (let ((sp (stget "SP_Median" ""))
-                      (hr (stget "HR_Median" ""))
-                      (sptime (stget "SP_Timestamp" #f))
-                      (sqi (stget "SP_SQI" ""))
-                      (filepath (stget "SP_Data" #f)))
-                  (if (fx> (string-length sp) 0) (dbset 'spo2med sp))
-                  (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
-                  (if sptime (dbset 'sptime sptime))
-                  (if (fx> (string-length sqi) 0) (dbset 'sqi sqi))
-                  (if filepath (dbset 'spo2files filepath))
-                  (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                  (lnhealth-sxrun 'save-child)
-                  'anthro))))
-   ("Next" ,(lambda ()
-              (if (uiget 'invalidspo2)
-                (begin
-                  (stclear "SP_Median")
-                  (uiset 'invalidspo2 #f)))
-              (let ((exitproc (lambda ()
-                                (lnhealth-sxrun 'save-child)
-                                (uiset 'frompulseox #t)
-                                       ;; SpO2 just recorded
-                                (let* ((sp0 (stget "SP_Median" #f))
-                                       ;; SpO2 possibly previous recorded
-                                       (sp1 (if (string? sp0) sp0 (lnhealth-sxrun 'getnotemptystring 'spo2med)))
-                                       ;; SpO2 possibly from a manual entry
-                                       (sp (if (string? sp1) sp1 (lnhealth-sxrun 'getnotemptystring 'spo2manual))))
-                                  ;; spo2 optional for under six months - if not present, send to additional questions
-                                  (if (and (string=? (dbget 'sixmonths-adm "") "1") (not sp))
-                                    (begin 
-                                      (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                                      'clinical-6mo)
-                                    (if sp
-                                      (begin
-                                        (if (and sp0 (fx> (string-length sp0) 0))
-                                          ;; Just recorded SpO2
-                                          (let ((hr (stget "HR_Median" ""))
-                                                (sptime (stget "SP_Timestamp" #f))
-                                                (sqi (stget "SP_SQI" ""))
-                                                (filepath (stget "SP_Data" #f)))
-                                            (dbset 'spo2med sp0)
-                                            (if (fx> (string-length hr) 0) (dbset 'hrmed hr))
-                                            (if sptime (dbset 'sptime sptime))
-                                            (if (fx> (string-length sqi) 0) (dbset 'sqi sqi))
-                                            (if filepath (dbset 'spo2files filepath))))
-                                        (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                                        (if (string=? (dbget 'sixmonths-adm "") "1")
-                                          (lnhealth-sxrun 'goto-risk)
-                                          'clinical))
-                                      (begin
-                                        (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                                        (list "Missing SpO2. Please measure it to proceed." (list "OK" (lambda ()
-                                                                                                         (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                                                                         #f))))))))))
-                (if (stget "CaseID" #f)
-                  ;; In the middle of a recording, ask them if they wish to stop it
-                  (begin
-                    (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                    (list "Stop current SpO2 recording?" (list "Yes" (lambda ()
-                                                                       (spo2spot-stop-recording)
-                                                                       (uiset 'invalidspo2 #t)
-                                                                       (exitproc)))
-                                                         (list "No" (lambda ()
-                                                                      (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                                                                      #f))))
-                  ;; Not in the middle of a recording, run exit procedure
-                  (exitproc)))))
-   (spacer height 600)
-   ,(lambda ()
-       (let ((id (stget "CaseID" #f)))
-          (if (or id (lnhealth-sxrun 'getnotemptystring 'spo2med) (stget "SP_Median" #f))
-            ;; If tablet based SpO2 being done or is already done, don't allow manual
-            '(spacer height 0)
-            `(button height 30 rounded #t text "SpO2 from another device" action ,(lambda ()
-                (if (uiget 'invalidspo2)
-                  (begin
-                     (stclear "SP_Median")
-                     (uiset 'invalidspo2 #f)))
-                (let ((sp (stget "SP_Median" #f)))
-                  (if (number? sp) (dbset 'spo2med (number->string sp)))
-                  (set! lnhealth:gui (uiget 'origgui lnhealth:gui))
-                  (lnhealth-sxrun 'save-child)
-                  'spo2))))))
- )
-
  ;; Clinical data screen
  (clinical
    "Clinical Data"
    ("Back" ,(lambda ()
-              (if (uiget 'invalidspo2)
-                (begin
-                  (stclear "SP_Median")
-                  (uiset 'invalidspo2 #f)))
               (lnhealth-sxrun 'save-child)
-              (if (uiget 'frompulseox)
-                (begin
-                  (uiset 'origgui lnhealth:gui)
-                  (set! lnhealth:gui (list lnhealth:gui spo2spot:gui))
-                  (glgui-widget-set! spo2spot:gui spo2spot:start 'hidden #f)
-                  'pulseox)
-                'spo2)))
+              'spo2))
    ("Next" ,(lambda ()
-              (if (uiget 'invalidspo2)
-                (begin
-                  (stclear "SP_Median")
-                  (uiset 'invalidspo2 #f)))
               (lnhealth-sxrun 'save-child)
               (let ((bcs (dbget 'comascore #f))
                     (momhiv (dbget 'momhiv #f))
@@ -2062,7 +1855,7 @@
    ("Back" ,(lambda ()
               (lnhealth-sxrun 'save-child)
               (let ((sixmonths-adm (dbget 'sixmonths-adm "")))
-                (if (string=? sixmonths-adm "1") 'anthro 'clinical)
+                (if (string=? sixmonths-adm "1") 'spo2 'clinical)
               )))
    ("Restart" ,(lambda ()
                      (lnhealth-sxrun 'save-child)
@@ -2071,10 +1864,6 @@
                      (dbclear 'childid2)
                      (dbclear 'first)
                      (dbclear 'last)
-                     (spo2spot-reset)
-                     (stclear "SP_Median")
-                     (stclear "HR_Median")
-                     (stclear "SP_Timestamp")
                      'menu))
    (spacer height 140)
    (label size small text "Post-Discharge Risk of Mortality")
